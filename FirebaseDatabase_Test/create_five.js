@@ -34,7 +34,8 @@ async function seedFirestore() {
     // ---------------------------------
     // Create 5 sample Ingredients
     // ---------------------------------
-    const ingredientNames = ["Cheese", "Basil", "Chicken", "Rice", "Pepper"];
+    const ingredientNames = ["Milk", "Bacon", "Lettuce", "Apple", "Jalapeno"];
+
     let ingredientRefs = [];
     for (let i = 0; i < 5; i++) {
       const ingredientData = {
