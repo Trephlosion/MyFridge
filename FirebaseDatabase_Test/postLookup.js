@@ -1,5 +1,6 @@
 var admin = require("firebase-admin");
 var serviceAccount = require('./serviceAccountKey.json');
+const readline = require('readline');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -7,37 +8,66 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-/ 3. A different user (or a user in a different role) lists/browses posts.
-async function differentUserListsPosts() {
-  console.log("\n=== Different User Listing All Posts ===");
-  // Optionally, check for a different user.
+// Helper function to ask a question and return a promise.
+function askQuestion(query) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  return new Promise(resolve => rl.question(query, answer => {
+    rl.close();
+    resolve(answer);
+  }));
+}
+
+// Function to prompt for post data.
+async function promptPostData() {
+  const userEmail = await askQuestion("Enter your email: ");
+  const postTitle = await askQuestion("Enter the post title: ");
+  const postDescription = await askQuestion("Enter the post description: ");
+  return { userEmail, postTitle, postDescription };
+}
+
+// 2. A user adds something (a new post in this example).
+async function userAddsPost() {
+  console.log("\n=== User Adding a New Post ===");
+  
+  // Prompt for post data.
+  const { userEmail, postTitle, postDescription } = await promptPostData();
+  
+  // Find the user who is adding the post.
   const userQuery = await db.collection('Users')
-    .where('email', '==', 'differentUser@example.com')
+    .where('email', '==', userEmail)
     .limit(1)
     .get();
 
   if (userQuery.empty) {
-    console.log("Different user not found; listing posts regardless.");
-  } else {
-    const diffUser = userQuery.docs[0];
-    console.log("Different user found:", diffUser.id);
+    console.log("User not found, cannot add post.");
+    return;
   }
-  // List all posts.
-  const postsSnapshot = await db.collection('Posts').get();
-  postsSnapshot.forEach(doc => {
-    console.log(doc.id, "=>", doc.data());
-  });
+  const userDoc = userQuery.docs[0];
+  
+  // Create the new post data.
+  const newPostData = {
+    user_id: userDoc.ref, // Reference to the user document.
+    title: postTitle,
+    description: postDescription,
+    created_at: admin.firestore.FieldValue.serverTimestamp(),
+    comments: [] // No comments yet.
+  };
+
+  const postRef = await db.collection('Posts').add(newPostData);
+  console.log("New post created with ID:", postRef.id);
 }
 
 // Main function to run all sample queries.
 async function runSampleQueries() {
-    try {
-      await differentUserListsPosts();
-      console.log("\nAll sample queries executed.");
-    } catch (error) {
-      console.error("Error running sample queries:", error);
-    }
+  try {
+    await userAddsPost();
+    console.log("\nAll sample queries executed.");
+  } catch (error) {
+    console.error("Error running sample queries:", error);
   }
-  
-  runSampleQueries();
-  
+}
+ 
+runSampleQueries();
