@@ -98,3 +98,11 @@ For a complete schema and further details, please refer to the project documenta
 1. **Clone the Repository:**
    ```bash
    git clone https://github.com/yourusername/myfridge.git
+
+2. **Run the installations in the directory:**
+    npm i 
+    npm init @eslint/config@latest
+    npm install -D tailwindcss postcss autoprefixer
+    npx shadcn@latest init
+    npm i -D @types/node
+
