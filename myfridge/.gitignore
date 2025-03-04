@@ -24,5 +24,3 @@ dist-ssr
 *.sw?
 
 # Ignore Stuff
-**/node_modules/
-*serviceAccountKey*.json

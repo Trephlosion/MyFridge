@@ -4,7 +4,7 @@
 # Ignore all service account key files (e.g., serviceAccountKey.json)
 *serviceAccountKey*.json
 *package-lock*.json
-*package*.json
+# *package*.json
 
 # Optionally, ignore npm log files
 npm-debug.log*
