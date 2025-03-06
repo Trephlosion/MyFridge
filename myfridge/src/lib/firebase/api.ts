@@ -42,7 +42,7 @@ export const createUserAccount = async (userData: any) => {
 
         const userDocRef = doc(database, "Users", user.uid);
         await setDoc(userDocRef, {
-            id: user.uid,
+            // id: user.uid,
             email,
             username,
             bio: "",
@@ -55,7 +55,7 @@ export const createUserAccount = async (userData: any) => {
             recipes:  [],
             posts: [],
             comments: [],
-            myFridge: [{ ingredientId: null, }],
+            myFridge: "",
             createdAt: new Date(),
             updatedAt: new Date(),
         });

@@ -12,4 +12,4 @@ const SkeletonPlaceholder() {
     )
 }
 
-export default SkeletonPlaceholder
+export default SkeletonPlaceholder;
