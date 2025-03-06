@@ -9,7 +9,7 @@ import {
     signInWithEmailAndPassword,*/ User,
 } from "firebase/auth";
 import { getCurrentUser, checkAuthUser as fetchAuthUser } from "@/lib/firebase/api";
-// import { addDoc, collection, setDoc, doc, getDoc } from "firebase/firestore";
+import { addDoc, collection, setDoc, doc, getDoc } from "firebase/firestore";
 
 
 

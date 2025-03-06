@@ -8,3 +8,5 @@ export {default as EditRecipe} from './EditRecipe';
 export {default as RecipeDetails} from './RecipeDetails';
 export {default as AllUsers} from './AllUsers';
 export {default as LikedRecipes} from './LikedRecipes';
+export {default as Admin} from './Admin';
+export {default as Workshops} from './Workshops';
