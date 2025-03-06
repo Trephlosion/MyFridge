@@ -51,6 +51,10 @@ const Topbar = () => {
                             alt="profile"
                             className="h-8 w-8 rounded-full"
                         />
+                        {/* Show "verified" text for content creators */}
+                        {user?.isVerified && (
+                            <p className="text-sm text-green-600">verified</p>
+                        )}
                     </Link>
                 </div>
             </div>

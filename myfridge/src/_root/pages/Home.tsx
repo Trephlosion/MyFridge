@@ -22,27 +22,6 @@
                 <div className="home-container">
                     <div className="home-posts">
                         <h2 className="h3-bold md:h2-bold text-left w-full">My Recipes</h2>
-                        <div className="flex flex-col space-y-3">
-                            <Skeleton className="h-[125px] w-[250px] rounded-xl" />
-                            <div className="space-y-2">
-                                <Skeleton className="h-4 w-[250px]" />
-                                <Skeleton className="h-4 w-[200px]" />
-                            </div>
-                        </div>
-                        {/* Show "verified" text for content creators */}
-                        {user?.isVerified && (
-                            <p className="text-sm text-green-600">verified</p>
-                        )}
-                        {/* Show administrator button */}
-                        {user?.isAdministrator && (
-                            <Button onClick={handleShowAllRecipes} className={"shad-button_primary p-2 bg-blue-500 text-white rounded-md mt-2"}>
-                                Show All Recipes
-                            </Button>
-                        )}
-                        <div className="w-full flex flex-col space-y-3">
-                            <Skeleton className="h-4 w-[250px]" />
-                            <Skeleton className="h-4 w-[200px]" />
-                        </div>
                         {/* Loading State */}
                         {isRecipeLoading && !recipes ? (
                             <div className="flex flex-col gap-9">

@@ -21,6 +21,11 @@ const UserCard = ({ user }: UserCardProps) => {
                 <p className="small-regular text-light-3 text-center line-clamp-1">
                     @{user.username} {/* Username */}
                 </p>
+                {/* Show "verified" text for content creators */}
+                {user?.isVerified && (
+                    <p className="small-regular text-center line-clamp-1 text-green-600">verified</p>
+                )}
+
             </div>
 
             {/* Follow Button */}
