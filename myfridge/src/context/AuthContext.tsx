@@ -86,8 +86,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return () => unsubscribe(); // Clean up listener
     }, []);
 
+
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, checkAuthUser }}>
+        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, checkAuthUser}}>
             {children}
         </AuthContext.Provider>
     );

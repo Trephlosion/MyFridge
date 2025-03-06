@@ -42,7 +42,7 @@ const SignupForm = () => {
                 return;
             }
 
-            console.log("User created", newUser)
+            // console.log("User created", newUser)
 
             // Step 2: Sign in the new user
             const session = await signInAccount({
@@ -56,7 +56,7 @@ const SignupForm = () => {
                 return;
             }
 
-            console.log("User signed in", session)
+            // console.log("User signed in", session)
 
             // Step 3: Check authentication state
             const isLoggedIn = await checkAuthUser();
@@ -129,7 +129,7 @@ const SignupForm = () => {
                         />
 
                         <Button type="submit" className="shad-button_primary">
-                            {isUserLoading ? (
+                            {isUserLoading || isCreatingUser || isSigningIn ? (
                                 <div className="flex-center gap-2">
                                     <Loader/> Loading...
                                 </div>

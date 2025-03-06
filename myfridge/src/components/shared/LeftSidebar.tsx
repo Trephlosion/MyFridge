@@ -3,7 +3,7 @@ import {Button} from "@/components/ui/button";
 import {useSignOutAccount} from "@/lib/react-query/queriesAndMutations.ts";
 import {useEffect} from "react";
 import {INITIAL_USER, useUserContext} from "@/context/AuthContext.tsx";
-import Loader from "@/components/shared/loader.tsx";
+import Loader from "@/components/shared/Loader.tsx";
 import {sidebarLinks} from "@/constants";
 import {INavLink} from "@/types";
 

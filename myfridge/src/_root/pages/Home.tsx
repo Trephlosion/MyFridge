@@ -4,6 +4,7 @@ import RecipeCard from "@/components/shared/RecipeCard";
 import { IRecipeMetadata } from "@/types";
 import { useGetRecentRecipes } from "@/lib/react-query/queriesAndMutations"; // Replace with your actual query
 import { useNavigate } from "react-router-dom";
+import {Skeleton} from "@/components/ui/skeleton.tsx";
 
 const Home = () => {
     const { data: recipes, isPending: isRecipeLoading, isError: isErrorRecipes } = useGetRecentRecipes();
@@ -28,8 +29,9 @@ const Home = () => {
                         <ul className="flex flex-col flex-1 gap-9 w-full">
                             {recipes?.map((recipe: IRecipeMetadata) => (
                                 <li key={recipe.id}>
-                                    <RecipeCard recipe={recipe} key={recipe.dish} />
-
+                                    <div className={"flex flex-col space-y-3"}>
+                                    <Skeleton className={"h-[125px] w-full rounded-xl"}/>
+                                </div>
                                 </li>
                             ))}
 
