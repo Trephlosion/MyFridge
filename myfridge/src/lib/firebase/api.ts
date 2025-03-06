@@ -7,37 +7,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage
 import { auth, database, storage } from "@/lib/firebase/config.ts";
 import { INewRecipe, IRecipeMetadata, IUpdateRecipe, IUpdateUser, IUser } from "@/types";
 
-// Create a new user and save details in Firestore
-export const createUserAccount = async (userData: any) => {
-    const { email, password, first_name, last_name, username } = userData;
-    try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-
-        const userDocRef = doc(database, "User", user.uid);
-        await setDoc(userDocRef, {
-            id: user.uid,
-            email,
-            first_name,
-            last_name,
-            username,
-            bio: "",
-            pfp: "",
-            isPrivate: false,
-            isVerified: false,
-            isAdministrator: false,
-            followers: [],
-            following: [],
-            recipes:  [],
-            myFridge: [{ ingredientId: null, }],
-        });
-
-        return user;
-    } catch (error) {
-        console.error("Error creating user:", error);
-        throw error;
-    }
-};
+// AUTHENTICATION FUNCTIONS
 
 // Sign in user
 export const signInAccount = async ({ email, password }: { email: string; password: string }) => {
@@ -60,21 +30,72 @@ export const signOutAccount = async () => {
     }
 };
 
+
+// USER FUNCTIONS
+
+// Create a new user and save details in Firestore
+export const createUserAccount = async (userData: any) => {
+    const { email, password,  username } = userData;
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        const userDocRef = doc(database, "Users", user.uid);
+        await setDoc(userDocRef, {
+            id: user.uid,
+            email,
+            username,
+            bio: "",
+            pfp: "",
+            isPrivate: false,
+            isVerified: false,
+            isAdministrator: false,
+            followers: [],
+            following: [],
+            recipes:  [],
+            posts: [],
+            comments: [],
+            myFridge: [{ ingredientId: null, }],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+
+        return user;
+    } catch (error) {
+        console.error("Error creating user:", error);
+        throw error;
+    }
+};
+
 // Get current user
 export async function getCurrentUser(): Promise<IUser | Error> {
     try {
         const currentUser = auth.currentUser;
         if (!currentUser) throw new Error("No user is currently signed in");
 
-        const userDocSnap = await getDoc(doc(database, "User", currentUser.uid));
+        const userDocSnap = await getDoc(doc(database, "Users", currentUser.uid));
         if (!userDocSnap.exists()) throw new Error("User document not found in Firestore");
 
         const userData = userDocSnap.data();
+
         return {
-            id: currentUser.uid, first_name: userData.first_name || "", last_name: userData.last_name || "",
-            username: userData.username || "", email: userData.email || "", pfp: userData.pfp || "", bio: userData.bio || "",
-            isPrivate: userData.isPrivate ?? false, isVerified: userData.isVerified ?? false, isAdministrator: userData.isAdministrator ?? false,
-            followers: userData.followers || [], following: userData.following || [], likedRecipes: userData.likedRecipes || [] , recipes: userData.recipes || [] , myFridge: userData.myFridge || [], pfpid: userData.pfpid || ""
+            id: currentUser.uid,
+            username: userData.username || "",
+            email: userData.email || "",
+            pfp: userData.pfp || "",
+            bio: userData.bio || "",
+            isPrivate: userData.isPrivate ?? false,
+            isVerified: userData.isVerified ?? false,
+            isAdministrator: userData.isAdministrator ?? false,
+            followers: userData.followers || [],
+            following: userData.following || [],
+            likedRecipes: userData.likedRecipes || [],
+            recipes: userData.recipes || [],
+            posts: userData.posts || [],
+            comments: userData.comments || [],
+            myFridge: userData.myFridge || "",
+            createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
+            updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date(),
         };
     } catch (error: unknown) {
         return error instanceof Error ? new Error(error.message) : new Error("An unknown error occurred");
@@ -87,7 +108,7 @@ export const checkAuthUser = async (): Promise<any> => {
         onAuthStateChanged(auth, async (firebaseUser: User | null) => {
             if (firebaseUser) {
                 try {
-                    const userDocRef = doc(database, "User", firebaseUser.uid);
+                    const userDocRef = doc(database, "Users", firebaseUser.uid);
                     const userDocSnap = await getDoc(userDocRef);
 
                     if (userDocSnap.exists()) {
@@ -107,6 +128,113 @@ export const checkAuthUser = async (): Promise<any> => {
         });
     });
 };
+
+// Get users
+export async function getUsers(limitCount?: number): Promise<IUser[]> {
+    const queries: any[] = [orderBy("createdAt", "desc")];
+
+    if (limitCount) {
+        queries.push(limit(limitCount));
+    }
+
+    try {
+        const usersQuery = query(collection(database, "Users"), ...queries);
+        const querySnapshot = await getDocs(usersQuery);
+
+        const users: IUser[] = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        })) as IUser[];
+
+        return users;
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        return [];
+    }
+}
+
+// Get user by ID
+export async function getUserById(userId: string): Promise<IUser | null> {
+    try {
+        const userDoc = await getDoc(doc(database, "Users", userId));
+        if (!userDoc.exists()) throw new Error("User not found");
+
+        return { id: userId, ...userDoc.data() } as IUser;
+    } catch (error) {
+        console.error("Error fetching user:", error);
+        return null;
+    }
+}
+
+// Get user's recipes
+export async function getUserRecipes(userId: string): Promise<IRecipeMetadata[]> {
+    if (!userId) throw new Error("User ID is required to fetch recipes.");
+
+    try {
+        const recipesQuery = query(
+            collection(database, "Recipe"),
+            where("userId", "==", userId),
+            orderBy("createdAt", "desc")
+        );
+        const querySnapshot = await getDocs(recipesQuery);
+
+        return querySnapshot.docs.map((doc) => ({
+            id: doc.id, // Include Firestore document ID
+            ...doc.data(),
+        })) as IRecipeMetadata[];
+    } catch (error) {
+        console.error("Error fetching user recipes:", error);
+        return [];
+    }
+}
+
+// Update user
+export async function updateUser(user: IUpdateUser) {
+    const hasFileToUpdate = user.file && user.file.length > 0;
+
+    try {
+        let image = { imageUrl: user.pfp, imageId: user.pfp };
+
+        if (hasFileToUpdate) {
+            const fileRef = ref(storage, `user/${user.file[0].name}`);
+            await uploadBytes(fileRef, user.file[0]);
+            const fileUrl = await getDownloadURL(fileRef);
+            image = { imageUrl: fileUrl, imageId: fileRef.fullPath };
+
+            // Delete old profile picture if exists
+            if (user.pfp) {
+                const oldFileRef = ref(storage, user.pfp);
+                await deleteObject(oldFileRef);
+            }
+        }
+
+        await updateDoc(doc(database, "User", user.id), {
+            username: user.username,
+            email: user.email,
+            pfp: image.imageUrl,
+            bio: user.bio,
+            isPrivate: user.isPrivate,
+            isVerified: user.isVerified,
+            isAdministrator: user.isAdministrator,
+            followers: user.followers,
+            following: user.following,
+            likedRecipes: user.likedRecipes,
+            recipes: user.recipes,
+            posts: user.posts,
+            comments: user.comments,
+            myFridge: user.myFridge,
+            updatedAt: new Date(),
+        });
+
+        return { status: "ok" };
+    } catch (error) {
+        console.error("Error updating user:", error);
+        throw error;
+    }
+}
+
+
+// RECIPE FUNCTIONS
 
 // Create a new recipe
 export async function createRecipe(recipe: INewRecipe) {
@@ -140,7 +268,7 @@ export async function createRecipe(recipe: INewRecipe) {
             : recipe.tags?.toString().split(",").map((tag: string) => tag.trim()) || [];
 
         // Save recipe to Firestore
-        const newRecipeRef = doc(collection(database, "Recipe"));
+        const newRecipeRef = doc(collection(database, "Recipes"));
         const newRecipe = {
             userId: recipe.userId,
             description: recipe.description,
@@ -170,30 +298,10 @@ export async function createRecipe(recipe: INewRecipe) {
     }
 }
 
-export async function uploadFile(file: File) {
-    try {
-        const uploadedFile = await uploadBytes(ref(storage, `uploads/${file.name}`), file);
-
-        return uploadedFile;
-    } catch (error) {
-        console.log(error);
-    }
-}
-
-export async function deleteFile(fileId: string) {
-    try {
-        const fileRef = ref(storage, fileId);
-        await deleteObject(fileRef);
-        return { status: "SUCC" };
-    } catch (error) {
-        console.log(error);
-    }
-}
-
 // Get recipes by search term
 export async function searchRecipe(searchTerm: string) {
     try {
-        const recipeQuery = query(collection(database, "Recipe"), where("tags", "array-contains-any", searchTerm));
+        const recipeQuery = query(collection(database, "Recipes"), where("tags", "array-contains-any", searchTerm));
         const querySnapshot = await getDocs(recipeQuery);
 
         const recipe = querySnapshot.docs.map(doc => doc.data());
@@ -240,7 +348,7 @@ export async function updateRecipe(recipe: IUpdateRecipe) {
             ? recipe.tags.map((tag: string) => tag.trim())
             : recipe.tags?.toString().split(",").map((tag: string) => tag.trim()) || [];
 
-        await updateDoc(doc(database, "Recipe", recipe.recipeId), {
+        await updateDoc(doc(database, "Recipes", recipe.recipeId), {
             description: recipe.description,
             title: recipe.dish,
             instructions: recipe.instructions,
@@ -272,7 +380,7 @@ export async function deleteRecipe(recipeId?: string, imageId?: string) {
     if (!recipeId || !imageId) return;
 
     try {
-        await deleteDoc(doc(database, "Recipe", recipeId));
+        await deleteDoc(doc(database, "Recipes", recipeId));
         const fileRef = ref(storage, imageId);
         await deleteObject(fileRef);
 
@@ -285,7 +393,7 @@ export async function deleteRecipe(recipeId?: string, imageId?: string) {
 // Like recipe
 export async function likeRecipe(recipeId: string, likesArray: string[]) {
     try {
-        await updateDoc(doc(database, "Recipe", recipeId), {
+        await updateDoc(doc(database, "Recipes", recipeId), {
             likes: likesArray,
         });
 
@@ -317,102 +425,6 @@ export async function deleteSavedRecipe(savedRecordId: string) {
         return { status: "Ok" };
     } catch (error) {
         console.log(error);
-    }
-}
-
-
-
-
-// Get users
-export async function getUsers(limit?: number) {
-    const queries: any[] = [orderBy("createdAt", "desc")];
-
-    if (limit) {
-        queries.push(limit(limit));
-    }
-
-    try {
-        const usersQuery = query(collection(database, "User"), ...queries);
-        const querySnapshot = await getDocs(usersQuery);
-
-        const users = querySnapshot.docs.map(doc => doc.data());
-        return users;
-    } catch (error) {
-        console.log(error);
-    }
-}
-
-
-
-// Get user by ID
-export async function getUserById(userId: string): Promise<IUser | null> {
-    try {
-        const userDoc = await getDoc(doc(database, "User", userId));
-        if (!userDoc.exists()) throw new Error("User not found");
-
-        return { id: userId, ...userDoc.data() } as IUser;
-    } catch (error) {
-        console.error("Error fetching user:", error);
-        return null;
-    }
-}
-
-// Get user's recipes
-export async function getUserRecipes(userId: string): Promise<IRecipeMetadata[]> {
-    if (!userId) throw new Error("User ID is required to fetch recipes.");
-
-    try {
-        const recipesQuery = query(
-            collection(database, "Recipe"),
-            where("userId", "==", userId),
-            orderBy("createdAt", "desc")
-        );
-        const querySnapshot = await getDocs(recipesQuery);
-
-        return querySnapshot.docs.map((doc) => ({
-            id: doc.id, // Include Firestore document ID
-            ...doc.data(),
-        })) as IRecipeMetadata[];
-    } catch (error) {
-        console.error("Error fetching user recipes:", error);
-        return [];
-    }
-}
-
-// Update user
-export async function updateUser(user: IUpdateUser) {
-    const hasFileToUpdate = user.file && user.file.length > 0;
-
-    try {
-        let image = { imageUrl: user.pfp, imageId: user.pfpid };
-
-        if (hasFileToUpdate) {
-            const fileRef = ref(storage, `user/${user.file[0].name}`);
-            await uploadBytes(fileRef, user.file[0]);
-            const fileUrl = await getDownloadURL(fileRef);
-            image = { imageUrl: fileUrl, imageId: fileRef.fullPath };
-
-            // Delete old profile picture if exists
-            if (user.pfpid) {
-                const oldFileRef = ref(storage, user.pfpid);
-                await deleteObject(oldFileRef);
-            }
-        }
-
-        await updateDoc(doc(database, "User", user.id), {
-            first_name: user.first_name,
-            last_name: user.last_name,
-            username: user.username,
-            bio: user.bio,
-            pfp: image.imageUrl,
-            pfpid: image.imageId,
-            isPrivate: user.isPrivate,
-        });
-
-        return { status: "ok" };
-    } catch (error) {
-        console.error("Error updating user:", error);
-        throw error;
     }
 }
 
@@ -461,9 +473,7 @@ export async function searchRecipes(searchTerm: string): Promise<IRecipeMetadata
 }
 
 // Get Recipes with Pagination (Infinite Scrolling)
-export async function getInfiniteRecipes({
-                                             pageParam,
-                                         }: {
+export async function getInfiniteRecipes({ pageParam }: {
     pageParam?: DocumentSnapshot;
 }): Promise<{ recipes: IRecipeMetadata[]; lastDoc: DocumentSnapshot | null }> {
     try {
@@ -503,5 +513,26 @@ export async function getInfiniteRecipes({
     } catch (error) {
         console.error("Error fetching recipes:", error);
         return { recipes: [], lastDoc: null };
+    }
+}
+
+// FILE FUNCTIONS
+export async function uploadFile(file: File) {
+    try {
+        const uploadedFile = await uploadBytes(ref(storage, `uploads/${file.name}`), file);
+
+        return uploadedFile;
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+export async function deleteFile(fileId: string) {
+    try {
+        const fileRef = ref(storage, fileId);
+        await deleteObject(fileRef);
+        return { status: "SUCC" };
+    } catch (error) {
+        console.log(error);
     }
 }

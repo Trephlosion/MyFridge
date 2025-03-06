@@ -1,21 +1,22 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useForm } from "react-hook-form";
-import { SigninValidation } from "@/lib/validation";
-import { z } from "zod";
-import { useSignInAccount } from "@/lib/react-query/queriesAndMutations.ts";
-import { Link, useNavigate } from "react-router-dom";
+import {useToast} from "@/hooks/use-toast"
+import {zodResolver} from "@hookform/resolvers/zod"
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form"
+import {Input} from "@/components/ui/input"
+import {Button} from "@/components/ui/button"
+import {useForm} from "react-hook-form";
+import {SigninValidation} from "@/lib/validation";
+import {z} from "zod";
 import Loader from "@/components/shared/Loader.tsx";
-import { checkAuthUser } from "@/lib/firebase/api.ts"; // ✅ Keep this if needed
-import { toast } from '@/components/ui/toast';
+import {Link, useNavigate} from "react-router-dom";
+import {useSignInAccount} from "@/lib/react-query/queriesAndMutations.ts";
+import {useUserContext} from "@/context/AuthContext.tsx";
 
 const SigninForm = () => {
+    const {toast} = useToast();
+    const {checkAuthUser, isLoading: isUserLoading} = useUserContext();
     const navigate = useNavigate();
 
-    // ✅ Use React Query for sign-in mutation
-    const { mutate: signIn, isLoading: isUserLoading } = useSignInAccount();
+    const {mutateAsync: signInAccount } = useSignInAccount()
 
     // ✅ Define form
     const form = useForm({
@@ -28,22 +29,33 @@ const SigninForm = () => {
 
     // ✅ Updated onSubmit function using React Query
     async function onSubmit(values: z.infer<typeof SigninValidation>) {
-        signIn(values, {
-            onSuccess: async () => {
-                const isLoggedIn = await checkAuthUser();
-                if (isLoggedIn) {
-                    form.reset();
-                    navigate("/");
-                    toast({ title: "Account signed in successfully! Welcome!" });
-                } else {
-                    toast({ title: "Login failed. Please try again." });
-                }
-            },
-            onError: (error: any) => {
-                console.error("Error signing in user", error);
-                toast({ title: "Sign In Failed, Please try again" });
+        try {
+            // Step 2: Sign in the new user
+            const session = await signInAccount({
+                email: values.email,
+                password: values.password,
+            });
+            console.log("User signed in", session)
+
+            if (!session) {
+                toast({title: "Something went wrong. Please log in to your new account."})
+                navigate("/sign-in");
+                return;
             }
-        });
+
+            // Step 3: Check authentication state
+            const isLoggedIn = await checkAuthUser();
+            if (isLoggedIn) {
+                form.reset();
+                navigate("/");
+                toast({title: "Account created successfully! Welcome!"})
+            } else {
+                toast({title: "Login failed. Please try again."})
+            }
+        } catch (error) {
+            console.error("Error signing in user", error)
+            toast({title: "Sign In Failed, Please try again"})
+        }
     }
 
     return (
@@ -105,4 +117,3 @@ const SigninForm = () => {
 };
 
 export default SigninForm;
-

@@ -1,25 +1,27 @@
 
 export type ExpandedUser = {
     id: string; // User's unique identifier
-    first_name: string; // First name
-    last_name: string; // Last name
     username: string; // Username
     email: string; // Email address
     pfp: string; // Profile picture URL
     bio: string; // Bio of the user
+
     isPrivate: boolean; // Privacy setting
     isVerified: boolean; // Verification status
     isAdministrator: boolean; // Admin status
+
     followers: string[]; // Array of follower IDs
     following: string[]; // Array of following IDs
     likedRecipes:  string[]; // Array of liked recipe IDs
 
     recipes: string[]; // Array of uploaded recipe IDs
+    posts: string[]; // Array of uploaded post IDs
+    comments: string[]; // Array of comment IDs
 
-    myFridge: {
-        ingredientId: string | null; // Ingredient ID
-    }[];
-    pfpid: string; // Profile picture ID
+    myFridge: string; // Fridge ID
+
+    createdAt: Date; // Date created
+    updatedAt: Date; // Date updated
 }
 
 
@@ -43,25 +45,28 @@ export type INavLink = {
 // User Update Type
 export type IUpdateUser = {
     id: string; // User's unique identifier
-    first_name: string; // First name
-    last_name: string; // Last name
     username: string; // Username
     email: string; // Email address
     pfp: string; // Profile picture URL
     bio: string; // Bio of the user
+
     isPrivate: boolean; // Privacy setting
     isVerified: boolean; // Verification status
     isAdministrator: boolean; // Admin status
+
     followers: string[]; // Array of follower IDs
     following: string[]; // Array of following IDs
     likedRecipes:  string[]; // Array of liked recipe IDs
 
     recipes: string[]; // Array of uploaded recipe IDs
+    posts: string[]; // Array of uploaded post IDs
+    comments: string[]; // Array of comment IDs
 
-    myFridge: {
-        ingredientId: string | null; // Ingredient ID
-    }[];
-    pfpid: string; // Profile picture ID
+    myFridge: string; // Fridge ID
+
+    createdAt: Date; // Date created
+    updatedAt: Date; // Date updated
+
     file: File[]; // Array of File objects
 };
 
@@ -98,33 +103,33 @@ export type IUpdateRecipe = {
 // User Type
 export type IUser = {
     id: string; // User's unique identifier
-    first_name: string; // First name
-    last_name: string; // Last name
     username: string; // Username
     email: string; // Email address
     pfp: string; // Profile picture URL
     bio: string; // Bio of the user
+
     isPrivate: boolean; // Privacy setting
     isVerified: boolean; // Verification status
     isAdministrator: boolean; // Admin status
+
     followers: string[]; // Array of follower IDs
     following: string[]; // Array of following IDs
     likedRecipes:  string[]; // Array of liked recipe IDs
 
     recipes: string[]; // Array of uploaded recipe IDs
+    posts: string[]; // Array of uploaded post IDs
+    comments: string[]; // Array of comment IDs
 
-    myFridge: {
-        ingredientId: string | null; // Ingredient ID
-    }[];
-    pfpid: string; // Profile picture ID
+    myFridge: string; // Fridge ID
+
+    createdAt: Date; // Date created
+    updatedAt: Date; // Date updated
 };
 
 // New User Interface
 export interface INewUser {
     email: string; // Required email address
     password: string; // Password
-    first_name: string; // Optional full name
-    last_name: string; // Optional full name
     username: string; // Optional username
 }
 
@@ -153,11 +158,7 @@ export type Recipe = {
     likes: string[]; // Array of user IDs who liked the recipe
     comments: string[]; // Array of comment IDs
 
-
-
 };
-
-
 
 export interface IRecipeMetadata {
     id: string; // Firestore document ID
