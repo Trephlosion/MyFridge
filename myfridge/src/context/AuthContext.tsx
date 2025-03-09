@@ -9,7 +9,7 @@ import {
     signInWithEmailAndPassword,*/ User,
 } from "firebase/auth";
 import { getCurrentUser, checkAuthUser as fetchAuthUser } from "@/lib/firebase/api";
-// import { addDoc, collection, setDoc, doc, getDoc } from "firebase/firestore";
+import { addDoc, collection, setDoc, doc, getDoc } from "firebase/firestore";
 
 
 
@@ -86,9 +86,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return () => unsubscribe(); // Clean up listener
     }, []);
 
-
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, checkAuthUser}}>
+        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, checkAuthUser }}>
             {children}
         </AuthContext.Provider>
     );

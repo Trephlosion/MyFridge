@@ -22,7 +22,7 @@ import {
     getUsers,
     getUserById,
     updateUser,
-    getUserRecipes,
+    getUserRecipes, createFridge,
 } from "@/lib/firebase/api";
 import { INewRecipe, INewUser, IUpdateRecipe, IUpdateUser } from "@/types";
 import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
@@ -47,6 +47,12 @@ export const useSignOutAccount = () => {
         mutationFn: signOutAccount,
     });
 };
+
+export const useCreateFridge = () => {
+    return useMutation({
+        mutationFn: (userID: string) => createFridge(userID),
+    });
+}
 
 export const useCreateRecipe = () => {
     const queryClient = useQueryClient();
@@ -106,8 +112,6 @@ export const useGetRecipeById = (recipeId?: string) => {
         enabled: !!recipeId,
     });
 };
-
-
 
 // Mutation for updating a recipe
 export const useUpdateRecipe = () => {

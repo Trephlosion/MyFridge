@@ -31,21 +31,25 @@ export const signOutAccount = async () => {
 };
 
 
+
 // USER FUNCTIONS
 
 // Create a new user and save details in Firestore
 export const createUserAccount = async (userData: any) => {
     const { email, password,  username } = userData;
+
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
+
+        const myFridge = await createFridge(user.uid);
 
         const userDocRef = doc(database, "Users", user.uid);
         await setDoc(userDocRef, {
             // id: user.uid,
             email,
             username,
-            bio: "",
+            bio: "Hey I'm new here!",
             pfp: "",
             isPrivate: false,
             isVerified: false,
@@ -55,7 +59,7 @@ export const createUserAccount = async (userData: any) => {
             recipes:  [],
             posts: [],
             comments: [],
-            myFridge: "",
+            myFridge ,
             createdAt: new Date(),
             updatedAt: new Date(),
         });
@@ -93,7 +97,7 @@ export async function getCurrentUser(): Promise<IUser | Error> {
             recipes: userData.recipes || [],
             posts: userData.posts || [],
             comments: userData.comments || [],
-            myFridge: userData.myFridge || "",
+            myFridge: userData.myFridge,
             createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
             updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date(),
         };
@@ -534,5 +538,43 @@ export async function deleteFile(fileId: string) {
         return { status: "SUCC" };
     } catch (error) {
         console.log(error);
+    }
+}
+
+
+// MYFRIDGE FUNCTIONS
+
+export async function createFridge(userid: string){
+
+
+    try {
+        const fridgeRef = doc(collection(database, "Fridges"));
+        const fridge = {
+            userid,
+            ingredients: [],
+            shoppingList: [],
+            updatedAt: new Date(),
+        };
+
+        await setDoc(fridgeRef, fridge);
+
+        return fridgeRef.id;
+    } catch (error) {
+        console.error("Error creating fridge:", error);
+        throw error;
+    }
+}
+
+export async function getFridgeIDByUser(userid: string){
+    try {
+        const fridgeQuery = query(collection(database, "Fridges"), where("userid", "==", userid));
+        const querySnapshot = await getDocs(fridgeQuery);
+
+        const fridge = querySnapshot.docs.map(doc => doc.id);
+
+        return fridge[0];
+    } catch (error) {
+        console.error("Error fetching fridge:", error);
+        return [];
     }
 }
