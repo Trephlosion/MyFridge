@@ -578,3 +578,9 @@ export async function getFridgeIDByUser(userid: string){
         return [];
     }
 }
+
+
+// INGREDIENT FUNCTIONS
+
+
+//

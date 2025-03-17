@@ -53,6 +53,10 @@ const LeftSidebar = () => {
                         />
                         <div className="flex flex-col">
                             <p className="small-regular text-light-3">@{user.username}</p>
+                            {/* Show "verified" text for content creators */}
+                            {user?.isVerified && (
+                                <p className="text-sm text-green-600">verified</p>
+                            )}
                         </div>
                     </Link>
                 )}
