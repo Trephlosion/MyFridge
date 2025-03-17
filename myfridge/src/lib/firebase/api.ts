@@ -170,20 +170,28 @@ export async function getUserById(userId: string): Promise<IUser | null> {
     }
 }
 
-// Get user's recipes
-export async function getUserRecipes(userId: string): Promise<IRecipeMetadata[]> {
-    if (!userId) throw new Error("User ID is required to fetch recipes.");
+
+
+// ✅ Update function to accept Firestore reference instead of string
+export async function getUserRecipes(userId: string | undefined): Promise<IRecipeMetadata[]> {
+    if (!userId || typeof userId !== "string") {
+        console.error("Invalid userId received:", userId); // ✅ Debugging Log
+        return [];
+    }
 
     try {
+        const userRef = doc(database, "Users", userId); // ✅ Convert userId to Firestore reference
+
         const recipesQuery = query(
-            collection(database, "Recipe"),
-            where("userId", "==", userId),
+            collection(database, "Recipes"), // ✅ Query the Recipes collection
+            where("userId", "==", userRef), // ✅ Use Firestore reference instead of string
             orderBy("createdAt", "desc")
         );
+
         const querySnapshot = await getDocs(recipesQuery);
 
         return querySnapshot.docs.map((doc) => ({
-            id: doc.id, // Include Firestore document ID
+            id: doc.id,
             ...doc.data(),
         })) as IRecipeMetadata[];
     } catch (error) {
@@ -191,6 +199,7 @@ export async function getUserRecipes(userId: string): Promise<IRecipeMetadata[]>
         return [];
     }
 }
+
 
 // Update user
 export async function updateUser(user: IUpdateUser) {

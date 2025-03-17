@@ -4,7 +4,8 @@ import {
         useQueryClient,
         useInfiniteQuery,
 } from "@tanstack/react-query";
-
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { database } from "@/lib/firebase/config";
 import {
     createRecipe,
     createUserAccount,
@@ -68,11 +69,18 @@ export const useCreateRecipe = () => {
 
 export const useGetUserRecipes = (userId?: string) => {
     return useQuery({
-        queryKey: [QUERY_KEYS.GET_USER_RECIPES, userId],
-        queryFn: () => getUserRecipes(userId),
-        enabled: !!userId,
+        queryKey: [QUERY_KEYS.GET_USER_RECIPES, userId || "guest"], // ✅ Ensure queryKey is always defined
+        queryFn: () => {
+            if (!userId) {
+                console.error("useGetUserRecipes called with an undefined userId!");
+                return [];
+            }
+            return getUserRecipes(userId);
+        },
+        enabled: !!userId, // ✅ Only run query if userId is defined
     });
 };
+
 
 // Query for fetching recent recipes
 export const useGetRecentRecipes = () => {
@@ -98,11 +106,33 @@ export const useGetRecipes = () => {
 // Query for searching recipes
 export const useSearchRecipes = (searchTerm: string) => {
     return useQuery({
-        queryKey: [QUERY_KEYS.SEARCH_RECIPES, searchTerm],
-        queryFn: () => searchRecipes(searchTerm),
-        enabled: !!searchTerm,
+        queryKey: ["searchRecipes", searchTerm],
+        queryFn: async () => {
+            if (!searchTerm) return [];
+
+            // ✅ Convert search term to lowercase for case-insensitive search
+            const lowercaseSearchTerm = searchTerm.toLowerCase();
+
+            const recipesRef = collection(database, "Recipes");
+            const snapshot = await getDocs(recipesRef);
+
+            // ✅ Filter results manually since Firestore doesn't natively support case-insensitive search
+            const filteredRecipes = snapshot.docs
+                .map((doc) => ({
+                    id: doc.id,
+                    ...doc.data(),
+                }))
+                .filter((recipe) =>
+                    recipe.title?.toLowerCase().includes(lowercaseSearchTerm) // ✅ Case-insensitive match
+                );
+
+            return filteredRecipes;
+        },
+        enabled: !!searchTerm, // ✅ Only fetch when searchTerm exists
     });
 };
+
+
 
 // Query for getting recipe by ID
 export const useGetRecipeById = (recipeId?: string) => {
@@ -223,3 +253,4 @@ export const useUpdateUser = () => {
         },
     });
 };
+
