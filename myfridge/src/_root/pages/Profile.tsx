@@ -47,15 +47,14 @@ const Profile = () => {
             />
             <div className="flex flex-col flex-1 justify-between md:mt-2">
               <div className="flex flex-col w-full">
-                <h1 className="text-center xl:text-left h3-bold md:h1-semibold w-full">
-                  {currentUser.first_name} {currentUser.last_name}
-                </h1>
-                <p className="small-regular md:body-medium text-light-3 text-center xl:text-left">
+
+                <h1 className="small-regular md:body-medium text-light-3 text-center xl:text-left">
                   @{currentUser.username}
-                </p>
+                </h1>
               </div>
               <div className="flex gap-8 mt-10 items-center justify-center xl:justify-start flex-wrap z-20">
                 <StatBlock value={currentUser.recipes.length || 0} label="Recipes" />
+                  <StatBlock value={currentUser.posts.length || 0} label={"Posts"} />
                 <StatBlock value={currentUser.followers.length || 0} label="Followers" />
                 <StatBlock value={currentUser.following.length || 0} label="Following" />
               </div>

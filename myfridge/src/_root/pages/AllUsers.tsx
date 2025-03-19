@@ -16,7 +16,7 @@ const AllUsers = () => {
     setIsLoading(true);
     setIsError(false);
     try {
-      const usersCollection = collection(database, "User");
+      const usersCollection = collection(database, "Users");
       const snapshot = await getDocs(usersCollection);
       const users = snapshot.docs.map((doc) => {
         const data = doc.data() as ExpandedUser;
