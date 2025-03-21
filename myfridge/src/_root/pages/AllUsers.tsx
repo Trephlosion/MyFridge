@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
 import { ExpandedUser } from "@/types";
+import BaseLoading from "@/components/shared/BaseLoading.tsx";
 
 const AllUsers = () => {
   const { toast } = useToast();
@@ -28,6 +29,8 @@ const AllUsers = () => {
       setIsError(true);
       toast({ title: "Something went wrong while fetching users." });
     } finally {
+      // Simulate loading state for 3 seconds
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       setIsLoading(false);
     }
   };
@@ -44,9 +47,11 @@ const AllUsers = () => {
   return (
       <div className="common-container">
         <div className="user-container">
-          <h2 className="h3-bold md:h2-bold text-left w-full">All Users</h2>
+          <h2 className="h3-bold md:h2-bold text-left w-full ">All Users</h2>
           {isLoading ? (
-              <Loader />
+
+              <BaseLoading />
+
           ) : (
               <ul className="user-grid">
                 {creators.map((creator) => (

@@ -70,36 +70,6 @@ export type IUpdateUser = {
     file: File[]; // Array of File objects
 };
 
-// New Post Type
-export type INewRecipe = {
-    userId: string;
-    file: File[]; // Array of uploaded files
-    dish: string;
-    description: string;
-    instructions: string;
-    cookTime: string;
-    prepTime: string;
-    serving:  string;
-    tags: string[];
-
-};
-
-// Update Post Type
-export type IUpdateRecipe = {
-    postId: string;
-    imageId: string;
-    imageUrl: string; // URL with a string fallback
-    file: File[]; // Array of uploaded files
-    dish: string;
-    description: string;
-    instructions: string;
-    cookTime: string;
-    prepTime: string;
-    serving:  string;
-    tags: string[];
-    recipeId: string;
-};
-
 // User Type
 export type IUser = {
     id: string; // User's unique identifier
@@ -144,25 +114,24 @@ export type IFileUpload = {
 
 export type Recipe = {
     id: string; // Firestore document ID
-    dish: string; // Title of the recipe
-    description?: string; // Optional description
-    cookTime?: string; // Cooking time
-    prepTime?: string; // Preparation time
-    servings?: number; // Number of servings
-    createdAt?: Date; // Date created
-    pfpId: string; // Optional image URL
-    userId: string; //
-    tags?: string[]; // Array of tags
-    instructions: string; // Recipe instructions
-    imageId: string; // Profile picture ID
+    title: string; // Recipe title (formerly "dish")
+    description?: string;
+    cookTime?: string;
+    prepTime?: string;
+    servings?: number;
+    createdAt?: Date;
+    updatedAt?: Date;
+    mediaUrl: string; // Image URL (formerly "pfp")
+    userId: string;
+    tags?: string[];
+    instructions: string[]; // Array of instruction steps
     likes: string[]; // Array of user IDs who liked the recipe
     comments: string[]; // Array of comment IDs
-
 };
 
 export interface IRecipeMetadata {
     id: string; // Firestore document ID
-    dish: string;
+    title: string;
     description: string;
     cookTime: string;
     prepTime: string;
@@ -170,10 +139,39 @@ export interface IRecipeMetadata {
     createdAt?: Date;
     updatedAt?: Date;
     tags?: string[];
-    instructions: string;
-    imageUrl?: string;
+    instructions: string[]; // Array of instructions
+    mediaUrl?: string; // Updated from "imageUrl" or "pfp"
     userId?: string;
     likes?: string[];
     comments?: string[];
     file?: File[];
 }
+
+// New Recipe Post Type
+export type INewRecipe = {
+    userId: string;
+    file: File[]; // Array of uploaded files
+    title: string; // Changed from "dish" to "title"
+    description: string;
+    instructions: string; // Accept a single string (to be split into an array)
+    cookTime: string;
+    prepTime: string;
+    servings: string; // Changed from "serving" to "servings"
+    tags: string[];
+};
+
+// Update Recipe Type
+export type IUpdateRecipe = {
+    postId: string;
+    mediaUrl: string; // Updated field name (formerly "imageUrl" or "pfp")
+    mediaId: string;  // Added storage path (formerly "pfpId")
+    file: File[]; // Array of uploaded files
+    title: string; // Changed from "dish" to "title"
+    description: string;
+    instructions: string; // Accept a single string (to be split into an array)
+    cookTime: string;
+    prepTime: string;
+    servings: string; // Changed from "serving" to "servings"
+    tags: string[];
+    recipeId: string;
+};
