@@ -139,6 +139,7 @@ import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
 import { ExpandedUser } from "@/types";
+import BaseLoading from "@/components/shared/BaseLoading.tsx";
 
 const AllUsers = () => {
   const { toast } = useToast();
@@ -151,7 +152,7 @@ const AllUsers = () => {
     setIsLoading(true);
     setIsError(false);
     try {
-      const usersCollection = collection(database, "User");
+      const usersCollection = collection(database, "Users");
       const snapshot = await getDocs(usersCollection);
       const users = snapshot.docs.map((doc) => {
         const data = doc.data() as ExpandedUser;
@@ -163,6 +164,8 @@ const AllUsers = () => {
       setIsError(true);
       toast({ title: "Something went wrong while fetching users." });
     } finally {
+      // Simulate loading state for 3 seconds
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       setIsLoading(false);
     }
   };
@@ -179,9 +182,11 @@ const AllUsers = () => {
   return (
       <div className="common-container">
         <div className="user-container">
-          <h2 className="h3-bold md:h2-bold text-left w-full">All Users</h2>
+          <h2 className="h3-bold md:h2-bold text-left w-full ">All Users</h2>
           {isLoading ? (
-              <Loader />
+
+              <BaseLoading />
+
           ) : (
               <ul className="user-grid">
                 {creators.map((creator) => (

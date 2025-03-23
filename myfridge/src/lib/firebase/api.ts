@@ -170,28 +170,20 @@ export async function getUserById(userId: string): Promise<IUser | null> {
     }
 }
 
-
-
-// ✅ Update function to accept Firestore reference instead of string
-export async function getUserRecipes(userId: string | undefined): Promise<IRecipeMetadata[]> {
-    if (!userId || typeof userId !== "string") {
-        console.error("Invalid userId received:", userId); // ✅ Debugging Log
-        return [];
-    }
+// Get user's recipes
+export async function getUserRecipes(userId: string): Promise<IRecipeMetadata[]> {
+    if (!userId) throw new Error("User ID is required to fetch recipes.");
 
     try {
-        const userRef = doc(database, "Users", userId); // ✅ Convert userId to Firestore reference
-
         const recipesQuery = query(
-            collection(database, "Recipes"), // ✅ Query the Recipes collection
-            where("userId", "==", userRef), // ✅ Use Firestore reference instead of string
+            collection(database, "Recipes"),
+            where("userId", "==", userId),
             orderBy("createdAt", "desc")
         );
-
         const querySnapshot = await getDocs(recipesQuery);
 
         return querySnapshot.docs.map((doc) => ({
-            id: doc.id,
+            id: doc.id, // Include Firestore document ID
             ...doc.data(),
         })) as IRecipeMetadata[];
     } catch (error) {
@@ -199,7 +191,6 @@ export async function getUserRecipes(userId: string | undefined): Promise<IRecip
         return [];
     }
 }
-
 
 // Update user
 export async function updateUser(user: IUpdateUser) {
@@ -221,7 +212,7 @@ export async function updateUser(user: IUpdateUser) {
             }
         }
 
-        await updateDoc(doc(database, "User", user.id), {
+        await updateDoc(doc(database, "Users", user.id), {
             username: user.username,
             email: user.email,
             pfp: image.imageUrl,
@@ -262,14 +253,12 @@ export async function createRecipe(recipe: INewRecipe) {
         if (!recipe.file || !Array.isArray(recipe.file) || !recipe.file[0]) {
             throw new Error("No file provided for the recipe.");
         }
-
-        const file = recipe.file[0]; // Access the first file safely
+        const file = recipe.file[0]; // Safely access the first file
 
         // Upload image to Firebase Storage
         const fileRef = ref(storage, `users/${currentUser.uid}/${file.name}`);
         await uploadBytes(fileRef, file);
         const fileUrl = await getDownloadURL(fileRef);
-
         if (!fileUrl) {
             await deleteObject(fileRef); // Clean up failed uploads
             throw new Error("File upload failed.");
@@ -285,40 +274,40 @@ export async function createRecipe(recipe: INewRecipe) {
         const newRecipe = {
             userId: recipe.userId,
             description: recipe.description,
-            pfp: fileUrl,
-            title: recipe.dish,
-            instructions: recipe.instructions,
+            mediaUrl: fileUrl, // Updated field name
+            title: recipe.title, // Updated from "dish"
+            // Convert instructions string to an array of steps
+            instructions: recipe.instructions.split("\n").map((step: string) => step.trim()),
             cookTime: recipe.cookTime,
             prepTime: recipe.prepTime,
-            servings: recipe.serving,
+            servings: recipe.servings, // Updated from "serving"
             tags: tags,
-            likes: 0,
-            likedBy: [],
+            likes: [], // Updated to be an empty array
             comments: [],
             createdAt: new Date(),
-            ratings: [{ userId: null, rating: 0 }],
-            ratingAvg: 0,
-            pfpId: fileRef.fullPath,
+            // Optional rating fields can be added here if needed
+            mediaId: fileRef.fullPath, // Updated field name from "pfpId"
         };
 
         await setDoc(newRecipeRef, newRecipe);
-
         console.log("Recipe created successfully!");
-        return newRecipeRef.id; // Return the ID of the new recipe
+        return newRecipeRef.id; // Return the new recipe's ID
     } catch (error) {
         console.error("Error creating recipe:", error);
         throw error;
     }
 }
 
-// Get recipes by search term
+// Get recipes by search term (searching within tags)
 export async function searchRecipe(searchTerm: string) {
     try {
-        const recipeQuery = query(collection(database, "Recipes"), where("tags", "array-contains-any", searchTerm));
+        const recipeQuery = query(
+            collection(database, "Recipes"),
+            where("tags", "array-contains-any", [searchTerm])
+        );
         const querySnapshot = await getDocs(recipeQuery);
-
-        const recipe = querySnapshot.docs.map(doc => doc.data());
-        return recipe;
+        const recipes = querySnapshot.docs.map((doc) => doc.data());
+        return recipes;
     } catch (error) {
         console.log(error);
     }
@@ -326,12 +315,10 @@ export async function searchRecipe(searchTerm: string) {
 
 // Get recipe by ID
 export async function getRecipeById(recipeId?: string) {
-    if (!recipeId) throw Error;
-
+    if (!recipeId) throw new Error("Recipe ID is required");
     try {
         const recipeDoc = await getDoc(doc(database, "Recipes", recipeId));
-        if (!recipeDoc.exists()) throw Error;
-
+        if (!recipeDoc.exists()) throw new Error("Recipe does not exist");
         return recipeDoc.data();
     } catch (error) {
         console.log(error);
@@ -341,19 +328,19 @@ export async function getRecipeById(recipeId?: string) {
 // Update recipe
 export async function updateRecipe(recipe: IUpdateRecipe) {
     const hasFileToUpdate = recipe.file.length > 0;
-
     try {
-        let image = {
-            imageUrl: recipe.imageUrl,
-            imageId: recipe.imageId,
+        // Initialize media object with current values
+        let media = {
+            mediaUrl: recipe.mediaUrl,
+            mediaId: recipe.mediaId,
         };
 
+        // Update media if a new file is provided
         if (hasFileToUpdate) {
             const fileRef = ref(storage, `recipe/${recipe.file[0].name}`);
             await uploadBytes(fileRef, recipe.file[0]);
             const fileUrl = await getDownloadURL(fileRef);
-
-            image = { ...image, imageUrl: fileUrl, imageId: fileRef.fullPath };
+            media = { mediaUrl: fileUrl, mediaId: fileRef.fullPath };
         }
 
         // Normalize tags: ensure it's always an array
@@ -363,25 +350,26 @@ export async function updateRecipe(recipe: IUpdateRecipe) {
 
         await updateDoc(doc(database, "Recipes", recipe.recipeId), {
             description: recipe.description,
-            title: recipe.dish,
-            instructions: recipe.instructions,
+            title: recipe.title, // Updated from "dish"
+            // Convert instructions string to an array
+            instructions: recipe.instructions.split("\n").map((step: string) => step.trim()),
             cookTime: recipe.cookTime,
             prepTime: recipe.prepTime,
-            servings: recipe.serving,
+            servings: recipe.servings, // Updated from "serving"
             tags: tags,
-            likes: 0,
-            likedBy: [],
+            likes: [], // Reset likes array if needed
             comments: [],
             updatedAt: new Date(),
-            ratings: [{ userId: null, rating: 0 }],
-            ratingAvg: 0,
+            // Optional: Remove or update rating fields as needed
+            mediaUrl: media.mediaUrl,
+            mediaId: media.mediaId,
         });
 
-        if (hasFileToUpdate) {
-            const oldFileRef = ref(storage, recipe.imageId);
+        // Delete the old media file if a new file was uploaded
+        if (hasFileToUpdate && recipe.mediaId) {
+            const oldFileRef = ref(storage, recipe.mediaId);
             await deleteObject(oldFileRef);
         }
-
         return { status: "ok" };
     } catch (error) {
         console.log(error);
@@ -389,14 +377,12 @@ export async function updateRecipe(recipe: IUpdateRecipe) {
 }
 
 // Delete recipe
-export async function deleteRecipe(recipeId?: string, imageId?: string) {
-    if (!recipeId || !imageId) return;
-
+export async function deleteRecipe(recipeId?: string, mediaId?: string) {
+    if (!recipeId || !mediaId) return;
     try {
         await deleteDoc(doc(database, "Recipes", recipeId));
-        const fileRef = ref(storage, imageId);
+        const fileRef = ref(storage, mediaId);
         await deleteObject(fileRef);
-
         return { status: "Ok" };
     } catch (error) {
         console.log(error);
@@ -409,21 +395,19 @@ export async function likeRecipe(recipeId: string, likesArray: string[]) {
         await updateDoc(doc(database, "Recipes", recipeId), {
             likes: likesArray,
         });
-
         return { status: "ok" };
     } catch (error) {
         console.log(error);
     }
 }
 
-// Save recipe
+// Save (bookmark) recipe
 export async function saveRecipe(userId: string, recipeId: string) {
     try {
         const savedRecipe = await addDoc(collection(database, "Bookmarks"), {
             user: userId,
             recipe: recipeId,
         });
-
         return savedRecipe;
     } catch (error) {
         console.log(error);
@@ -434,7 +418,6 @@ export async function saveRecipe(userId: string, recipeId: string) {
 export async function deleteSavedRecipe(savedRecordId: string) {
     try {
         await deleteDoc(doc(database, "Bookmarks", savedRecordId));
-
         return { status: "Ok" };
     } catch (error) {
         console.log(error);
@@ -444,10 +427,9 @@ export async function deleteSavedRecipe(savedRecordId: string) {
 // Fetch recent recipes
 export const getRecentRecipes = async (): Promise<IRecipeMetadata[]> => {
     try {
-        const recipesRef = collection(database, "Recipe");
+        const recipesRef = collection(database, "Recipes");
         const recipesQuery = query(recipesRef, orderBy("createdAt", "desc"), limit(20));
         const snapshot = await getDocs(recipesQuery);
-
         return snapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
@@ -458,76 +440,53 @@ export const getRecentRecipes = async (): Promise<IRecipeMetadata[]> => {
     }
 };
 
-// Search Recipes by Caption
+// Search recipes by description (caption)
 export async function searchRecipes(searchTerm: string): Promise<IRecipeMetadata[]> {
     try {
-        const recipesRef = collection(database, "Recipe");
-
-        // Search for matching "caption" field using Firestore `where` clause
+        const recipesRef = collection(database, "Recipes");
         const recipesQuery = query(
             recipesRef,
-            where("description", ">=", searchTerm), // Searches for string prefix match
-            where("description", "<=", searchTerm + "\uf8ff") // Ensures range ends correctly
+            where("description", ">=", searchTerm),
+            where("description", "<=", searchTerm + "\uf8ff")
         );
-
         const querySnapshot = await getDocs(recipesQuery);
-
-        // Map Firestore data to IRecipeMetadata
         const recipes = querySnapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
         })) as IRecipeMetadata[];
-
         return recipes;
     } catch (error) {
         console.error("Error searching recipes:", error);
         return [];
     }
-}
+};
 
-// Get Recipes with Pagination (Infinite Scrolling)
-export async function getInfiniteRecipes({ pageParam }: {
+// Get recipes with pagination (infinite scrolling)
+export async function getInfiniteRecipes({
+                                             pageParam,
+                                         }: {
     pageParam?: DocumentSnapshot;
 }): Promise<{ recipes: IRecipeMetadata[]; lastDoc: DocumentSnapshot | null }> {
     try {
-        const recipesRef = collection(database, "Recipe");
-
-        // Start the query
-        let recipesQuery = query(
-            recipesRef,
-            orderBy("createdAt", "desc"), // Sort by "createdAt" descending
-            limit(9) // Limit to 9 recipes per page
-        );
-
-        // If pageParam exists, use it as a cursor for pagination
+        const recipesRef = collection(database, "Recipes");
+        let recipesQuery = query(recipesRef, orderBy("createdAt", "desc"), limit(9));
         if (pageParam) {
-            recipesQuery = query(
-                recipesRef,
-                orderBy("createdAt", "desc"),
-                startAfter(pageParam),
-                limit(9)
-            );
+            recipesQuery = query(recipesRef, orderBy("createdAt", "desc"), startAfter(pageParam), limit(9));
         }
-
         const querySnapshot = await getDocs(recipesQuery);
-
-        // Get recipes data
         const recipes = querySnapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
         })) as IRecipeMetadata[];
-
-        // Get the last document for the cursor
-        const lastDoc = querySnapshot.docs.length > 0
-            ? querySnapshot.docs[querySnapshot.docs.length - 1]
-            : null;
-
+        const lastDoc =
+            querySnapshot.docs.length > 0 ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
         return { recipes, lastDoc };
     } catch (error) {
         console.error("Error fetching recipes:", error);
         return { recipes: [], lastDoc: null };
     }
 }
+
 
 // FILE FUNCTIONS
 export async function uploadFile(file: File) {
@@ -587,3 +546,9 @@ export async function getFridgeIDByUser(userid: string){
         return [];
     }
 }
+
+
+// INGREDIENT FUNCTIONS
+
+
+//

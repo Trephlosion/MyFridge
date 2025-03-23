@@ -64,7 +64,7 @@ const GridRecipeList = ({
                 {/* Link to Recipe Details */}
                 <Link to={`/recipes/${recipe.id}`} className="grid-recipe_link">
                   <img
-                      src={recipe.pfpId || "/assets/icons/profile-placeholder.svg"}
+                      src={recipe.mediaUrl || "/assets/icons/profile-placeholder.svg"}
                       alt="recipe"
                       className="h-full w-full object-cover"
                   />
@@ -81,9 +81,9 @@ const GridRecipeList = ({
                             alt="creator"
                             className="w-8 h-8 rounded-full"
                         />
-                        <p className="line-clamp-1">
-                          {creator.first_name} {creator.last_name}
-                        </p>
+                        <Link to={`/profile/${creator.id}`}>
+                          <p className="small-semibold text-light-1">{creator.username}</p>
+                        </Link>
                       </div>
                   )}
                   {showStats && <RecipeStats recipe={recipe} userId={user.id} />}

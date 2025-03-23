@@ -6,6 +6,7 @@ import {INITIAL_USER, useUserContext} from "@/context/AuthContext.tsx";
 import Loader from "@/components/shared/Loader.tsx";
 import {sidebarLinks} from "@/constants";
 import {INavLink} from "@/types";
+import {Skeleton} from "@/components/ui/skeleton.tsx";
 
 const LeftSidebar = () => {
     const {mutate: signOut, isSuccess} = useSignOutAccount();
@@ -41,8 +42,15 @@ const LeftSidebar = () => {
                 </Link>
 
                 {isLoading || !user.email ? (
-                    <div className="h-14">
-                        <Loader/>
+                    <div className="flex gap-3 items-center">
+                        {/*<Loader/>*/}
+                        <Skeleton className={"h-14 w-14 rounded-full"}/>
+                        <div className="flex flex-col">
+                            <Skeleton className={"h-4 w-28"}/>
+                            <Skeleton className={"h-4 w-20"}/>
+                        </div>
+
+
                     </div>
                 ) : (
                     <Link to={`/profile/${user.id}`} className="flex gap-3 items-center">
@@ -53,6 +61,10 @@ const LeftSidebar = () => {
                         />
                         <div className="flex flex-col">
                             <p className="small-regular text-light-3">@{user.username}</p>
+                            {/* Show "verified" text for content creators */}
+                            {user?.isVerified && (
+                                <p className="text-sm text-green-600">verified</p>
+                            )}
                         </div>
                     </Link>
                 )}

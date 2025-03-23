@@ -1,6 +1,3 @@
-            // import { useUserContext } from "@/context/AuthContext.tsx";
-            //
-            // const { user } = useUserContext();
 
             export const sidebarLinks = [
                 {
@@ -28,18 +25,16 @@
                     route: "/create-recipe",
                     label: "Create Recipe",
                 },
-                // ...(user?.isVerified || user?.isAdministrator ? [
-                //     ...(user?.isAdministrator ? [{
-                //         imgURL: "/assets/icons/admin.svg",
-                //         route: "/admin",
-                //         label: "Admin",
-                //     }] : []),
-                //     ...(user?.isVerified ? [{
-                //         imgURL: "/assets/icons/verified.svg",
-                //         route: "/workshops",
-                //         label: "Workshops",
-                //     }] : []),
-                // ] : [])
+                {
+                    imgURL: "/assets/icons/admin.svg",
+                    route: "/admin",
+                    label: "Admin",
+                },
+                {
+                    imgURL: "/assets/icons/verified.svg",
+                    route: "/workshops",
+                    label: "Workshops",
+                }
             ];
 
             export const bottombarLinks = [
@@ -63,16 +58,14 @@
                     route: "/create-recipe",
                     label: "Create",
                 },
-                // ...(user?.isVerified || user?.isAdministrator ? [
-                //     ...(user?.isAdministrator ? [{
-                //         imgURL: "/assets/icons/admin.svg",
-                //         route: "/admin",
-                //         label: "Admin",
-                //     }] : []),
-                //     ...(user?.isVerified ? [{
-                //         imgURL: "/assets/icons/verified.svg",
-                //         route: "/workshops",
-                //         label: "Workshops",
-                //     }] : []),
-                // ] : [])
+                {
+                    imgURL: "/assets/icons/admin.svg",
+                    route: "/admin",
+                    label: "Admin",
+                },
+                {
+                    imgURL: "/assets/icons/verified.svg",
+                    route: "/workshops",
+                    label: "Workshops",
+                }
             ];
