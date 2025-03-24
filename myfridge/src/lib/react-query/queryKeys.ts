@@ -17,4 +17,17 @@ export enum QUERY_KEYS{
 
     //  SEARCH KEYS
     SEARCH_RECIPES = "getSearchRecipes",
+
+    // FRIDGE KEYS
+    GET_ALL_FRIDGE_INGREDIENTS = "getAllFridgeIngredients",
+    GET_FRIDGE_ID_BY_USER = "getFridgeIDByUser",
+    // INGREDIENT KEYS
+
+    GET_ALL_INGREDIENTS = "getAllIngredients",
+    GET_INGREDIENT_BY_NAME = "getIngredientByName",
+    GET_INGREDIENT_BY_ID = "getIngredientById",
+    GET_INGREDIENTS_BY_USER = "getIngredientsByUser",
+    GET_INGREDIENTS_BY_RECIPE = "getIngredientsByRecipe",
+    GET_INGREDIENTS_BY_FRIDGE = "getIngredientsByFridge",
+
 }

@@ -26,12 +26,7 @@
                     label: "Create Recipe",
                 },
                 {
-                    imgURL: "/assets/icons/admin.svg",
-                    route: "/admin",
-                    label: "Admin",
-                },
-                {
-                    imgURL: "/assets/icons/verified.svg",
+                    imgURL: "/assets/icons/workshop.svg",
                     route: "/workshops",
                     label: "Workshops",
                 }
@@ -59,12 +54,7 @@
                     label: "Create",
                 },
                 {
-                    imgURL: "/assets/icons/admin.svg",
-                    route: "/admin",
-                    label: "Admin",
-                },
-                {
-                    imgURL: "/assets/icons/verified.svg",
+                    imgURL: "/assets/icons/workshop.svg",
                     route: "/workshops",
                     label: "Workshops",
                 }

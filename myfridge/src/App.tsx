@@ -30,11 +30,8 @@ import { Routes, Route } from 'react-router-dom';
                                         <Route path="/profile/:id/*" element={<Profile />} />
                                         <Route path="/update-profile/:id/*" element={<UpdateProfile />} />
                                         <Route path="/liked-recipes/:id/*" element={<LikedRecipes />} />
-                                        {(user?.isVerified || user?.isAdministrator) && (
+                                        {(user?.isVerified ) && (
                                             <>
-                                                {user?.isAdministrator && (
-                                                    <Route path="/admin" element={<Admin />} />
-                                                )}
                                                 {user?.isVerified && (
                                                     <Route path="/workshops/:id/*" element={<Workshops />} />
                                                 )}

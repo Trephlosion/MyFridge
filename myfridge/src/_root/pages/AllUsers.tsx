@@ -1,14 +1,16 @@
+/*
 
 import { useEffect, useState } from "react";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
 import { useUserContext } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import {IUser} from "@/types";
 
 const AllUsers = () => {
   const navigate = useNavigate();
   const { user } = useUserContext();
-  const [users, setUsers] = useState([]);
+  const [users , setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -57,14 +59,14 @@ const AllUsers = () => {
   // ✅ Handle search input and filter users
   useEffect(() => {
     const results = users.filter(
-        (user) =>
+        (user: IUser) =>
             user.username?.toLowerCase().includes(search.toLowerCase()) ||
             user.email?.toLowerCase().includes(search.toLowerCase())
     );
     setFilteredUsers(results);
   }, [search, users]);
 
-  if (!isAdmin) {
+  /!*if (!isAdmin) {
     return (
         <div className="flex-center w-full h-full">
           <p className="text-red-500 text-xl font-semibold">
@@ -72,13 +74,13 @@ const AllUsers = () => {
           </p>
         </div>
     );
-  }
+  }*!/
 
   return (
       <div className="p-5">
         <h2 className="text-2xl font-bold mb-4">User Search </h2>
 
-        { /*🔍 Search Bar (Now Fixes Invisible Text Issue) */}
+        { /!*🔍 Search Bar (Now Fixes Invisible Text Issue) *!/}
         <input
             type="text"
             placeholder="Search users by username or email..."
@@ -92,10 +94,10 @@ const AllUsers = () => {
             }}
         />
 
-        {/* 🔹 Display Search Results */}
+        {/!* 🔹 Display Search Results *!/}
         <div className="grid grid-cols-3 gap-4">
           {filteredUsers.length > 0 ? (
-              filteredUsers.map((user) => (
+              filteredUsers.map((user: IUser) => (
                   <div
                       key={user.id}
                       className="p-4 border rounded cursor-pointer hover:bg-gray-100"
@@ -120,32 +122,43 @@ const AllUsers = () => {
 
 export default AllUsers;
 
+*/
 
-
-
-
-
-
-
-
-
-
-
-
-/*
-import { useToast } from "@/hooks/use-toast";
-import { Loader, UserCard } from "@/components/shared";
 import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
-import { ExpandedUser } from "@/types";
-import BaseLoading from "@/components/shared/BaseLoading.tsx";
+import { useUserContext } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { Loader, UserCard, BaseLoading } from "@/components/shared";
+import { ExpandedUser, IUser } from "@/types";
+
 
 const AllUsers = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useUserContext()
   const [creators, setCreators] = useState<ExpandedUser[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isError, setIsError] = useState<boolean>(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if the logged-in user is an admin
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!user) return;
+      try {
+        const userDoc = await getDoc(doc(database, "Users", user.id));
+        if (userDoc.exists() && userDoc.data().isAdministrator === true) {
+          setIsAdmin(true);
+        }
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+      }
+    };
+    checkAdmin();
+  }, [user]);
+
 
   // Fetch all users from Firestore
   const fetchUsers = async () => {
@@ -182,7 +195,11 @@ const AllUsers = () => {
   return (
       <div className="common-container">
         <div className="user-container">
-          <h2 className="h3-bold md:h2-bold text-left w-full ">All Users</h2>
+          {/* Page Title */}
+
+          <h2 className="h3-bold md:h2-bold text-left w-full ">
+            {isAdmin ? "All Users - Admin View" : "All Users"}
+          </h2>
           {isLoading ? (
 
               <BaseLoading />
@@ -202,8 +219,3 @@ const AllUsers = () => {
 };
 
 export default AllUsers;
-*/
-
-
-
-

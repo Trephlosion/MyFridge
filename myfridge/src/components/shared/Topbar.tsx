@@ -15,7 +15,7 @@ const Topbar = () => {
         if(isSuccess) navigate(0);
         }, [isSuccess])
 
-    console.log("User object:", user);
+
 
 
     if (!user) {
@@ -46,15 +46,23 @@ const Topbar = () => {
                         <img src="/assets/icons/logout.svg" alt="logout" />
                     </Button>
                     <Link to={`/profile/${user.id}`} className="flex-center gap-3">
-                        <img
-                            src={user.pfp || "/assets/icons/profile-placeholder.svg"}
-                            alt="profile"
-                            className="h-8 w-8 rounded-full"
-                        />
-                        {/* Show "verified" text for content creators */}
-                        {user?.isVerified && (
-                            <p className="text-sm text-green-600">verified</p>
-                        )}
+                        <>
+                        <div className="relative">
+                            <img
+                                src={user.pfp || "/assets/icons/profile-placeholder.svg"}
+                                alt="creator"
+                                className="rounded-full w-8 h-8"
+                            />
+                            {user?.isVerified && (
+                                <img
+                                    src="/assets/icons/verified.svg"
+                                    alt="verified"
+                                    className="absolute bottom-0 right-0 w-2 h-2"
+                                />
+                            )}
+                        </div>
+                                <p className="small-regular text-light-3">@{user.username}</p>
+                        </>
                     </Link>
                 </div>
             </div>

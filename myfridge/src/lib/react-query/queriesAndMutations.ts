@@ -1,8 +1,8 @@
 import {
     useQuery,
-        useMutation,
-        useQueryClient,
-        useInfiniteQuery,
+    useMutation,
+    useQueryClient,
+    useInfiniteQuery,
 } from "@tanstack/react-query";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
@@ -23,7 +23,20 @@ import {
     getUsers,
     getUserById,
     updateUser,
-    getUserRecipes, createFridge,
+    getUserRecipes,
+    getInfiniteRecipes, // Updated function for infinite scroll
+    createFridge,
+    followUser,
+    createFridge,
+    getFridgeIDByUser,
+    getAllFridgeIngredients,
+    addIngredientToFridge,
+    getAllIngredients,
+    getIngredientByName,
+    getIngredientById,
+    createNewIngredient,
+    removeIngredientFromFridge,
+    addIngredientToShoppingList,
 } from "@/lib/firebase/api";
 import { INewRecipe, INewUser, IUpdateRecipe, IUpdateUser } from "@/types";
 import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
@@ -53,7 +66,7 @@ export const useCreateFridge = () => {
     return useMutation({
         mutationFn: (userID: string) => createFridge(userID),
     });
-}
+};
 
 export const useCreateRecipe = () => {
     const queryClient = useQueryClient();
@@ -69,7 +82,7 @@ export const useCreateRecipe = () => {
 
 export const useGetUserRecipes = (userId?: string) => {
     return useQuery({
-        queryKey: [QUERY_KEYS.GET_USER_RECIPES, userId || "guest"], // ✅ Ensure queryKey is always defined
+        queryKey: [QUERY_KEYS.GET_USER_RECIPES, userId || "guest"],
         queryFn: () => {
             if (!userId) {
                 console.error("useGetUserRecipes called with an undefined userId!");
@@ -77,10 +90,9 @@ export const useGetUserRecipes = (userId?: string) => {
             }
             return getUserRecipes(userId);
         },
-        enabled: !!userId, // ✅ Only run query if userId is defined
+        enabled: !!userId,
     });
 };
-
 
 // Query for fetching recent recipes
 export const useGetRecentRecipes = () => {
@@ -94,12 +106,8 @@ export const useGetRecentRecipes = () => {
 export const useGetRecipes = () => {
     return useInfiniteQuery({
         queryKey: [QUERY_KEYS.GET_INFINITE_RECIPES],
-        queryFn: getUserRecipes, // Adjusted function
-        getNextPageParam: (lastPage: any) => {
-            if (!lastPage || lastPage.length === 0) return null; // No more pages
-            const lastId = lastPage[lastPage.length - 1].id;
-            return lastId;
-        },
+        queryFn: ({ pageParam }) => getInfiniteRecipes({ pageParam }),
+        getNextPageParam: (lastPage: { recipes: any[]; lastDoc: any }) => lastPage.lastDoc,
     });
 };
 
@@ -110,29 +118,27 @@ export const useSearchRecipes = (searchTerm: string) => {
         queryFn: async () => {
             if (!searchTerm) return [];
 
-            // ✅ Convert search term to lowercase for case-insensitive search
+            // Convert search term to lowercase for case-insensitive search
             const lowercaseSearchTerm = searchTerm.toLowerCase();
 
             const recipesRef = collection(database, "Recipes");
             const snapshot = await getDocs(recipesRef);
 
-            // ✅ Filter results manually since Firestore doesn't natively support case-insensitive search
+            // Filter results manually since Firestore doesn't natively support case-insensitive search
             const filteredRecipes = snapshot.docs
                 .map((doc) => ({
                     id: doc.id,
                     ...doc.data(),
                 }))
                 .filter((recipe) =>
-                    recipe.title?.toLowerCase().includes(lowercaseSearchTerm) // ✅ Case-insensitive match
+                    recipe.title?.toLowerCase().includes(lowercaseSearchTerm)
                 );
 
             return filteredRecipes;
         },
-        enabled: !!searchTerm, // ✅ Only fetch when searchTerm exists
+        enabled: !!searchTerm,
     });
 };
-
-
 
 // Query for getting recipe by ID
 export const useGetRecipeById = (recipeId?: string) => {
@@ -160,8 +166,8 @@ export const useUpdateRecipe = () => {
 export const useDeleteRecipe = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ recipeId, imageId }: { recipeId?: string; imageId: string }) =>
-            deleteRecipe(recipeId, imageId),
+        mutationFn: ({ recipeId, mediaId }: { recipeId?: string; mediaId: string }) =>
+            deleteRecipe(recipeId, mediaId),
         onSuccess: () => {
             queryClient.invalidateQueries({
                 queryKey: [QUERY_KEYS.GET_RECENT_RECIPES],
@@ -254,3 +260,112 @@ export const useUpdateUser = () => {
     });
 };
 
+export const useFollowUser = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ currentUserId, profileUserId, isFollowing }: { currentUserId: string; profileUserId: string; isFollowing: boolean }) => {
+            await followUser(currentUserId, profileUserId, isFollowing);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_CURRENT_USER] });
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_USER_BY_ID] });
+        },
+    });
+};
+
+
+// Query for getting fridge ID by user
+export const useGetFridgeIDByUser = (userId: string) => {
+    return useQuery({
+        queryKey: [QUERY_KEYS.GET_FRIDGE_ID_BY_USER, userId],
+        queryFn: () => getFridgeIDByUser(userId),
+        enabled: !!userId,
+    });
+};
+
+
+
+// Query for getting all fridge ingredients
+export const useGetAllFridgeIngredients = (fridgeId: string) => {
+    return useQuery({
+        queryKey: [QUERY_KEYS.GET_ALL_FRIDGE_INGREDIENTS, fridgeId],
+        queryFn: () => getAllFridgeIngredients(fridgeId),
+        enabled: !!fridgeId,
+    });
+};
+
+
+
+
+// Mutation for adding an ingredient to the fridge
+export const useAddIngredient = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ fridgeId, ingredient }: { fridgeId: string; ingredient: string }) => addIngredientToFridge(fridgeId, ingredient),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({
+                queryKey: [QUERY_KEYS.GET_ALL_FRIDGE_INGREDIENTS, variables.fridgeId],
+            });
+        },
+    });
+};
+
+// Query for getting all ingredients
+export const useGetAllIngredients = () => {
+    return useQuery({
+        queryKey: [QUERY_KEYS.GET_ALL_INGREDIENTS],
+        queryFn: getAllIngredients,
+    });
+};
+
+// Query for getting ingredient by name
+export const useGetIngredientByName = (ingredient: string) => {
+    return useQuery({
+        queryKey: [QUERY_KEYS.GET_INGREDIENT_BY_NAME, ingredient],
+        queryFn: () => getIngredientByName(ingredient),
+        enabled: !!ingredient,
+    });
+};
+
+// Query for getting ingredient by ID
+export const useGetIngredientById = (ingredientId: string) => {
+    return useQuery({
+        queryKey: [QUERY_KEYS.GET_INGREDIENT_BY_ID, ingredientId],
+        queryFn: () => getIngredientById(ingredientId),
+        enabled: !!ingredientId,
+    });
+};
+
+// Mutation for creating a new ingredient
+export const useCreateIngredient = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (ingredient: string) => createNewIngredient(ingredient),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: [QUERY_KEYS.GET_ALL_INGREDIENTS],
+            });
+        },
+    });
+};
+
+// Mutation for removing an ingredient from the fridge
+export const useRemoveIngredientFromFridge = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ fridgeId, ingredient }: { fridgeId: string; ingredient: string }) => removeIngredientFromFridge(fridgeId, ingredient),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({
+                queryKey: [QUERY_KEYS.GET_ALL_FRIDGE_INGREDIENTS, variables.fridgeId],
+            });
+        },
+    });
+};
+
+// Mutation for adding an ingredient to the shopping list
+export const useAddIngredientToShoppingList = () => {
+    return useMutation({
+        mutationFn: ({ userId, ingredient }: { userId: string; ingredient: string }) =>
+            addIngredientToShoppingList(userId, ingredient),
+    });
+};

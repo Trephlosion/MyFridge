@@ -68,6 +68,12 @@ export type IUpdateUser = {
     updatedAt: Date; // Date updated
 
     file: File[]; // Array of File objects
+
+    followAction?: {
+        profileUserId: string;
+        isFollowing: boolean;
+    };
+
 };
 
 // User Type

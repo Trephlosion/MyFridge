@@ -27,7 +27,7 @@ const LeftSidebar = () => {
         if(isSuccess) navigate(0);
     }, [isSuccess]);
 
-    console.log("User object:", user);
+
 
     return (
         <nav className="leftsidebar">
@@ -53,20 +53,26 @@ const LeftSidebar = () => {
 
                     </div>
                 ) : (
+                    <>
                     <Link to={`/profile/${user.id}`} className="flex gap-3 items-center">
-                        <img
-                            src={user.pfp || "/assets/icons/profile-placeholder.svg"}
-                            alt="profile"
-                            className="h-14 w-14 rounded-full"
-                        />
-                        <div className="flex flex-col">
-                            <p className="small-regular text-light-3">@{user.username}</p>
-                            {/* Show "verified" text for content creators */}
+                        <div className="relative flex flex-col">
+                            <img
+                                src={user.pfp || "/assets/icons/profile-placeholder.svg"}
+                                alt="creator"
+                                className="rounded-full w-14 h-14"
+                            />
                             {user?.isVerified && (
-                                <p className="text-sm text-green-600">verified</p>
+                                <img
+                                    src="/assets/icons/verified.svg"
+                                    alt="verified"
+                                    className="absolute bottom-0 right-0 w-4 h-4"
+                                />
                             )}
+                            <p className="right-0 small-regular text-light-3">@{user.username}</p>
                         </div>
                     </Link>
+
+                    </>
                 )}
 
                 <ul className="flex flex-col gap-6">

@@ -1,4 +1,4 @@
-import { Fridge, columns } from "./columns"
+import { Fridge, fridgeColumns } from "./fridgeColumns.tsx"
 import { DataTable } from "./data-table"
 
 async function getData(): Promise<Fridge[]> {

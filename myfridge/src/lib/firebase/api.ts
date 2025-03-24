@@ -2,7 +2,7 @@ import {
     createUserWithEmailAndPassword, onAuthStateChanged,
     signInWithEmailAndPassword, User,
 } from "firebase/auth";
-import { addDoc, startAfter, DocumentSnapshot, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, limit, getDocs } from "firebase/firestore";
+import { addDoc, startAfter, DocumentSnapshot, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, limit, getDocs, runTransaction, arrayUnion, arrayRemove } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { auth, database, storage } from "@/lib/firebase/config.ts";
 import { INewRecipe, IRecipeMetadata, IUpdateRecipe, IUpdateUser, IUser } from "@/types";
@@ -34,9 +34,8 @@ export const signOutAccount = async () => {
 
 // USER FUNCTIONS
 
-// Create a new user and save details in Firestore
 export const createUserAccount = async (userData: any) => {
-    const { email, password,  username } = userData;
+    const { email, password, username } = userData;
 
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -46,7 +45,6 @@ export const createUserAccount = async (userData: any) => {
 
         const userDocRef = doc(database, "Users", user.uid);
         await setDoc(userDocRef, {
-            // id: user.uid,
             email,
             username,
             bio: "Hey I'm new here!",
@@ -56,10 +54,10 @@ export const createUserAccount = async (userData: any) => {
             isAdministrator: false,
             followers: [],
             following: [],
-            recipes:  [],
+            recipes: [],
             posts: [],
             comments: [],
-            myFridge ,
+            myFridge: doc(database, "Fridges", myFridge), // Ensure this is a reference
             createdAt: new Date(),
             updatedAt: new Date(),
         });
@@ -205,13 +203,13 @@ export async function updateUser(user: IUpdateUser) {
             const fileUrl = await getDownloadURL(fileRef);
             image = { imageUrl: fileUrl, imageId: fileRef.fullPath };
 
-            // Delete old profile picture if exists
             if (user.pfp) {
                 const oldFileRef = ref(storage, user.pfp);
                 await deleteObject(oldFileRef);
             }
         }
 
+        // Update user document
         await updateDoc(doc(database, "Users", user.id), {
             username: user.username,
             email: user.email,
@@ -220,21 +218,60 @@ export async function updateUser(user: IUpdateUser) {
             isPrivate: user.isPrivate,
             isVerified: user.isVerified,
             isAdministrator: user.isAdministrator,
-            followers: user.followers,
-            following: user.following,
-            likedRecipes: user.likedRecipes,
-            recipes: user.recipes,
-            posts: user.posts,
-            comments: user.comments,
-            myFridge: user.myFridge,
+            recipes: user.recipes.map(recipeId => doc(database, "Recipes", recipeId)), // Ensure these are references
+            posts: user.posts.map(postId => doc(database, "Posts", postId)), // Ensure these are references
+            comments: user.comments.map(commentId => doc(database, "Comments", commentId)), // Ensure these are references
+            myFridge: doc(database, "Fridges", user.myFridge), // Ensure this is a reference
             updatedAt: new Date(),
         });
+
+        // Update followers and following using followUser function
+        for (const followerId of user.followers) {
+            await followUser(followerId, user.id, false);
+        }
+
+        for (const followingId of user.following) {
+            await followUser(user.id, followingId, false);
+        }
 
         return { status: "ok" };
     } catch (error) {
         console.error("Error updating user:", error);
         throw error;
     }
+}
+
+// Follow/unfollow user
+export async function followUser(currentUserId: string, profileUserId: string, isFollowing: boolean) {
+    const currentUserRef = doc(database, "Users", currentUserId);
+    const profileUserRef = doc(database, "Users", profileUserId);
+
+    await runTransaction(database, async (transaction) => {
+        const currentUserDoc = await transaction.get(currentUserRef);
+        const profileUserDoc = await transaction.get(profileUserRef);
+
+        if (!currentUserDoc.exists() || !profileUserDoc.exists()) {
+            throw new Error("User does not exist!");
+        }
+
+        if (isFollowing) {
+            // Unfollow
+            transaction.update(currentUserRef, {
+                following: arrayRemove(profileUserId),
+            });
+            transaction.update(profileUserRef, {
+                followers: arrayRemove(currentUserId),
+            });
+        } else {
+            // Follow
+            transaction.update(currentUserRef, {
+                following: arrayUnion(profileUserId),
+            });
+            transaction.update(profileUserRef, {
+                followers: arrayUnion(currentUserId),
+            });
+        }
+    });
 }
 
 
@@ -265,7 +302,7 @@ export async function createRecipe(recipe: INewRecipe) {
         }
 
         // Normalize tags: ensure it's always an array
-        const tags = Array.isArray(recipe.tags)
+        const tags: string = Array.isArray(recipe.tags)
             ? recipe.tags.map((tag: string) => tag.trim())
             : recipe.tags?.toString().split(",").map((tag: string) => tag.trim()) || [];
 
@@ -375,7 +412,6 @@ export async function updateRecipe(recipe: IUpdateRecipe) {
         console.log(error);
     }
 }
-
 // Delete recipe
 export async function deleteRecipe(recipeId?: string, mediaId?: string) {
     if (!recipeId || !mediaId) return;
@@ -512,9 +548,7 @@ export async function deleteFile(fileId: string) {
 
 // MYFRIDGE FUNCTIONS
 
-export async function createFridge(userid: string){
-
-
+export async function createFridge(userid: string) {
     try {
         const fridgeRef = doc(collection(database, "Fridges"));
         const fridge = {
@@ -533,22 +567,178 @@ export async function createFridge(userid: string){
     }
 }
 
-export async function getFridgeIDByUser(userid: string){
+export async function getFridgeIDByUser(userid: string) {
     try {
         const fridgeQuery = query(collection(database, "Fridges"), where("userid", "==", userid));
         const querySnapshot = await getDocs(fridgeQuery);
 
-        const fridge = querySnapshot.docs.map(doc => doc.id);
+        if (querySnapshot.empty) {
+            throw new Error("Fridge not found");
+        }
 
-        return fridge[0];
+        const fridgeDoc = querySnapshot.docs[0];
+        return fridgeDoc.id;
     } catch (error) {
         console.error("Error fetching fridge:", error);
-        return [];
+        return null;
     }
 }
 
+export async function getFridgeById(fridgeId: string) {
+    try {
+        const fridgeDoc = await getDoc(doc(database, "Fridges", fridgeId));
+        if (!fridgeDoc.exists()) throw new Error("Fridge not found");
+        return fridgeDoc.data();
+    } catch (error) {
+        console.log(error);
+    }
+}
 
+export async function updateFridge(fridgeId: string, fridgeData: any) {
+    try {
+        const ingredients = fridgeData.ingredients.map((ingredientId: string) => ({
+            ingredientId: doc(database, "Ingredients", ingredientId),
+        }));
+        const shoppingList = fridgeData.shoppingList.map((ingredientId: string) => ({
+            ingredientId: doc(database, "Ingredients", ingredientId),
+        }));
+
+        await updateDoc(doc(database, "Fridges", fridgeId), {
+            ingredients,
+            shoppingList,
+            updatedAt: new Date(),
+        });
+        return { status: "ok" };
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+export async function getAllFridgeIngredients(userid: string) {
+    try {
+
+
+        const fridgeQuery = query(collection(database, "Fridges"), where("userid", "==", userid));
+        const querySnapshot = await getDocs(fridgeQuery);
+
+        if (querySnapshot.empty) {
+            throw new Error("Fridge not found");
+        }
+
+        const fridgeDoc = querySnapshot.docs[0];
+        // incrementing the index of the ingredients array
+        const ingredientData = fridgeDoc.data().ingredients.map((ingredient: any) => {
+            return getIngredientNameById(ingredient.ingredientId.id);
+        });
+        // const ingredientData = [getIngredientNameById(fridgeDoc.data().ingredients[0].ingredientId.id)];
+        return ingredientData;
+
+
+
+
+    } catch (error) {
+        console.error("Error fetching fridge:", error);
+        return null;
+    }
+}
+
+export async function addIngredientToFridge(fridgeId: string, ingredientId: string) {
+    try {
+        const fridgeDoc = doc(database, "Fridges", fridgeId);
+        await updateDoc(fridgeDoc, {
+            ingredients: arrayUnion({ ingredientId: doc(database, "Ingredients", ingredientId) }),
+        });
+        return { status: "ok" };
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+export async function removeIngredientFromFridge(fridgeId: string, ingredientId: string) {
+    try {
+        const fridgeDoc = doc(database, "Fridges", fridgeId);
+        await updateDoc(fridgeDoc, {
+            ingredients: arrayRemove({ ingredientId: doc(database, "Ingredients", ingredientId) }),
+        });
+        return { status: "ok" };
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+export async function addIngredientToShoppingList(fridgeId: string, ingredientId: string) {
+    try {
+        const fridgeDoc = doc(database, "Fridges", fridgeId);
+        await updateDoc(fridgeDoc, {
+            shoppingList: arrayUnion({ ingredientId: doc(database, "Ingredients", ingredientId) }),
+        });
+        return { status: "ok" };
+    } catch (error) {
+        console.log(error);
+    }
+}
 // INGREDIENT FUNCTIONS
+
+export async function getAllIngredients() {
+    try {
+        const ingredientsRef = collection(database, "Ingredients");
+        const querySnapshot = await getDocs(ingredientsRef);
+        const ingredients = querySnapshot.docs.map((doc) => doc.data());
+        return ingredients;
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+export async function getIngredientNameById(name: string) {
+    try {
+        const ingredientDoc = await getDoc(doc(database, "Ingredients", name));
+        if (!ingredientDoc.exists()) throw new Error("Ingredient not found");
+        return ingredientDoc.data();
+    } catch (error) {
+        console.log(error);
+    }
+
+}
+
+export async function getIngredientByName(ingredient: string) {
+    try {
+        const ingredientsRef = collection(database, "Ingredients");
+        const querySnapshot = await getDocs(ingredientsRef);
+        const ingredients = querySnapshot.docs.map((doc) => doc.data());
+        return ingredients;
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+export async function getIngredientById(ingredientId: string) {
+    try {
+        const ingredientDoc = await getDoc(doc(database, "Ingredients", ingredientId));
+        if (!ingredientDoc.exists()) throw new Error("Ingredient not found");
+        return ingredientDoc.data();
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+export async function createNewIngredient(ingredient: string) {
+    // Check if ingredient already exists
+    const ingredients = await getAllIngredients();
+    const existingIngredient = ingredients.find((item: any) => item.name === ingredient);
+    if (existingIngredient) {
+        throw new Error("Ingredient already exists");
+    } else {
+        try {
+            await addDoc(collection(database, "Ingredients"), {
+                name: ingredient,
+            });
+            return { status: "ok" };
+        } catch (error) {
+            console.log(error);
+        }
+    }
+}
 
 
 //
