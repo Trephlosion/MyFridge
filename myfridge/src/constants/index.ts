@@ -24,6 +24,11 @@ export const sidebarLinks = [
         route: "/create-recipe",
         label: "Create Recipe",
     },
+    {
+        imgURL: "/assets/icons/chat.svg",
+        route: "/workshops",
+        label: "Workshops",
+    },
 ];
 
 export const bottombarLinks = [
@@ -46,5 +51,10 @@ export const bottombarLinks = [
         imgURL: "/assets/icons/gallery-add.svg",
         route: "/create-recipe",
         label: "Create",
+    },
+    {
+        imgURL: "/assets/icons/chat.svg",  // Replace with the actual icon for workshops
+        route: "/workshops",
+        label: "Workshops",
     },
 ];

@@ -6,6 +6,7 @@ import { GridRecipeList, Loader } from "@/components/shared";
 import { useGetRecipes, useSearchRecipes } from "@/lib/react-query/queriesAndMutations";
 import { Recipe } from "@/types";
 
+
 export type SearchResultProps = {
   isSearchFetching: boolean;
   searchedRecipes: Recipe[];

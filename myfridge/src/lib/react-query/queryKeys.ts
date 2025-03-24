@@ -17,4 +17,10 @@ export enum QUERY_KEYS{
 
     //  SEARCH KEYS
     SEARCH_RECIPES = "getSearchRecipes",
+
+    // WORKSHOP KEYS
+    GET_WORKSHOPS = "getWorkshops",
+    GET_INFINITE_WORKSHOPS = "getInfiniteWorkshops",
+    GET_WORKSHOP_BY_ID = "getWorkshopById",
+    SEARCH_WORKSHOPS = "SearchWorkshops",
 }

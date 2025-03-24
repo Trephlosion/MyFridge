@@ -1,8 +1,8 @@
 import {
     useQuery,
-        useMutation,
-        useQueryClient,
-        useInfiniteQuery,
+    useMutation,
+    useQueryClient,
+    useInfiniteQuery,
 } from "@tanstack/react-query";
 
 import {
@@ -23,10 +23,17 @@ import {
     getUserById,
     updateUser,
     getUserRecipes,
+    likeWorkshop,
+    saveWorkshop,
+    createWorkshop,
+    getWorkshops,
+    updateWorkshop,
+    deleteWorkshop,
+    searchWorkshops,
 } from "@/lib/firebase/api";
-import { INewRecipe, INewUser, IUpdateRecipe, IUpdateUser } from "@/types";
+import { INewRecipe, INewUser, IUpdateRecipe, IUpdateUser, INewWorkshop, IUpdateWorkshop } from "@/types";
 import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
-
+import { Workshop } from "@/types";
 // Mutation for creating a new user
 export const useCreateUserAccount = () => {
     return useMutation({
@@ -106,8 +113,6 @@ export const useGetRecipeById = (recipeId?: string) => {
         enabled: !!recipeId,
     });
 };
-
-
 
 // Mutation for updating a recipe
 export const useUpdateRecipe = () => {
@@ -207,6 +212,8 @@ export const useGetUserById = (userId: string) => {
     });
 };
 
+
+
 // Mutation for updating user data
 export const useUpdateUser = () => {
     const queryClient = useQueryClient();
@@ -219,3 +226,109 @@ export const useUpdateUser = () => {
         },
     });
 };
+export const useCreateWorkshop = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (workshopData: INewWorkshop) => createWorkshop(workshopData),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: [QUERY_KEYS.GET_WORKSHOPS],
+            });
+        },
+    });
+};
+
+// Query for fetching workshops
+export const useGetWorkshops = () => {
+    return useQuery({
+        queryKey: [QUERY_KEYS.GET_WORKSHOPS],
+        queryFn: getWorkshops,
+    });
+};
+// Query for fetching workshops for infinite scrolling
+export const useGetInfiniteWorkshops = () => {
+    return useInfiniteQuery({
+        queryKey: [QUERY_KEYS.GET_INFINITE_WORKSHOPS],
+        queryFn: ({ pageParam = 0 }) => getWorkshops(pageParam),  // Ensure pageParam is passed to getWorkshops
+        getNextPageParam: (lastPage: any) => {
+            if (!lastPage || !lastPage.nextPage) return null;  // Modify per your data structure
+            return lastPage.nextPage;  // Return the next page identifier
+        },
+    });
+};
+
+
+// Query for searching workshops
+export const useSearchWorkshops = (searchTerm: string) => {
+    return useQuery<Workshop[]>({
+        queryKey: [QUERY_KEYS.SEARCH_WORKSHOPS, searchTerm],
+        queryFn: async () => {
+            const result = await searchWorkshops(searchTerm);
+            return result ?? []; // Ensure it always returns an array
+        },
+        enabled: !!searchTerm, // Prevents query from running when searchTerm is empty
+    });
+};
+
+// Mutation for updating a workshop
+export const useUpdateWorkshop = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (workshop: IUpdateWorkshop) => updateWorkshop(workshop),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({
+                queryKey: [QUERY_KEYS.GET_WORKSHOP_BY_ID, variables.workshopId],
+            });
+        },
+    });
+};
+
+// Mutation for deleting a workshop
+export const useDeleteWorkshop = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (workshopId: string) => deleteWorkshop(workshopId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: [QUERY_KEYS.GET_WORKSHOPS],
+            });
+        },
+    });
+};
+// Mutation for liking a workshop
+export const useLikeWorkshop = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+                         workshopId,
+                         likesArray,
+                     }: {
+            workshopId: string;
+            likesArray: string[];
+        }) => likeWorkshop(workshopId, likesArray),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({
+                queryKey: [QUERY_KEYS.GET_WORKSHOP_BY_ID, variables.workshopId],
+            });
+        },
+    });
+};
+
+// Mutation for saving a workshop
+export const useSaveWorkshop = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ userId, workshopId }: { userId: string; workshopId: string }) =>
+            saveWorkshop(userId, workshopId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: [QUERY_KEYS.GET_CURRENT_USER],
+            });
+        },
+    });
+};
+
+
+
+
+

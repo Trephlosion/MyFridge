@@ -6,6 +6,7 @@ import RootLayout from './_root/RootLayout';
 import SignupForm from './_auth/forms/SignupForm.tsx';
 import SigninForm from './_auth/forms/SigninForm.tsx';
 import {Home} from './_root/pages';
+import Workshops from './_root/pages/Workshops';
 
 const App = () => {
         return(
@@ -19,6 +20,7 @@ const App = () => {
                     {/* private routes */}
                     <Route element={<RootLayout />}>
                         <Route index element={<Home/>}/>
+                        <Route path="/workshops" element={<Workshops />} />
                     </Route>
                 </Routes>
             </main>

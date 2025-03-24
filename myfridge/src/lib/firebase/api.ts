@@ -536,3 +536,60 @@ export async function deleteFile(fileId: string) {
         console.log(error);
     }
 }
+//WORKSHOP FUNCTIONS
+export const createWorkshop = async (workshopData: INewWorkshop) => {
+    const workshopRef = doc(collection(database, "Workshops"));
+    await setDoc(workshopRef, workshopData);
+    return workshopRef.id;
+};
+export const getWorkshops = async (pageParam = 0) => {
+    const response = await fetch(`/api/workshops?page=${pageParam}`);
+    return response.json();
+};
+export const getWorkshopById = async (workshopId: string) => {
+    const workshopRef = doc(database, "Workshops", workshopId);
+    const docSnap = await getDoc(workshopRef);
+    if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() };
+    } else {
+        return null;
+    }
+};
+export const updateWorkshop = async (workshop: IUpdateWorkshop) => {
+    const workshopRef = doc(database, "Workshops", workshop.id);
+    await setDoc(workshopRef, workshop, { merge: true });
+};
+export const deleteWorkshop = async (workshopId: string) => {
+    const workshopRef = doc(database, "Workshops", workshopId);
+    await deleteDoc(workshopRef);
+};
+export const likeWorkshop = async (workshopId: string, likesArray: string[]) => {
+    const workshopRef = doc(database, "Workshops", workshopId);
+    await updateDoc(workshopRef, { likes: likesArray });
+};
+
+export const saveWorkshop = async (userId: string, workshopId: string) => {
+    const userRef = doc(database, "Users", userId);
+    await updateDoc(userRef, { savedWorkshops: arrayUnion(workshopId) });
+};
+
+// Search workshops based on a search term (e.g., by name or description)
+export const searchWorkshops = async (searchTerm: string) => {
+    const workshopsRef = collection(database, "Workshops");
+
+    // Perform the search using a query
+    const querySnapshot = await getDocs(
+        query(
+            workshopsRef,
+            where("name", "==", searchTerm),  // Adjust field and condition based on search needs
+        )
+    );
+
+    const workshops = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+    }));
+
+    return workshops;
+};
+
