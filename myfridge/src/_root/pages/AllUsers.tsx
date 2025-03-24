@@ -97,59 +97,84 @@ const AllUsers = () => {
             </tr>
             </thead>
             <tbody>
-            {filteredUsers.map((user) => (
-                <tr key={user.id} className="text-center border-b">
-                  <td className="p-2 border">{user.email}</td>
-                  <td className="p-2 border">{user.username}</td>
-                  <td className="p-2 border">{user.role || "User"}</td>
+            {filteredUsers.map((otherUser) => (
+                <tr key={otherUser.id} className="text-center border-b">
+                  <td className="p-2 border">{otherUser.email}</td>
+                  <td className="p-2 border">{otherUser.username}</td>
+                  <td className="p-2 border">{otherUser.role || "User"}</td>
+
                   <td className="p-2 relative">
                     <Button
                         className="bg-blue-500 text-white"
                         onClick={() =>
                             setActiveDropdown(
-                                activeDropdown === user.id ? null : user.id
+                                activeDropdown === otherUser.id ? null : otherUser.id
                             )
                         }
                     >
                       Options
                     </Button>
 
-                    {activeDropdown === user.id && (
-                        <div className="absolute z-10 right-0 mt-2 bg-white rounded shadow p-2 text-black w-40">
-                          <button
-                              className="block w-full text-left py-1 hover:bg-gray-100"
-                              onClick={() => handleChangeRole(user.id, "User")}
-                          >
-                            Set as User
-                          </button>
-                          <button
-                              className="block w-full text-left py-1 hover:bg-gray-100"
-                              onClick={() =>
-                                  handleChangeRole(user.id, "Content Creator")
-                              }
-                          >
-                            Set as Content Creator
-                          </button>
-                          <button
-                              className="block w-full text-left py-1 hover:bg-gray-100"
-                              onClick={() =>
-                                  handleChangeRole(user.id, "Recipe Curator")
-                              }
-                          >
-                            Set as Recipe Curator
-                          </button>
-                          <button
-                              className="block w-full text-left py-1 hover:bg-red-100 text-red-600"
-                              onClick={() => handleDeleteUser(user.id)}
-                          >
-                            Delete User
-                          </button>
+                    {activeDropdown === otherUser.id && (
+                        <div className="absolute z-10 right-0 mt-2 bg-white rounded shadow p-2 text-black w-48">
+                          {isAdmin ? (
+                              <>
+                                <button
+                                    className="block w-full text-left py-1 hover:bg-gray-100"
+                                    onClick={() => handleChangeRole(otherUser.id, "User")}
+                                >
+                                  Set as User
+                                </button>
+                                <button
+                                    className="block w-full text-left py-1 hover:bg-gray-100"
+                                    onClick={() =>
+                                        handleChangeRole(otherUser.id, "Content Creator")
+                                    }
+                                >
+                                  Set as Content Creator
+                                </button>
+                                <button
+                                    className="block w-full text-left py-1 hover:bg-gray-100"
+                                    onClick={() =>
+                                        handleChangeRole(otherUser.id, "Recipe Curator")
+                                    }
+                                >
+                                  Set as Recipe Curator
+                                </button>
+                                <button
+                                    className="block w-full text-left py-1 hover:bg-red-100 text-red-600"
+                                    onClick={() => handleDeleteUser(otherUser.id)}
+                                >
+                                  Delete User
+                                </button>
+                              </>
+                          ) : (
+                              <>
+                                <button
+                                    className="block w-full text-left py-1 hover:bg-gray-100"
+                                    onClick={() => {
+                                      // Handle follow/unfollow logic (stub)
+                                      alert("Follow/Unfollow action placeholder");
+                                      setActiveDropdown(null);
+                                    }}
+                                >
+                                  Follow / Unfollow
+                                </button>
+                                <button
+                                    className="block w-full text-left py-1 hover:bg-gray-100"
+                                    onClick={() => navigate(`/profile/${otherUser.id}`)}
+                                >
+                                  View User Profile
+                                </button>
+                              </>
+                          )}
                         </div>
                     )}
                   </td>
                 </tr>
             ))}
             </tbody>
+
           </table>
           {filteredUsers.length === 0 && (
               <p className="text-center mt-4 text-gray-400">No users found.</p>
@@ -161,204 +186,6 @@ const AllUsers = () => {
 
 export default AllUsers;
 
-
-
-
-
-
-
-
-
-
-/*import { useEffect, useState } from "react";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
-import { database } from "@/lib/firebase/config";
-import { useUserContext } from "@/context/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { Menu } from "@headlessui/react"; // ✅ Headless UI for dropdowns
-import { Swifrom "@headlessui/react"; // ✅ Headless UI for switches
-import Modal from "@/components/shared/Modal"; // ✅ Use a reusable modal for alerts
-
-function handleChangeUserRole(id) {
-  
-}
-
-const AllUsers = () => {
-  const navigate = useNavigate();
-  const { user } = useUserContext();
-  const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
-  const [search, setSearch] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  // ✅ Check if the logged-in user is an admin
-  useEffect(() => {
-    const checkAdmin = async () => {
-      if (!user) return;
-      try {
-        const userDoc = await getDoc(doc(database, "Users", user.id));
-        if (userDoc.exists() && userDoc.data().isAdministrator === true) {
-          setIsAdmin(true);
-        }
-      } catch (error) {
-        console.error("Error checking admin status:", error);
-      }
-    };
-    checkAdmin();
-  }, [user]);
-
-  // ✅ Fetch all users from Firestore if admin
-  useEffect(() => {
-    if (!isAdmin) return;
-
-    const fetchUsers = async () => {
-      setIsLoading(true);
-      try {
-        const usersCollection = collection(database, "Users");
-        const snapshot = await getDocs(usersCollection);
-        const usersData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setUsers(usersData);
-        setFilteredUsers(usersData);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      }
-      setIsLoading(false);
-    };
-
-    fetchUsers();
-  }, [isAdmin]);
-
-  // ✅ Handle search input and filter users
-  useEffect(() => {
-    const results = users.filter(
-        (user) =>
-            user.username?.toLowerCase().includes(search.toLowerCase()) ||
-            user.email?.toLowerCase().includes(search.toLowerCase())
-    );
-    setFilteredUsers(results);
-  }, [search, users]);
-
-  if (!isAdmin) {
-    return (
-        <div className="flex-center w-full h-full">
-          <p className="text-red-500 text-xl font-semibold">
-            Access to this page is restricted.
-          </p>
-        </div>
-    );
-  }
-
-  return (
-      <div className="p-5">
-        <h2 className="text-2xl font-bold mb-4">User Search</h2>
-
-        {/* 🔍 Search Bar }
-        <input
-            type="text"
-            placeholder="Search users by username or email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full p-2 border rounded mb-4 text-black bg-white placeholder-gray-500"
-        />
-
-        {/* 📊 Custom Table }
-        <table className="w-full border-collapse border border-gray-300">
-          <thead>
-          <tr className="bg-gray-100 text-black">
-            <th className="border p-2">Email</th>
-            <th className="border p-2">Username</th>
-            <th className="border p-2">Role</th>
-            <th className="border p-2">Actions</th>
-          </tr>
-          </thead>
-          <tbody>
-          {filteredUsers.length > 0 ? (
-              filteredUsers.map((user) => (
-                  <tr key={user.id} className="border">
-                    <td className="p-2">{user.email}</td>
-                    <td className="p-2">{user.username || "Unknown User"}</td>
-                    <td className="p-2">{user.role || "User"}</td>
-                    <td className="p-2 flex gap-2">
-                      {/* 🔽 Custom Dropdown Menu (Headless UI) }
-                      <Menu as="div" className="relative inline-block">
-                        <Menu.Button className="bg-blue-500 text-white p-2 rounded">Options</Menu.Button>
-                        <Menu.Items className="absolute bg-white shadow-md p-2 rounded mt-2">
-                          <Menu.Item>
-                            {({ active }) => (
-                                <button
-                                    className={`block w-full text-left p-2 text-black ${
-                                        active ? 'bg-gray-200' : ''
-                                    }`}
-                                    onClick={() => handleChangeUserRole(user.id)}
-                                >
-                                  Change User Role
-                                </button>
-                            )}
-                          </Menu.Item>
-
-                          <Menu.Item>
-                            {({ active }) => (
-                                <button
-                                    className={`block w-full text-left p-2 text-black ${
-                                        active ? 'bg-gray-200' : ''
-                                    }`}
-                                    onClick={() => handleBanUser(user.id)}
-                                >
-                                  Ban User
-                                </button>
-                            )}
-                          </Menu.Item>
-
-                          <Menu.Item>
-                            {({ active }) => (
-                                <button
-                                    className={`block w-full text-left p-2 text-black ${
-                                        active ? 'bg-gray-200' : ''
-                                    }`}
-                                    onClick={() => handleDeactivateUser(user.id)}
-                                >
-                                  Deactivate User
-                                </button>
-                            )}
-                          </Menu.Item>
-
-                          <Menu.Item>
-                            {({ active }) => (
-                                <button
-                                    className={`block w-full text-left p-2 text-black ${
-                                        active ? 'bg-gray-200' : ''
-                                    }`}
-                                    onClick={() => handleMessageUser(user.id)}
-                                >
-                                  Message User
-                                </button>
-                            )}
-                          </Menu.Item>
-
-                        </Menu.Items>
-                      </Menu>
-                    </td>
-                  </tr>
-              ))
-          ) : (
-              <tr>
-                <td colSpan={4} className="text-center text-gray-500 p-2">
-                  No users found.
-                </td>
-              </tr>
-          )}
-          </tbody>
-        </table>
-      </div>
-  );
-};
-
-export default AllUsers;
-*/
 
 
 

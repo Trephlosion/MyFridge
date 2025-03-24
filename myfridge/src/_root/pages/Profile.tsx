@@ -1,4 +1,149 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { database } from "@/lib/firebase/config";
+import { useUserContext } from "@/context/AuthContext";
+import { Button } from "@/components/ui/button";
+
+const Profile = () => {
+    const { id } = useParams();
+    const { user } = useUserContext();
+    const [profileUser, setProfileUser] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            if (!id) {
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const docRef = doc(database, "Users", id);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    setProfileUser({ id: docSnap.id, ...docSnap.data() });
+                } else {
+                    console.log("User not found");
+                }
+            } catch (error) {
+                console.error("Error fetching user:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const checkAdmin = async () => {
+            if (!user) return;
+            try {
+                const userDoc = await getDoc(doc(database, "Users", user.id));
+                if (userDoc.exists() && userDoc.data().isAdministrator === true) {
+                    setIsAdmin(true);
+                }
+            } catch (error) {
+                console.error("Error checking admin status:", error);
+            }
+        };
+
+        fetchUser();
+        checkAdmin();
+    }, [id, user]);
+
+    const handleDeleteUser = async () => {
+        if (!profileUser) return;
+        try {
+            await deleteDoc(doc(database, "Users", profileUser.id));
+            navigate("/people");
+        } catch (error) {
+            console.error("Error deleting user:", error);
+        }
+    };
+
+    const handleChangeRole = async (newRole: string) => {
+        if (!profileUser) return;
+        try {
+            await updateDoc(doc(database, "Users", profileUser.id), {
+                role: newRole,
+            });
+            setProfileUser({ ...profileUser, role: newRole });
+        } catch (error) {
+            console.error("Error updating role:", error);
+        }
+    };
+
+    if (loading) {
+        return <div className="text-white p-4">Loading user...</div>;
+    }
+
+    if (!profileUser) {
+        return <div className="text-white p-4">User not found.</div>;
+    }
+
+    return (
+        <div className="p-6 text-white">
+            <div className="flex flex-col items-center">
+                <div className="w-32 h-32 bg-yellow-600 rounded-full flex items-center justify-center text-4xl font-bold mb-4">
+                    {profileUser.username?.charAt(0) || "U"}
+                </div>
+                <h2 className="text-xl font-bold">@{profileUser.username}</h2>
+                <p className="mb-2">{profileUser.bio || "No bio available."}</p>
+                <p className="mb-2">
+                    <strong>Role:</strong> {profileUser.role || "User"}
+                </p>
+
+                {/* Admin-only actions */}
+                {isAdmin && (
+                    <div className="mt-4 space-y-2">
+                        <p className="text-sm text-gray-300">Admin Actions</p>
+                        <div className="space-x-2">
+                            <Button
+                                onClick={() => handleChangeRole("User")}
+                                className="bg-blue-600"
+                            >
+                                Set as User
+                            </Button>
+                            <Button
+                                onClick={() => handleChangeRole("Content Creator")}
+                                className="bg-purple-600"
+                            >
+                                Set as Content Creator
+                            </Button>
+                            <Button
+                                onClick={() => handleChangeRole("Recipe Curator")}
+                                className="bg-green-600"
+                            >
+                                Set as Recipe Curator
+                            </Button>
+                            <Button
+                                onClick={handleDeleteUser}
+                                className="bg-red-600"
+                            >
+                                Delete User
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default Profile;
+
+
+
+
+
+
+
+
+
+
+
+/*import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useUserContext } from "@/context/AuthContext";
 import { doc, getDoc, deleteDoc, updateDoc } from "firebase/firestore";
@@ -126,7 +271,7 @@ const Profile = () => {
                     />
                     <h1 className="h3-bold md:h1-semibold">{currentUser.username}</h1>
 
-                    {/* ✅ Display User Role Here */}
+                    {/* ✅ Display User Role Here }
                     <p className="text-lg font-medium text-gray-400 mt-1">
                         Role: <span className="text-white">{currentUser.role || "User"}</span>
                     </p>
@@ -140,7 +285,7 @@ const Profile = () => {
                         <p><strong>{currentUser.following?.length || 0}</strong> Following</p>
                     </div>
 
-                    {/* 🛠️ Settings Button (Only Admins See This) */}
+                    {/* 🛠️ Settings Button (Only Admins See This) }
                     {isAdmin && (
                         <div className="absolute top-0 right-0">
                             <button
@@ -201,8 +346,7 @@ const Profile = () => {
 };
 
 export default Profile;
-
-
+*/
 
 
 
