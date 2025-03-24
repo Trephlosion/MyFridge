@@ -37,9 +37,9 @@ import {
 import {DataTableColumnHeader} from "@/components/DataTables/DataTableColumnHeader.tsx";
 import {addIngredientToShoppingList, removeIngredientFromFridge} from "@/lib/firebase/api.ts";
 import { useNavigate } from "react-router-dom";
-
 // Inside your component
-const navigate = useNavigate();
+
+
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
@@ -54,6 +54,7 @@ export type Admin = {
 }
 
 const adminColumns: ColumnDef<Admin>[] = [
+
     { id: "select",
     header: ({ table }) => (
     <Checkbox
@@ -104,9 +105,6 @@ const adminColumns: ColumnDef<Admin>[] = [
         accessorKey: "actions",
         header: "Actions",
         cell: ({row}) => {
-            const {user: currentUser} = useUserContext();
-            const userid = row.original.id;
-
             return (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -117,7 +115,7 @@ const adminColumns: ColumnDef<Admin>[] = [
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem
-                            onClick={() => navigate(`/profile/${row.original.id}`)}
+                            onClick={() => (`/profile/${row.original.id}`)}
                         >
                             View User Profile
                         </DropdownMenuItem>
