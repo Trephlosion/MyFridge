@@ -1,5 +1,5 @@
 import { Fridge, fridgeColumns } from "./fridgeColumns.tsx"
-import { DataTable } from "./data-table"
+import { Ingredients_dataTable } from "./ingredients_data-table.tsx"
 
 async function getData(): Promise<Fridge[]> {
     // Fetch data from your API here.

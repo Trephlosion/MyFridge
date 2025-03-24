@@ -79,7 +79,7 @@ const FridgeForm = () => {
             ) : (
                 <>
                     <h1 className="h3-bold text-dark-1">Edit MyFridge</h1>
-                    <DataTable columns={FridgeColumns} data={fridge || []} />
+                    <DataTable columns={FridgeColumns} data={fridge} />
                 </>
             )}
 

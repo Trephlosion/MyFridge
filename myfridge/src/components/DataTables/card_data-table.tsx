@@ -26,9 +26,9 @@ interface DataTableProps<TData, TValue> {
 }
 
 export default function DataTable<TData, TValue>({
-    columns,
-    data,
-}: DataTableProps<TData, TValue>) {
+                                                     columns,
+                                                     data,
+                                                 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -58,9 +58,9 @@ export default function DataTable<TData, TValue>({
             <div className="flex items-center py-4">
                 <Input
                     placeholder="Enter Filter..."
-                    value={(table.getColumn("ingredient_name")?.getFilterValue() as string) ?? ""}
+                    value={(table.getColumn("username")?.getFilterValue() as string) ?? ""}
                     onChange={(event) =>
-                        table.getColumn("ingredient_name")?.setFilterValue(event.target.value)
+                        table.getColumn("username")?.setFilterValue(event.target.value)
                     }
                     className="max-w-sm"
                 />
