@@ -43,65 +43,50 @@ export type INavLink = {
 };
 
 // User Update Type
-export type IUpdateUser = {
-    id: string; // User's unique identifier
-    username: string; // Username
-    email: string; // Email address
-    pfp: string; // Profile picture URL
-    bio: string; // Bio of the user
+export interface IUser {
+    id: string;
+    username: string;
+    email: string;
+    pfp: string;
+    bio: string;
+    isPrivate: boolean;
+    isVerified: boolean;
+    isAdministrator: boolean;
+    isDeactivated: boolean; // New field
+    isBanned: boolean; // New field
+    isCurator: boolean; // New field
+    followers: string[];
+    following: string[];
+    likedRecipes: string[];
+    recipes: string[];
+    posts: string[];
+    comments: string[];
+    myFridge: any;
+    createdAt: Date;
+    updatedAt: Date;
+}
 
-    isPrivate: boolean; // Privacy setting
-    isVerified: boolean; // Verification status
-    isAdministrator: boolean; // Admin status
-
-    followers: string[]; // Array of follower IDs
-    following: string[]; // Array of following IDs
-    likedRecipes:  string[]; // Array of liked recipe IDs
-
-    recipes: string[]; // Array of uploaded recipe IDs
-    posts: string[]; // Array of uploaded post IDs
-    comments: string[]; // Array of comment IDs
-
-    myFridge: string; // Fridge ID
-
-    createdAt: Date; // Date created
-    updatedAt: Date; // Date updated
-
-    file: File[]; // Array of File objects
-
-    followAction?: {
-        profileUserId: string;
-        isFollowing: boolean;
-    };
-
-};
-
-// User Type
-export type IUser = {
-    id: string; // User's unique identifier
-    username: string; // Username
-    email: string; // Email address
-    pfp: string; // Profile picture URL
-    bio: string; // Bio of the user
-
-    isPrivate: boolean; // Privacy setting
-    isVerified: boolean; // Verification status
-    isAdministrator: boolean; // Admin status
-
-    followers: string[]; // Array of follower IDs
-    following: string[]; // Array of following IDs
-    likedRecipes:  string[]; // Array of liked recipe IDs
-
-    recipes: string[]; // Array of uploaded recipe IDs
-    posts: string[]; // Array of uploaded post IDs
-    comments: string[]; // Array of comment IDs
-
-    myFridge: string; // Fridge ID
-
-    createdAt: Date; // Date created
-    updatedAt: Date; // Date updated
-};
-
+export interface IUpdateUser {
+    id: string;
+    username: string;
+    email: string;
+    pfp: string;
+    bio: string;
+    isPrivate: boolean;
+    isVerified: boolean;
+    isAdministrator: boolean;
+    isDeactivated: boolean; // New field
+    isBanned: boolean; // New field
+    isCurator: boolean; // New field
+    followers: string[];
+    following: string[];
+    likedRecipes: string[];
+    recipes: string[];
+    posts: string[];
+    comments: string[];
+    myFridge: any;
+    file?: File[];
+}
 // New User Interface
 export interface INewUser {
     email: string; // Required email address

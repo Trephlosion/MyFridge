@@ -52,6 +52,9 @@ export const createUserAccount = async (userData: any) => {
             isPrivate: false,
             isVerified: false,
             isAdministrator: false,
+            isDeactivated: false, // New field
+            isBanned: false, // New field
+            isCurator: false, // New field
             followers: [],
             following: [],
             recipes: [],
@@ -218,6 +221,9 @@ export async function updateUser(user: IUpdateUser) {
             isPrivate: user.isPrivate,
             isVerified: user.isVerified,
             isAdministrator: user.isAdministrator,
+            isDeactivated: user.isDeactivated, // New field
+            isBanned: user.isBanned, // New field
+            isCurator: user.isCurator, // New field
             recipes: user.recipes.map(recipeId => doc(database, "Recipes", recipeId)), // Ensure these are references
             posts: user.posts.map(postId => doc(database, "Posts", postId)), // Ensure these are references
             comments: user.comments.map(commentId => doc(database, "Comments", commentId)), // Ensure these are references
@@ -240,7 +246,6 @@ export async function updateUser(user: IUpdateUser) {
         throw error;
     }
 }
-
 // Follow/unfollow user
 export async function followUser(currentUserId: string, profileUserId: string, isFollowing: boolean) {
     const currentUserRef = doc(database, "Users", currentUserId);

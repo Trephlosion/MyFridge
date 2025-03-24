@@ -124,16 +124,16 @@ const adminColumns: ColumnDef<Admin>[] = [
                         <DropdownMenuItem
 
                         >
-                            Change Admin Role
+                            Change Admin Status
                         </DropdownMenuItem>
                         <DropdownMenuItem
 
                         >
-                            Change Creator Role
+                            Change Creator Status
                         </DropdownMenuItem>
 
                         <DropdownMenuItem>
-                            Change Curator Role
+                            Change Curator Status
                         </DropdownMenuItem>
 
                         <DropdownMenuItem>
