@@ -55,7 +55,7 @@ const LeftSidebar = () => {
                 ) : (
                     <>
                     <Link to={`/profile/${user.id}`} className="flex gap-3 items-center">
-                        <div className="relative flex flex-col">
+                        <div className="relative ">
                             <img
                                 src={user.pfp || "/assets/icons/profile-placeholder.svg"}
                                 alt="creator"
@@ -68,8 +68,11 @@ const LeftSidebar = () => {
                                     className="absolute bottom-0 right-0 w-4 h-4"
                                 />
                             )}
-                            <p className="right-0 small-regular text-light-3">@{user.username}</p>
+
                         </div>
+                            <div className={"flex flex-col"}>
+                                <p className="right-0 small-regular text-light-3">@{user.username}</p>
+                            </div>
                     </Link>
 
                     </>

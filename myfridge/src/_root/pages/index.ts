@@ -9,3 +9,4 @@ export {default as RecipeDetails} from './RecipeDetails';
 export {default as AllUsers} from './AllUsers';
 export {default as LikedRecipes} from './LikedRecipes';
 export {default as Workshops} from './Workshops';
+export {default as Admin} from './Admin';

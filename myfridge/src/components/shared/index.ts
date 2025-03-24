@@ -12,3 +12,4 @@ export { default as BaseLoading } from "./BaseLoading.tsx";
 export { default as MiniRecipeCard } from "./RecipeCardMini.tsx";
 export { default as UserSkeletonCard } from "./UserSkeletonCard.tsx";
 export { default as GridWorkshopList } from "./GridWorkshopList.tsx";
+export { default as UserCardMini } from "./UserCardMini.tsx";
