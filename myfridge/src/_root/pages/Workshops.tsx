@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import { useInView } from "react-intersection-observer";
 import { Input } from "@/components/ui/input";
 import useDebounce from "@/hooks/useDebounce";
 import { GridWorkshopList } from "@/components/shared";
-import { useSearchWorkshops } from "@/lib/react-query/queriesAndMutations";
+import { useSearchWorkshops, useGetWorkshops } from "@/lib/react-query/queriesAndMutations";
 import { Workshop } from "@/types";
 import { database } from "@/lib/firebase/config";
 import { collection, getDocs } from "firebase/firestore";
 
 export type SearchResultProps = {
+    isSearchFetching: boolean;
     searchedWorkshops: Workshop[] | undefined;
 };
 
@@ -20,7 +20,6 @@ const SearchResults = ({ searchedWorkshops }: SearchResultProps) => {
 };
 
 const Workshops = () => {
-    const { ref, inView } = useInView();
     const [searchValue, setSearchValue] = useState("");
     const debouncedSearch = useDebounce(searchValue, 500);
     const { data: searchedWorkshops } = useSearchWorkshops(debouncedSearch);
@@ -37,22 +36,24 @@ const Workshops = () => {
                 const workshopsList = querySnapshot.docs.map(doc => {
                     const data = doc.data();
 
-                    // Ensure date is properly parsed
-                    const parsedDate = data.date?.seconds
-                        ? new Date(data.date.seconds * 1000)  // If Firestore Timestamp
-                        : new Date(data.date);               // If stored as a string
+                    let parsedDate: Date | null = null;
+
+                    if (data.date?.seconds) {
+                        parsedDate = new Date(data.date.seconds * 1000);
+                    } else if (typeof data.date === "string") {
+                        parsedDate = new Date(data.date);
+                    }
 
                     return {
                         id: doc.id,
                         ...data,
-                        date: parsedDate, // Ensure date is a JS Date object
-                    };
-                }) as Workshop[];
+                        date: parsedDate || new Date(),
+                    } as Workshop;
+                });
 
-                // Filter out past workshops and sort by date
                 const upcomingWorkshops = workshopsList
-                    .filter(workshop => workshop.date > new Date()) // Only future workshops
-                    .sort((a, b) => a.date.getTime() - b.date.getTime()); // Sort soonest first
+                    .filter(workshop => workshop.date && workshop.date > new Date())
+                    .sort((a, b) => a.date.getTime() - b.date.getTime());
 
                 setWorkshops(upcomingWorkshops);
                 setIsLoading(false);
@@ -97,9 +98,10 @@ const Workshops = () => {
                 <h3 className="body-bold md:h3-bold text-center">Upcoming Workshops</h3>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-9 w-full max-w-5xl">
+            {/* GRID LAYOUT FOR WORKSHOPS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-9 w-full max-w-5xl">
                 {shouldShowSearchResults ? (
-                    <SearchResults searchedWorkshops={searchedWorkshops} />
+                    <SearchResults searchedWorkshops={searchedWorkshops || []} />
                 ) : shouldShowWorkshops ? (
                     <p className="text-light-4 mt-10 text-center w-full">No upcoming workshops</p>
                 ) : (

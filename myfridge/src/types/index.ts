@@ -180,9 +180,11 @@ export interface IRecipeMetadata {
 // types/workshop.ts
 export type Workshop = {
     id: string;
+    date: Date;
     pfpId: string;
     userId: string;
     title: string;
+    maxParticipants: number;
     description: string;
     likes: string[];  // Example field
     // Add other fields for the workshop here
