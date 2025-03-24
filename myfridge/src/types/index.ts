@@ -152,6 +152,33 @@ export interface IRecipeMetadata {
     comments?: string[];
     file?: File[];
 }
+// types/workshop.ts
+export type Workshop = {
+    id: string;
+    pfpId: string;
+    userId: string;
+    title: string;
+    description: string;
+    likes: string[];  // Example field
+    // Add other fields for the workshop here
+};
+
+export interface INewWorkshop {
+    title: string;
+    description: string;
+    date: string;
+    location: string;
+    instructorId: string;
+}
+
+export interface IUpdateWorkshop {
+    workshopId: string;
+    title?: string;
+    description?: string;
+    date?: string;
+    location?: string;
+    instructorId?: string;
+}
 
 // New Recipe Post Type
 export type INewRecipe = {

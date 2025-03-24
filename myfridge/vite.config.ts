@@ -10,4 +10,12 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    hmr: {
+      protocol: "ws",           // Ensures WebSocket is being used
+      host: "localhost",        // Ensures it's binding to localhost
+      port: 5173,               // Correct port where your dev server is running
+      clientPort: 5173,         // You can try setting this if using non-standard setups
+    },
+  },
 })

@@ -30,4 +30,10 @@ export enum QUERY_KEYS{
     GET_INGREDIENTS_BY_RECIPE = "getIngredientsByRecipe",
     GET_INGREDIENTS_BY_FRIDGE = "getIngredientsByFridge",
 
+
+    // WORKSHOP KEYS
+    GET_WORKSHOPS = "getWorkshops",
+    GET_INFINITE_WORKSHOPS = "getInfiniteWorkshops",
+    GET_WORKSHOP_BY_ID = "getWorkshopById",
+    SEARCH_WORKSHOPS = "SearchWorkshops",
 }
