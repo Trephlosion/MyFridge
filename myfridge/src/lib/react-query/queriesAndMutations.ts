@@ -228,6 +228,8 @@ export const useUpdateUser = () => {
         },
     });
 };
+// Mutation for Workshops
+// Mutation for Workshops
 export const useCreateWorkshop = () => {
     const queryClient = useQueryClient();
     return useMutation({
@@ -245,7 +247,7 @@ export const useGetWorkshops = () => {
     return useQuery({
         queryKey: [QUERY_KEYS.GET_WORKSHOPS],
         queryFn: async () => {
-            const snapshot = await database.collection("workshops").get();
+            const snapshot = await getDocs(collection(database, "Workshops"));
             return snapshot.docs.map(doc => doc.data() as Workshop);  // Ensure data is properly mapped to Workshop type
         },
     });
@@ -257,12 +259,12 @@ export const useGetInfiniteWorkshops = () => {
         queryKey: [QUERY_KEYS.GET_INFINITE_WORKSHOPS],
         queryFn: async ({ pageParam = 0 }) => {
             const pageSize = 10; // Example page size
-            const snapshot = await database
-                .collection("workshops")
-                .orderBy("createdAt") // Ensure proper ordering
-                .startAfter(pageParam)
-                .limit(pageSize)
-                .get();
+            const snapshot = await getDocs(
+                collection(database, "Workshops")
+                    .orderBy("createdAt") // Ensure proper ordering
+                    .startAfter(pageParam)
+                    .limit(pageSize)
+            );
             const workshops = snapshot.docs.map(doc => doc.data() as Workshop);
             const nextPage = snapshot.docs.length < pageSize ? null : snapshot.docs[snapshot.docs.length - 1].id;
             return { workshops, nextPage };  // Return workshops and next page identifier
@@ -278,10 +280,17 @@ export const useSearchWorkshops = (searchTerm: string) => {
     return useQuery<Workshop[]>({
         queryKey: [QUERY_KEYS.SEARCH_WORKSHOPS, searchTerm],
         queryFn: async () => {
-            const snapshot = await searchWorkshops(searchTerm);
-            return snapshot?.docs.map(doc => doc.data() as Workshop) ?? []; // Ensure it always returns an array
+            if (!searchTerm) return [];
+
+            const lowercaseSearchTerm = searchTerm.toLowerCase();
+            const snapshot = await getDocs(collection(database, "Workshops"));
+            return snapshot.docs
+                .map(doc => doc.data() as Workshop)
+                .filter(workshop =>
+                    workshop.title?.toLowerCase().includes(lowercaseSearchTerm)
+                );
         },
-        enabled: !!searchTerm,  // Prevents query from running when searchTerm is empty
+        enabled: !!searchTerm, // Prevents query from running when searchTerm is empty
     });
 };
 
@@ -310,6 +319,7 @@ export const useDeleteWorkshop = () => {
         },
     });
 };
+
 // Mutation for liking a workshop
 export const useLikeWorkshop = () => {
     const queryClient = useQueryClient();
@@ -342,8 +352,3 @@ export const useSaveWorkshop = () => {
         },
     });
 };
-
-
-
-
-
