@@ -699,9 +699,7 @@ export async function getAllFridgeIngredients(userid: string) {
 
         const fridgeDoc = querySnapshot.docs[0];
         // incrementing the index of the ingredients array
-        const ingredientData = fridgeDoc.data().ingredients.map((ingredient: any) => {
-            return getIngredientNameById(ingredient.ingredientId.id);
-        });
+        const ingredientData = fridgeDoc.data().ingredients;
         // const ingredientData = [getIngredientNameById(fridgeDoc.data().ingredients[0].ingredientId.id)];
         return ingredientData;
 

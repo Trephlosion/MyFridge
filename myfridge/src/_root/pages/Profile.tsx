@@ -13,6 +13,8 @@ import {
 import { IUser } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FridgeForm from "@/components/form/FridgeForm";
+import { onSnapshot } from "firebase/firestore";
+
 
 const formatNumber = (num: number): string => {
     if (num < 1000) return num.toString();
@@ -40,6 +42,10 @@ const Profile = () => {
     const { user } = useUserContext(); // Authenticated user context
     const { pathname } = useLocation();
     const navigate = useNavigate();
+    const [myFridge, setMyFridge] = useState([]);
+    const [confirmationMessage, setConfirmationMessage] = useState("");
+
+
 
     const { data: currentUser, isLoading } = useGetUserById(id || "");
     const followMutation = useFollowUser();
@@ -47,6 +53,7 @@ const Profile = () => {
     const [followersCount, setFollowersCount] = useState<number>(0);
     const [followingCount, setFollowingCount] = useState<number>(0);
     const [isUpdating, setIsUpdating] = useState<boolean>(false);
+
 
     const { data: fridge, isLoading: isFridgeLoading } = useGetAllFridgeIngredients(user.id);
 
@@ -76,6 +83,24 @@ const Profile = () => {
         setFollowersCount((prev) => (isFollowing ? prev - 1 : prev + 1));
         setIsUpdating(false);
     };
+
+    useEffect(() => {
+        if (user.myFridge) {
+            const unsub = onSnapshot(user.myFridge, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    // Update the myFridge state with the ingredients array from the document.
+                    // Assumes your document has an 'ingredients' array.
+                    setMyFridge(data.ingredients || []);
+                } else {
+                    setMyFridge([]);
+                }
+            });
+            return () => unsub();
+        }
+    }, [user.myFridge]);
+
+
 
     return (
         <div className="profile-container">
@@ -158,7 +183,18 @@ const Profile = () => {
                 {user.id === currentUser.id && (
                     <>
                         <TabsContent value={"fridge"} className="w-full max-w-5xl">
-                            <FridgeForm />
+                            <div>
+                                <DataTable
+                                    columns={FridgeColumns}
+                                    data={myFridge.map((ingredient, index) => ({
+                                        id: index.toString(),
+                                        ingredient_name: ingredient,
+                                    }))}
+                                />
+                            </div>
+
+
+
                         </TabsContent>
                     </>
                 )}
