@@ -853,8 +853,51 @@ export async function toggleUserActivation(userId: string): Promise<void> {
         const userRef = doc(database, "Users", userId);
         await updateDoc(userRef, { isDeactivated: true });
         // Optionally, sign the user out or restrict app functionality here.
+        // deactivate the user in firebase authentication
+        await httpsCallable(functions, "toggleUserActivation")({ uid: userId });
     } catch (error) {
         console.error("Error updating user disabled state:", error);
     }
 }
+
+export async function toggleUserAdmin(userId: string): Promise<void> {
+    try {
+        const userRef = doc(database, "Users", userId);
+        await updateDoc(userRef, { isAdministrator: true });
+        // Optionally, sign the user out or restrict app functionality here.
+    } catch (error) {
+        console.error("Error updating user disabled state:", error);
+    }
+}
+
+export async function toggleUserCreator(userId: string): Promise<void> {
+    try {
+        const userRef = doc(database, "Users", userId);
+        await updateDoc(userRef, { isVerified: true });
+        // Optionally, sign the user out or restrict app functionality here.
+    } catch (error) {
+        console.error("Error updating user disabled state:", error);
+    }
+}
+
+export async function toggleUserCurator(userId: string): Promise<void> {
+    try {
+        const userRef = doc(database, "Users", userId);
+        await updateDoc(userRef, { isCurator: true });
+        // Optionally, sign the user out or restrict app functionality here.
+    } catch (error) {
+        console.error("Error updating user disabled state:", error);
+    }
+}
+
+export async function toggleUserBan(userId: string): Promise<void> {
+    try {
+        const userRef = doc(database, "Users", userId);
+        await updateDoc(userRef, { isBanned: true });
+        // Optionally, sign the user out or restrict app functionality here.
+    } catch (error) {
+        console.error("Error updating user disabled state:", error);
+    }
+}
+
 //

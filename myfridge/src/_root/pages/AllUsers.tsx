@@ -20,7 +20,7 @@ import {  useCreateUserAccount } from "@/lib/react-query/queriesAndMutations";
             const [isAdmin, setIsAdmin] = useState(false);
             const {mutateAsync: createUserAccount, isPending: isCreatingUser} = useCreateUserAccount()
 
-            // Check if the logged-in user is an admin
+            /*// Check if the logged-in user is an admin
             useEffect(() => {
               const checkAdmin = async () => {
                 if (!user) return;
@@ -34,7 +34,7 @@ import {  useCreateUserAccount } from "@/lib/react-query/queriesAndMutations";
                 }
               };
               checkAdmin();
-            }, [user]);
+            }, [user]);*/
 
             // Fetch all users from Firestore
             const fetchUsers = async () => {

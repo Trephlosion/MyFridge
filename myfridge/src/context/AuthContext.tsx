@@ -1,16 +1,9 @@
 import {createContext, useContext, useEffect, useState} from "react";
 import {AuthContextType, IUser} from "@/types";
-import { useNavigate } from "react-router-dom";
-import { auth } from "@/lib/firebase/config";
-import {
-    onAuthStateChanged, /*browserLocalPersistence,
-    createUserWithEmailAndPassword,
-    setPersistence,
-    signInWithEmailAndPassword,*/ User,
-} from "firebase/auth";
-import { getCurrentUser, checkAuthUser as fetchAuthUser } from "@/lib/firebase/api";
-import { addDoc, collection, setDoc, doc, getDoc } from "firebase/firestore";
-
+import {useNavigate} from "react-router-dom";
+import {auth} from "@/lib/firebase/config";
+import {onAuthStateChanged, signOut, User,} from "firebase/auth";
+import {checkAuthUser as fetchAuthUser} from "@/lib/firebase/api";
 
 
 // Initial user state
@@ -24,6 +17,10 @@ export const INITIAL_USER: IUser = {
     isPrivate:                  false,   // Privacy setting
     isVerified:                 false,   // Creator status
     isAdministrator:            false,   // Admin status
+    isDeactivated:              false,   // Account status
+    isCurator:                  false,
+    isBanned:                   false,
+
 
     followers:                  [],      // Array of follower IDs
     following:                  [],      // Array of following IDs
@@ -51,13 +48,19 @@ export const AuthContext = createContext<AuthContextType>(INITIAL_STATE);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<IUser>(INITIAL_USER);
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const navigate = useNavigate();
 
-    // Function to check and update the authentication state
     const checkAuthUser = async (): Promise<boolean> => {
         setIsLoading(true);
         try {
             const currentUser = await fetchAuthUser();
             if (currentUser) {
+                // Prevent login if user is deactivated.
+                if (currentUser.isDeactivated) {
+                    await signOut(auth);
+                    setUser(INITIAL_USER);
+                    return false;
+                }
                 setUser(currentUser);
                 return true;
             } else {
@@ -72,18 +75,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    const navigate = useNavigate();
-    // Listen for Firebase authentication changes
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
             if (firebaseUser) {
                 await checkAuthUser();
             } else {
-                navigate('/sign-in');
+                navigate("/sign-in");
             }
         });
 
-        return () => unsubscribe(); // Clean up listener
+        return () => unsubscribe();
     }, []);
 
     return (
