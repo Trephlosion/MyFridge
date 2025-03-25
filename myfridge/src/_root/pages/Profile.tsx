@@ -62,7 +62,23 @@ const Profile = () => {
             setFollowersCount(currentUser.followers.length);
             setFollowingCount(currentUser.following.length);
         }
-    }, [currentUser]);
+
+        let unsub = () => {};
+        if (user.myFridge) {
+            unsub = onSnapshot(user.myFridge, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    setMyFridge(data.ingredients || []);
+                } else {
+                    setMyFridge([]);
+                }
+            });
+        }
+
+        return () => {
+            unsub();
+        };
+    }, [currentUser, user.myFridge]);
 
     if (isLoading || isFridgeLoading || !currentUser)
         return (
@@ -84,21 +100,7 @@ const Profile = () => {
         setIsUpdating(false);
     };
 
-    useEffect(() => {
-        if (user.myFridge) {
-            const unsub = onSnapshot(user.myFridge, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    // Update the myFridge state with the ingredients array from the document.
-                    // Assumes your document has an 'ingredients' array.
-                    setMyFridge(data.ingredients || []);
-                } else {
-                    setMyFridge([]);
-                }
-            });
-            return () => unsub();
-        }
-    }, [user.myFridge]);
+
 
 
 

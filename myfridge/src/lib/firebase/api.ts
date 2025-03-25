@@ -4,10 +4,18 @@ import {
 } from "firebase/auth";
 import { addDoc, startAfter, DocumentSnapshot, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, limit, getDocs, runTransaction, arrayUnion, arrayRemove } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { auth, database, storage } from "@/lib/firebase/config.ts";
+import { auth, database, storage,} from "@/lib/firebase/config.ts";
 import { INewRecipe, IRecipeMetadata, IUpdateRecipe, IUpdateUser, IUser } from "@/types";
 import firebase from "firebase/compat/app";
 import DocumentReference = firebase.firestore.DocumentReference;
+import { INewWorkshop, IUpdateWorkshop } from "@/types";
+import { getFunctions, httpsCallable } from "firebase/functions";
+
+
+
+const functions = getFunctions();
+// const toggleUserActivation = httpsCallable(functions, 'toggleUserActivation');
+
 
 // AUTHENTICATION FUNCTIONS
 
@@ -825,5 +833,21 @@ export async function createNewIngredient(ingredient: string) {
     }
 }
 
+/*toggleUserActivation({ uid: "USER_ID_HERE" })
+    .then((result) => {
+        console.log("New disabled state:", result.data.disabled);
+    })
+    .catch((error) => {
+        console.error("Error calling function:", error);
+    });*/
 
+export async function toggleUserActivation(userId: string): Promise<void> {
+    try {
+        const userRef = doc(database, "Users", userId);
+        await updateDoc(userRef, { isDeactivated: true });
+        // Optionally, sign the user out or restrict app functionality here.
+    } catch (error) {
+        console.error("Error updating user disabled state:", error);
+    }
+}
 //

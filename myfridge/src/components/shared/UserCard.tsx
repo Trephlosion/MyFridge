@@ -16,6 +16,8 @@ import {
     DropdownMenuCheckboxItem
 } from "@/components/ui/dropdown-menu.tsx";
 import { MoreHorizontal } from "lucide-react";
+import { toggleUserActivation } from "@/lib/firebase/api"; // Adjust the import path as needed
+
 
 const formatNumber = (num: number): string => {
     if (num < 1000) return num.toString();
@@ -46,7 +48,6 @@ const UserCard = ({ user }: UserCardProps) => {
     const { user: currentUser } = useUserContext();
     const followMutation = useFollowUser();
     const updateUserMutation = useUpdateUser();
-
     const [followersCount, setFollowersCount] = useState<number>(user.followers.length);
     const [followingCount, setFollowingCount] = useState<number>(user.following.length);
     const [isUpdating, setIsUpdating] = useState<boolean>(false);
@@ -72,6 +73,15 @@ const UserCard = ({ user }: UserCardProps) => {
     const handleBanUser = async () => {
         const updatedUser = { ...user, isBanned: true };
         await updateUserMutation.mutateAsync(updatedUser);
+    };
+
+    const handleToggleActivation = async () => {
+        try {
+            // await toggleUserActivation(user.id);
+            console.log("User activation toggled successfully");
+        } catch (error) {
+            console.error("Error toggling activation:", error);
+        }
     };
 
     return (
@@ -149,17 +159,15 @@ const UserCard = ({ user }: UserCardProps) => {
                             Change Curator Status
                         </DropdownMenuCheckboxItem>
                         <DropdownMenuItem>
-                            <Button type="button" size="sm" className="shad-button_primary px-5" onClick={handleBanUser}>
+                            <Button type="button" size="sm" className="shad-button bg-red px-5" onClick={handleBanUser}>
                                 Ban User
                             </Button>
                         </DropdownMenuItem>
-                        <DropdownMenuCheckboxItem
-                            className="dropdown-menu-checkbox-item"
-                            checked={user.isDeactivated}
-                            onCheckedChange={() => handleToggleProperty("isDeactivated")}
-                        >
-                            Deactivate User
-                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuItem>
+                            <Button type="button" size="sm" className="shad-button_primary px-5" onClick={handleToggleActivation}>
+                                {user.isDeactivated ? "Activate User" : "Deactivate User"}
+                            </Button>
+                        </DropdownMenuItem>
                     </>
                 )}
             </DropdownMenuContent>
