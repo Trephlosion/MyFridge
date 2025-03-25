@@ -107,3 +107,4 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
 };
 
 export default RecipeCard;
+
