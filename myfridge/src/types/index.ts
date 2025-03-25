@@ -102,7 +102,7 @@ export interface IRecipeMetadata {
     createdAt?: Date;
     updatedAt?: Date;
     tags?: string[];
-    instructions: string[]; // Array of instructions
+    instructions: string; // Array of instructions
     mediaUrl?: string; // Updated from "imageUrl" or "pfp"
     userId?: any;
     likes?: string[];
@@ -141,11 +141,11 @@ export interface IUpdateWorkshop {
 
 // New Recipe Post Type
 export type INewRecipe = {
-    userId: string;
+    userId: any;
     file: File[]; // Array of uploaded files
     title: string; // Changed from "dish" to "title"
     description: string;
-    instructions: string; // Accept a single string (to be split into an array)
+    instructions: string[]; // Accept a single string (to be split into an array)
     cookTime: string;
     prepTime: string;
     servings: string; // Changed from "serving" to "servings"

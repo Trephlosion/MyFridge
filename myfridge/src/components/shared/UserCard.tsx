@@ -77,7 +77,7 @@ const UserCard = ({ user }: UserCardProps) => {
 
     const handleToggleActivation = async () => {
         try {
-            // await toggleUserActivation(user.id);
+             await toggleUserActivation(user.id);
             console.log("User activation toggled successfully");
         } catch (error) {
             console.error("Error toggling activation:", error);

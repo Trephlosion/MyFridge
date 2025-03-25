@@ -78,14 +78,10 @@ const CreateRecipe = () => {
                     />
                     <h2 className="h3-bold md:h2-bold text-left w-full">Create Recipe</h2>
                 </div>
-                <RecipeForm onSubmit={handleCreateRecipe} /> {/* ✅ Pass function to RecipeForm */}
+                <RecipeForm /> {/* ✅ Pass function to RecipeForm */}
             </div>
         </div>
     );
 };
 
 export default CreateRecipe;
-
-
-
-

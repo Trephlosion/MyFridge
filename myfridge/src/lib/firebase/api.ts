@@ -326,23 +326,23 @@ export async function createRecipe(recipe: INewRecipe) {
         }
 
         // Normalize tags: ensure it's always an array
-        const tags: string = Array.isArray(recipe.tags)
-            ? recipe.tags.map((tag: string) => tag.trim())
-            : recipe.tags?.toString().split(",").map((tag: string) => tag.trim()) || [];
+        // const tags: string = Array.isArray(recipe.tags)
+        //     ? recipe.tags.map((tag: string) => tag.trim())
+        //     : recipe.tags?.toString().split(",").map((tag: string) => tag.trim()) || [];
 
         // Save recipe to Firestore
         const newRecipeRef = doc(collection(database, "Recipes"));
         const newRecipe = {
-            userId: recipe.userId,
+            userId: doc(database, "Users", recipe?.userId),
             description: recipe.description,
             mediaUrl: fileUrl, // Updated field name
             title: recipe.title, // Updated from "dish"
             // Convert instructions string to an array of steps
-            instructions: recipe.instructions.split("\n").map((step: string) => step.trim()),
+            instructions: recipe.instructions,
             cookTime: recipe.cookTime,
             prepTime: recipe.prepTime,
             servings: recipe.servings, // Updated from "serving"
-            tags: tags,
+            tags: recipe.tags,
             likes: [], // Updated to be an empty array
             comments: [],
             createdAt: new Date(),
@@ -351,6 +351,13 @@ export async function createRecipe(recipe: INewRecipe) {
         };
 
         await setDoc(newRecipeRef, newRecipe);
+
+        // add new recipe to the user's recipe array
+        const userRef = doc(database, "Users", recipe.userId);
+        await updateDoc(userRef, {
+            recipes: arrayUnion(newRecipeRef),
+        });
+
         console.log("Recipe created successfully!");
         return newRecipeRef.id; // Return the new recipe's ID
     } catch (error) {

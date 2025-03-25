@@ -14,6 +14,7 @@ import {
     limit,
 } from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
+import {useUserContext} from "@/context/AuthContext.tsx";
 
 const Explore = () => {
     const [searchTerm, setSearchTerm] = useState("");
@@ -21,9 +22,9 @@ const Explore = () => {
     const [suggestedRecipes, setSuggestedRecipes] = useState<any[]>([]);
     const [showMyRecipes, setShowMyRecipes] = useState(false);
     const navigate = useNavigate();
-    const userId = "user_document_id_here"; // Replace with actual user ID
+    const {user } = useUserContext();
 
-    const { data: userRecipes, isLoading: isLoadingUserRecipes } = useGetUserRecipes(userId);
+    const { data: userRecipes, isLoading: isLoadingUserRecipes } = useGetUserRecipes(user.id);
     const { data: searchResults, isLoading: isSearching } = useSearchRecipes(searchTerm.toLowerCase());
 
     useEffect(() => {
@@ -136,6 +137,3 @@ const Explore = () => {
 };
 
 export default Explore;
-
-
-

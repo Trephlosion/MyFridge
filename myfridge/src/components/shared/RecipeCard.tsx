@@ -18,9 +18,9 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
     // Fetch recipe image URL from Firebase Storage
     useEffect(() => {
         const fetchImageUrl = async () => {
-            if (recipe.pfpId) {
+            if (recipe.mediaUrl) {
                 try {
-                    const fileRef = ref(storage, recipe.pfpId); // Use pfpId as storage path
+                    const fileRef = ref(storage, recipe.mediaUrl); // Use pfpId as storage path
                     const url = await getDownloadURL(fileRef);
                     setImageUrl(url); // Set the fetched URL
                 } catch (error) {
@@ -107,4 +107,3 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
 };
 
 export default RecipeCard;
-
