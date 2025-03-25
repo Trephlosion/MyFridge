@@ -28,18 +28,21 @@ const RecipeDetails = () => {
 
     const handleSubmitReview = async () => {
         if (!user || !review || rating === 0) return;
+        try {
+            await addDoc(collection(database, 'Recipes', id, 'Ratings'), {
+                recipeId: id,
+                userId: user.username,
+                comment: review,
+                stars: rating,
+                createdAt: new Date()
+            });
 
-        await addDoc(collection(database, 'reviews'), {
-            recipeId: id,
-            userId: user.uid,
-            comment: review,
-            stars: rating,
-            createdAt: new Date()
-        });
-
-        setSubmitted(true);
-        setReview('');
-        setRating(0);
+            setSubmitted(true);
+            setReview('');
+            setRating(0);
+        } catch (error) {
+            console.error('Error submitting a review:', error)
+        }
     };
 
     if (!recipe) return <div className="text-white text-center mt-10">Loading recipe...</div>;
@@ -96,6 +99,7 @@ const RecipeDetails = () => {
                     {submitted ? 'Review Submitted' : 'Submit Review'}
                 </button>
             </div>
+
         </div>
     );
 };
