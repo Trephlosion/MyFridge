@@ -1,119 +1,104 @@
+import React, { useEffect, useState } from 'react';
+import { doc, getDoc, addDoc, collection } from 'firebase/firestore';
+import { database } from "@/lib/firebase/config";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Loader, GridRecipeList, RecipeStats } from "@/components/shared";
-import { useGetRecipeById, useGetRecentRecipes, useDeleteRecipe } from "@/lib/react-query/queriesAndMutations";
-import { multiFormatDateString } from "@/lib/utils";
 import { useUserContext } from "@/context/AuthContext";
 
+
 const RecipeDetails = () => {
-    const navigate = useNavigate();
-    const { id } = useParams(); // Recipe ID from URL
+    const { id } = useParams();
     const { user } = useUserContext();
+    const [recipe, setRecipe] = useState(null);
+    const [review, setReview] = useState('');
+    const [rating, setRating] = useState(0);
+    const [submitted, setSubmitted] = useState(false);
 
-    // Fetch the recipe details and related recipes
-    const { data: recipe, isLoading } = useGetRecipeById(id);
-    const { data: userRecipes, isLoading: isUserRecipeLoading } = useGetRecentRecipes();
-    const { mutate: deleteRecipe } = useDeleteRecipe();
+    useEffect(() => {
+        const fetchRecipe = async () => {
+            if (id) {
+                const recipeDoc = await getDoc(doc(database, 'Recipes', id));
+                if (recipeDoc.exists()) {
+                    setRecipe({ id: recipeDoc.id, ...recipeDoc.data() });
+                }
+            }
+        };
+        fetchRecipe();
+    }, [id]);
 
-    // Filter related recipes excluding the current one
-    const relatedRecipes = userRecipes?.filter((userRecipe) => userRecipe.id !== id);
+    const handleSubmitReview = async () => {
+        if (!user || !review || rating === 0) return;
 
-    // Handle delete recipe
-    const handleDeleteRecipe = () => {
-        if (recipe) {
-            deleteRecipe({ recipeId: id, imageId: recipe.imageId });
-            navigate(-1); // Navigate back
-        }
+        await addDoc(collection(database, 'reviews'), {
+            recipeId: id,
+            userId: user.uid,
+            comment: review,
+            stars: rating,
+            createdAt: new Date()
+        });
+
+        setSubmitted(true);
+        setReview('');
+        setRating(0);
     };
 
+    if (!recipe) return <div className="text-white text-center mt-10">Loading recipe...</div>;
+
     return (
-        <div className="recipe_details-container">
-            {/* Back Button */}
-            <div className="hidden md:flex max-w-5xl w-full">
-                <Button onClick={() => navigate(-1)} variant="ghost" className="shad-button_ghost">
-                    <img src="/assets/icons/back.svg" alt="back" width={24} height={24} />
-                    <p className="small-medium lg:base-medium">Back</p>
-                </Button>
+        <div className="p-6 max-w-4xl mx-auto text-white">
+            <img
+                src={recipe.media_url || 'https://www.food4fuel.com/wp-content/uploads/woocommerce-placeholder-600x600.png'}
+                alt={recipe.title}
+                className="w-full h-96 object-cover rounded-2xl shadow-lg"
+            />
+
+            <h1 className="text-4xl font-bold text-center mt-6">{recipe.title}</h1>
+
+            <div className="flex justify-around text-lg my-4">
+                <p><span className="font-semibold">Prep:</span> {recipe.prep_time || 'N/A'}</p>
+                <p><span className="font-semibold">Cook:</span> {recipe.cook_time || 'N/A'}</p>
+                <p><span className="font-semibold">Total:</span> {recipe.total_time || 'N/A'}</p>
+                <p><span className="font-semibold">Yield:</span> {recipe.yield || 'N/A'}</p>
             </div>
 
-            {/* Recipe Details */}
-            {isLoading || !recipe ? (
-                <Loader />
-            ) : (
-                <div className="recipe_details-card">
-                    <img src={recipe.imageUrl} alt="recipe" className="recipe_details-img" />
-                    <div className="recipe_details-info">
-                        <div className="flex-between w-full">
-                            {/* Creator Profile Link */}
-                            <Link to={`/profile/${recipe.userId}`} className="flex items-center gap-3">
-                                <img
-                                    src={recipe.pfpId || "/assets/icons/profile-placeholder.svg"}
-                                    alt="creator"
-                                    className="w-8 h-8 lg:w-12 lg:h-12 rounded-full"
-                                />
-                                <div className="flex gap-1 flex-col">
-                                    <p className="base-medium lg:body-bold text-light-1">
-                                        {recipe.first_name} {recipe.last_name}
-                                    </p>
-                                    <div className="flex-center gap-2 text-light-3">
-                                        <p className="subtle-semibold lg:small-regular">{multiFormatDateString(recipe.createdAt)}</p>
-                                    </div>
-                                </div>
-                            </Link>
+            <div className="bg-gray-800 p-6 rounded-xl my-6">
+                <h2 className="text-2xl font-semibold mb-4">Description</h2>
+                <p className="leading-relaxed italic">{recipe.description || 'No description provided.'}</p>
+            </div>
 
-                            {/* Edit and Delete Buttons */}
-                            <div className="flex-center gap-4">
-                                {user.id === recipe.userId && (
-                                    <>
-                                        <Link to={`/update-recipe/${recipe.id}`}>
-                                            <img src="/assets/icons/edit.svg" alt="edit" width={24} height={24} />
-                                        </Link>
-                                        <Button
-                                            onClick={handleDeleteRecipe}
-                                            variant="ghost"
-                                            className="ost_details-delete_btn"
-                                        >
-                                            <img src="/assets/icons/delete.svg" alt="delete" width={24} height={24} />
-                                        </Button>
-                                    </>
-                                )}
-                            </div>
-                        </div>
+            <div className="bg-gray-900 p-6 rounded-xl">
+                <h2 className="text-2xl font-semibold mb-4">Leave a Review</h2>
 
-                        <hr className="border w-full border-dark-4/80" />
+                <textarea
+                    value={review}
+                    onChange={(e) => setReview(e.target.value)}
+                    placeholder="Write your review here..."
+                    className="w-full p-3 rounded-md text-black mb-4"
+                />
 
-                        {/* Recipe Description */}
-                        <div className="flex flex-col flex-1 w-full small-medium lg:base-regular">
-                            <p>{recipe.description}</p>
-                            <ul className="flex gap-1 mt-2">
-                                {recipe.tags?.map((tag: string, index: number) => (
-                                    <li key={`${tag}-${index}`} className="text-light-3 small-regular">
-                                        #{tag}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        {/* Recipe Stats */}
-                        <div className="w-full">
-                            <RecipeStats recipe={recipe} userId={user.id} />
-                        </div>
-                    </div>
+                <div className="flex items-center gap-2 mb-4">
+                    {[1, 2, 3, 4, 5].map((num) => (
+                        <span
+                            key={num}
+                            onClick={() => setRating(num)}
+                            className={`cursor-pointer text-2xl ${rating >= num ? 'text-yellow-400' : 'text-gray-500'}`}
+                        >
+              ★
+            </span>
+                    ))}
                 </div>
-            )}
 
-            {/* Related Recipes */}
-            <div className="w-full max-w-5xl">
-                <hr className="border w-full border-dark-4/80" />
-                <h3 className="body-bold md:h3-bold w-full my-10">More Related Recipes</h3>
-                {isUserRecipeLoading || !relatedRecipes ? (
-                    <Loader />
-                ) : (
-                    <GridRecipeList recipes={relatedRecipes} />
-                )}
+                <button
+                    onClick={handleSubmitReview}
+                    disabled={submitted}
+                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
+                >
+                    {submitted ? 'Review Submitted' : 'Submit Review'}
+                </button>
             </div>
         </div>
     );
 };
 
 export default RecipeDetails;
+
