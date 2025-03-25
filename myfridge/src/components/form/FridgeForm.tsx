@@ -41,10 +41,12 @@ const FridgeForm = () => {
         }
 
         try {
-            // Add the ingredient name (string) to the user's fridge document
+            // Update the user's fridge document in Firebase by adding the ingredient string to the ingredients array.
             await addIngredientToFridge(user.id, ingredientName);
-            // Update local state to reflect the change
-            setMyFridge([...myFridge, ingredientName]);
+
+            // Update local state to reflect the change, so that the table re-renders with the new ingredient.
+            const updatedFridge = [...myFridge, ingredientName];
+            setMyFridge(updatedFridge);
             setConfirmationMessage("Ingredient added to your fridge.");
         } catch (error) {
             console.error("Error adding ingredient:", error);
@@ -56,6 +58,7 @@ const FridgeForm = () => {
             setConfirmationMessage("");
         }, 3000);
     };
+
 
     useEffect(() => {
         if (fridge) {
