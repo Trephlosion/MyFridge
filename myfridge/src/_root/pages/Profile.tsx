@@ -155,13 +155,13 @@ const Profile = () => {
                     <LikedRecipes />
                 </TabsContent>
 
-                {/*{user.id === currentUser.id && (
+                {user.id === currentUser.id && (
                     <>
                         <TabsContent value={"fridge"} className="w-full max-w-5xl">
                             <FridgeForm />
                         </TabsContent>
                     </>
-                )}*/}
+                )}
             </Tabs>
 
             <Outlet />

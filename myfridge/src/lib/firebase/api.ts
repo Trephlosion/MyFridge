@@ -6,6 +6,8 @@ import { addDoc, startAfter, DocumentSnapshot, collection, doc, getDoc, setDoc, 
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { auth, database, storage } from "@/lib/firebase/config.ts";
 import { INewRecipe, IRecipeMetadata, IUpdateRecipe, IUpdateUser, IUser } from "@/types";
+import firebase from "firebase/compat/app";
+import DocumentReference = firebase.firestore.DocumentReference;
 
 // AUTHENTICATION FUNCTIONS
 
@@ -34,42 +36,47 @@ export const signOutAccount = async () => {
 
 // USER FUNCTIONS
 
+ // assuming createFridge is exported elsewhere
+
 export const createUserAccount = async (userData: any) => {
-    const { email, password, username } = userData;
+  const { email, password, username } = userData;
+  const isAdministrator = userData.isAdministrator ?? false;
+  const isVerified = userData.isVerified ?? false;
+  const isCurator = userData.isCurator ?? false;
 
-    try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
 
-        const myFridge = await createFridge(user.uid);
+    const myFridgeId = await createFridge(user.uid);
 
-        const userDocRef = doc(database, "Users", user.uid);
-        await setDoc(userDocRef, {
-            email,
-            username,
-            bio: "Hey I'm new here!",
-            pfp: "",
-            isPrivate: false,
-            isVerified: false,
-            isAdministrator: false,
-            isDeactivated: false, // New field
-            isBanned: false, // New field
-            isCurator: false, // New field
-            followers: [],
-            following: [],
-            recipes: [],
-            posts: [],
-            comments: [],
-            myFridge: doc(database, "Fridges", myFridge), // Ensure this is a reference
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        });
+    const userDocRef = doc(database, "Users", user.uid);
+    await setDoc(userDocRef, {
+      email,
+      username,
+      bio: "Hey I'm new here!",
+      pfp: "",
+      isPrivate: false,
+      isVerified: isVerified,
+      isAdministrator: isAdministrator,
+      isDeactivated: false,
+      isBanned: false,
+      isCurator: isCurator,
+      followers: [],
+      following: [],
+      recipes: [],
+      posts: [],
+      comments: [],
+      myFridge: doc(database, "Fridges", myFridgeId),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
 
-        return user;
-    } catch (error) {
-        console.error("Error creating user:", error);
-        throw error;
-    }
+    return user;
+  } catch (error) {
+    console.error("Error creating user:", error);
+    throw error;
+  }
 };
 
 // Get current user
@@ -92,6 +99,9 @@ export async function getCurrentUser(): Promise<IUser | Error> {
             isPrivate: userData.isPrivate ?? false,
             isVerified: userData.isVerified ?? false,
             isAdministrator: userData.isAdministrator ?? false,
+            isDeactivated: userData.isDeactivated ?? false,
+            isBanned: userData.isBanned ?? false,
+            isCurator: userData.isCurator ?? false,
             followers: userData.followers || [],
             following: userData.following || [],
             likedRecipes: userData.likedRecipes || [],
@@ -106,6 +116,7 @@ export async function getCurrentUser(): Promise<IUser | Error> {
         return error instanceof Error ? new Error(error.message) : new Error("An unknown error occurred");
     }
 }
+
 
 // Check if a user is authenticated and retrieve their Firestore document
 export const checkAuthUser = async (): Promise<any> => {
@@ -429,7 +440,6 @@ export async function deleteRecipe(recipeId?: string, mediaId?: string) {
         console.log(error);
     }
 }
-
 // Like recipe
 export async function likeRecipe(recipeId: string, likesArray: string[]) {
     try {
@@ -728,7 +738,8 @@ export async function removeIngredientFromFridge(fridgeId: string, ingredientId:
     }
 }
 
-export async function addIngredientToShoppingList(fridgeId: string, ingredientId: string) {
+export async function addIngredientToShoppingList(fridgeId: string, ingredientId: string)
+{
     try {
         const fridgeDoc = doc(database, "Fridges", fridgeId);
         await updateDoc(fridgeDoc, {
@@ -739,6 +750,20 @@ export async function addIngredientToShoppingList(fridgeId: string, ingredientId
         console.log(error);
     }
 }
+
+export async function addNewIngredient(fridgeRef: DocumentReference, ingredientName: string) {
+    try {
+        const ingredientRef = doc(database, "Ingredients", ingredientName);
+        await setDoc(ingredientRef, { name: ingredientName });
+        await updateDoc(fridgeRef, {
+            ingredients: arrayUnion(ingredientName),
+        });
+        return { status: ok };
+    } catch (error) {
+        console.log(error);
+    }
+}
+
 // INGREDIENT FUNCTIONS
 
 export async function getAllIngredients() {

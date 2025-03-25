@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { WorkshopStats } from "@/components/shared/WorkshopStats"; // Replace with the correct stats component for workshops
 import { useUserContext } from "@/context/AuthContext";
-import { Workshop, ExpandedUser } from "@/types";
+import { Workshop, IUser } from "@/types";
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
@@ -20,12 +20,12 @@ const GridWorkshopList = ({
     const { user } = useUserContext();
 
     // Local state to hold user details
-    const [creators, setCreators] = useState<{ [key: string]: ExpandedUser | null }>({});
+    const [creators, setCreators] = useState<{ [key: string]: IUser | null }>({});
 
     // Fetch creator data from Firestore
     useEffect(() => {
         const fetchCreators = async () => {
-            const creatorData: { [key: string]: ExpandedUser | null } = {};
+            const creatorData: { [key: string]: IUser | null } = {};
 
             for (const workshop of workshops) {
                 if (workshop.userId && !creators[workshop.userId]) {
@@ -36,7 +36,7 @@ const GridWorkshopList = ({
                         if (userSnap.exists()) {
                             creatorData[workshop.userId] = {
                                 id: userSnap.id,
-                                ...(userSnap.data() as ExpandedUser),
+                                ...(userSnap.data() as IUser),
                             };
                         } else {
                             creatorData[workshop.userId] = null;
@@ -80,7 +80,7 @@ const GridWorkshopList = ({
                                         className="w-8 h-8 rounded-full"
                                     />
                                     <p className="line-clamp-1">
-                                        {creator.first_name} {creator.last_name}
+                                        <Link to={`/profile/${creator.id}`}>@{creator.username}</Link>
                                     </p>
                                 </div>
                             )}

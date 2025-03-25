@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { RecipeStats } from "@/components/shared";
 import { useUserContext } from "@/context/AuthContext";
-import { Recipe, ExpandedUser } from "@/types";
+import { Recipe, IUser } from "@/types";
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
+
 
 type GridRecipeListProps = {
   recipes: Recipe[]; // List of recipes
@@ -20,23 +21,23 @@ const GridRecipeList = ({
   const { user } = useUserContext();
 
   // Local state to hold user details
-  const [creators, setCreators] = useState<{ [key: string]: ExpandedUser | null }>({});
+  const [creators, setCreators] = useState<{ [key: string]: IUser | null }>({});
 
   // Fetch creator data from Firestore
   useEffect(() => {
     const fetchCreators = async () => {
-      const creatorData: { [key: string]: ExpandedUser | null } = {};
+      const creatorData: { [key: string]: IUser | null } = {};
 
       for (const recipe of recipes) {
         if (recipe.userId && !creators[recipe.userId]) {
           try {
-            const userDocRef = doc(database, "User", recipe.userId);
+            const userDocRef = doc(database, "Users", recipe.userId);
             const userSnap = await getDoc(userDocRef);
 
             if (userSnap.exists()) {
               creatorData[recipe.userId] = {
                 id: userSnap.id,
-                ...(userSnap.data() as ExpandedUser),
+                ...(userSnap.data() as IUser),
               };
             } else {
               creatorData[recipe.userId] = null;

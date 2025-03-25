@@ -16,7 +16,7 @@ import {
     SheetTrigger,
 } from "@/components/ui/sheet";
 import { useLocation, useNavigate } from "react-router-dom";
-import { addIngredientToFridge, createNewIngredient, getIngredientByName } from "@/lib/firebase/api";
+import { addNewIngredient, createNewIngredient, getIngredientByName } from "@/lib/firebase/api";
 
 const FridgeForm = () => {
     const { user } = useUserContext(); // Authenticated user context
@@ -42,7 +42,7 @@ const FridgeForm = () => {
 
         try {
             // Update the user's fridge document in Firebase by adding the ingredient string to the ingredients array.
-            await addIngredientToFridge(user.id, ingredientName);
+            await addNewIngredient(user.myFridge, ingredientName);
 
             // Update local state to reflect the change, so that the table re-renders with the new ingredient.
             const updatedFridge = [...myFridge, ingredientName];

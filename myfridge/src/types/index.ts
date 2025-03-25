@@ -1,38 +1,10 @@
 
-export type ExpandedUser = {
-    id: string; // User's unique identifier
-    username: string; // Username
-    email: string; // Email address
-    pfp: string; // Profile picture URL
-    bio: string; // Bio of the user
-
-    isPrivate: boolean; // Privacy setting
-    isVerified: boolean; // Verification status
-    isAdministrator: boolean; // Admin status
-
-    followers: string[]; // Array of follower IDs
-    following: string[]; // Array of following IDs
-    likedRecipes:  string[]; // Array of liked recipe IDs
-
-    recipes: string[]; // Array of uploaded recipe IDs
-    posts: string[]; // Array of uploaded post IDs
-    comments: string[]; // Array of comment IDs
-
-    myFridge: string; // Fridge ID
-
-    createdAt: Date; // Date created
-    updatedAt: Date; // Date updated
-}
-
-
 // Define the types for the context
 export interface AuthContextType {
     user: IUser;
     isAuthenticated: boolean;
     isLoading: boolean;
     checkAuthUser: () => Promise<boolean>;
-
-
 }
 
 // Navigation Link Type
@@ -113,7 +85,7 @@ export type Recipe = {
     createdAt?: Date;
     updatedAt?: Date;
     mediaUrl: string; // Image URL (formerly "pfp")
-    userId: string;
+    userId: any;
     tags?: string[];
     instructions: string[]; // Array of instruction steps
     likes: string[]; // Array of user IDs who liked the recipe
@@ -132,7 +104,7 @@ export interface IRecipeMetadata {
     tags?: string[];
     instructions: string[]; // Array of instructions
     mediaUrl?: string; // Updated from "imageUrl" or "pfp"
-    userId?: string;
+    userId?: any;
     likes?: string[];
     comments?: string[];
     file?: File[];
@@ -141,7 +113,7 @@ export interface IRecipeMetadata {
 export type Workshop = {
     id: string;
     pfpId: string;
-    userId: string;
+    userId: any;
     title: string;
     description: string;
     likes: string[];  // Example field
