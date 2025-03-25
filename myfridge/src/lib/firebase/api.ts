@@ -848,56 +848,64 @@ export async function createNewIngredient(ingredient: string) {
         console.error("Error calling function:", error);
     });*/
 
+
+// Toggle user deactivation
 export async function toggleUserActivation(userId: string): Promise<void> {
     try {
         const userRef = doc(database, "Users", userId);
-        await updateDoc(userRef, { isDeactivated: true });
-        // Optionally, sign the user out or restrict app functionality here.
-        // deactivate the user in firebase authentication
-        await httpsCallable(functions, "toggleUserActivation")({ uid: userId });
+        const userSnap = await getDoc(userRef);
+        const currentStatus = userSnap.data()?.isDeactivated;
+        await updateDoc(userRef, { isDeactivated: !currentStatus });
     } catch (error) {
-        console.error("Error updating user disabled state:", error);
+        console.error("Error toggling user disabled state:", error);
     }
 }
 
+// Toggle admin status
 export async function toggleUserAdmin(userId: string): Promise<void> {
     try {
         const userRef = doc(database, "Users", userId);
-        await updateDoc(userRef, { isAdministrator: true });
-        // Optionally, sign the user out or restrict app functionality here.
+        const userSnap = await getDoc(userRef);
+        const currentStatus = userSnap.data()?.isAdministrator;
+        await updateDoc(userRef, { isAdministrator: !currentStatus });
     } catch (error) {
-        console.error("Error updating user disabled state:", error);
+        console.error("Error toggling user admin state:", error);
     }
 }
 
+// Toggle creator status
 export async function toggleUserCreator(userId: string): Promise<void> {
     try {
         const userRef = doc(database, "Users", userId);
-        await updateDoc(userRef, { isVerified: true });
-        // Optionally, sign the user out or restrict app functionality here.
+        const userSnap = await getDoc(userRef);
+        const currentStatus = userSnap.data()?.isVerified;
+        await updateDoc(userRef, { isVerified: !currentStatus });
     } catch (error) {
-        console.error("Error updating user disabled state:", error);
+        console.error("Error toggling user verified state:", error);
     }
 }
 
+// Toggle curator status
 export async function toggleUserCurator(userId: string): Promise<void> {
     try {
         const userRef = doc(database, "Users", userId);
-        await updateDoc(userRef, { isCurator: true });
-        // Optionally, sign the user out or restrict app functionality here.
+        const userSnap = await getDoc(userRef);
+        const currentStatus = userSnap.data()?.isCurator;
+        await updateDoc(userRef, { isCurator: !currentStatus });
     } catch (error) {
-        console.error("Error updating user disabled state:", error);
+        console.error("Error toggling user curator state:", error);
     }
 }
 
+// Toggle ban status
 export async function toggleUserBan(userId: string): Promise<void> {
     try {
         const userRef = doc(database, "Users", userId);
-        await updateDoc(userRef, { isBanned: true });
-        // Optionally, sign the user out or restrict app functionality here.
+        const userSnap = await getDoc(userRef);
+        const currentStatus = userSnap.data()?.isBanned;
+        await updateDoc(userRef, { isBanned: !currentStatus });
     } catch (error) {
-        console.error("Error updating user disabled state:", error);
+        console.error("Error toggling user banned state:", error);
     }
 }
-
 //
