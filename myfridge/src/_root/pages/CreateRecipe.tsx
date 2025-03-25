@@ -1,5 +1,5 @@
 import RecipeForm from "@/components/form/RecipeForm.tsx";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc } from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
 import { useUserContext } from "@/context/AuthContext.tsx";
 import { useNavigate } from "react-router-dom";
@@ -42,7 +42,7 @@ const CreateRecipe = () => {
 
             // ✅ Prepare valid Firestore document
             const newRecipe = {
-                dish: recipeData.dish,
+                title: recipeData.dish,
                 description: recipeData.description,
                 instructions: recipeData.instructions,
                 cookTime: recipeData.cookTime,
@@ -50,7 +50,7 @@ const CreateRecipe = () => {
                 serving: recipeData.serving,
                 media_url: imageUrl || "", // ✅ Save image URL (or empty if missing)
                 tags: recipeData.tags,
-                author: `/Users/${user.id}`, // ✅ Correct reference format
+                author: doc(database, "Users", user?.id), // ✅ Correct reference format
                 createdAt: serverTimestamp(),
             };
 
