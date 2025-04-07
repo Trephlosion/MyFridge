@@ -198,7 +198,7 @@ const AiRecipeCarousel = () => {
         <Carousel opts={{ align: "start" }} className="w-full max-w-sm">
             <CarouselContent>
                 {aiRecipes.map((recipe) => (
-                    <CarouselItem key={recipe.id} className="w-full">
+                    <CarouselItem key={recipe.id} className="w-full h-fit">
                         <div className="p-1">
                             <RecipeCard recipe={recipe} />
                         </div>

@@ -161,9 +161,9 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
              }} */}
                 <p className="text-sm text-gray-700 line-clamp-3">{recipe.description}</p>
             </CardDescription>
-            <CardFooter className="mt-auto px-3">
+            <CardFooter className="mt-auto px-5">
                 <RecipeStats recipe={recipe} userId={user.id} />
-                <ul className="flex flex-wrap gap-1 mt-2 text-xs text-gray-500">
+                <ul className="flex flex-col flex-wrap gap-1 mt-2 text-xs text-gray-500">
                     {safeTags.map((tag, idx) => (
                         <li key={`${tag}-${idx}`}>#{tag}</li>
                     ))}
