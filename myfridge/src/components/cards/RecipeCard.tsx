@@ -59,9 +59,9 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
     }, [recipe.mediaUrl]);
 
     // Fetch the author's info.
-    const handleGetUserInfo = async (authorId: string) => {
+    const handleGetUserInfo = async (authorId: any) => {
         try {
-            const userRef = doc(database, "Users", authorId);
+            const userRef = authorId;
             const userSnap = await getDoc(userRef);
             if (userSnap.exists()) {
                 const userData = userSnap.data();
@@ -87,7 +87,7 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
 
     useEffect(() => {
         const fetchUserInfo = async () => {
-            if (recipe.author && recipe.author) {
+            if (recipe.author || recipe.userId) {
                 const info = await handleGetUserInfo(recipe.author);
                 setUserInfo(info);
             }

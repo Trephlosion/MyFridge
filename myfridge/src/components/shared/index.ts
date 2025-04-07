@@ -13,3 +13,4 @@ export { default as MiniRecipeCard } from "../cards/RecipeCardMini.tsx";
 export { default as UserSkeletonCard } from "../cards/UserSkeletonCard.tsx";
 export { default as UserCardMini } from "../cards/UserCardMini.tsx";
 export { default as RecipeSkeleton } from "../cards/RecipeSkeleton.tsx"
+export { default as TopUsersCarousel } from "./TopUsersCarousel.tsx"

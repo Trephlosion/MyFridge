@@ -71,6 +71,25 @@ import { useEffect, useState } from 'react';
                             <p className="leading-relaxed italic">{recipe.description || 'No description provided.'}</p>
                         </div>
 
+                        <div>
+                            <h3>Ingredients</h3>
+                            <ul className="list-disc pl-6">
+                                {recipe.ingredients && recipe.ingredients.map((ingredient, index) => (
+                                    <li key={index} className="text-lg">{ingredient}</li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h3>Instructions</h3>
+                            <ol className="list-decimal pl-6">
+                                {recipe.instructions && recipe.instructions.map((instruction, index) => (
+                                    <li key={index} className="text-lg">{instruction}</li>
+                                ))}
+                            </ol>
+
+                        </div>
+
                         <div className="bg-gray-900 p-6 rounded-xl">
                             <h2 className="text-2xl font-semibold mb-4">Leave a Review</h2>
 
