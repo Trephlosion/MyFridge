@@ -30,7 +30,7 @@ const Explore = () => {
     const { data: userRecipes, isLoading: isLoadingUserRecipes } = useGetUserRecipes(user.id);
     const { data: searchResults, isLoading: isSearching } = useSearchRecipes(searchTerm.toLowerCase());
 
-    //TODO: CHANGE TO RECIPE CARD
+
 
     useEffect(() => {
         const fetchSuggestedRecipes = async () => {
@@ -53,7 +53,7 @@ const Explore = () => {
         ? userRecipes ?? []
         : searchTerm
             ? (searchResults ?? []).filter((recipe) =>
-                recipe.title?.toLowerCase().includes(searchTerm.toLowerCase())
+                recipe.id?.toLowerCase().includes(searchTerm.toLowerCase())
             )
             : suggestedRecipes;
 

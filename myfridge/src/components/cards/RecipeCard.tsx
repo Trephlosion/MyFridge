@@ -8,7 +8,14 @@ import { Recipe } from "@/types";
 import { database, storage } from "@/lib/firebase/config";
 import RecipeStats from "@/components/cards/RecipeStats";
 import { doc, getDoc } from "firebase/firestore";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+    Card,
+    CardContent,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+} from "@/components/ui/card";
 
 type RecipeCardProps = {
     recipe: Recipe;
@@ -27,17 +34,21 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
         username: "Unknown",
     });
 
-    // Fetch the recipe image from storage.
+    // Fetch the image URL.
     useEffect(() => {
         const fetchImageUrl = async () => {
             if (recipe.mediaUrl) {
-                try {
-                    const fileRef = ref(storage, recipe.mediaUrl);
-                    const url = await getDownloadURL(fileRef);
-                    setImageUrl(url);
-                } catch (error) {
-                    console.error("Error fetching image URL:", error);
-                    setImageUrl("/assets/icons/profile-placeholder.svg");
+                if (recipe.mediaUrl.startsWith("http")) {
+                    setImageUrl(recipe.mediaUrl);
+                } else {
+                    try {
+                        const fileRef = ref(storage, recipe.mediaUrl);
+                        const url = await getDownloadURL(fileRef);
+                        setImageUrl(url);
+                    } catch (error) {
+                        console.error("Error fetching image URL:", error);
+                        setImageUrl("/assets/icons/profile-placeholder.svg");
+                    }
                 }
             } else {
                 setImageUrl("/assets/icons/recipe-placeholder.svg");
@@ -47,38 +58,44 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
         fetchImageUrl();
     }, [recipe.mediaUrl]);
 
-    // Helper function to fetch the author's info from Firestore.
+    // Fetch the author's info.
     const handleGetUserInfo = async (authorId: string) => {
         try {
             const userRef = doc(database, "Users", authorId);
             const userSnap = await getDoc(userRef);
             if (userSnap.exists()) {
                 const userData = userSnap.data();
-                const pfp = userData.pfp || "/assets/icons/profile-placeholder.svg";
-                const username = userData.username || "Unknown";
-                return { pfp, username };
+                return {
+                    pfp: userData.pfp || "/assets/icons/profile-placeholder.svg",
+                    username: userData.username || "Unknown",
+                };
             } else {
                 console.error("User document does not exist.");
-                return { pfp: "/assets/icons/profile-placeholder.svg", username: "Unknown" };
+                return {
+                    pfp: "/assets/icons/profile-placeholder.svg",
+                    username: "Unknown",
+                };
             }
         } catch (error) {
             console.error("Error fetching user info:", error);
-            return { pfp: "/assets/icons/profile-placeholder.svg", username: "Unknown" };
+            return {
+                pfp: "/assets/icons/profile-placeholder.svg",
+                username: "Unknown",
+            };
         }
     };
 
-    // Fetch the author's profile picture and username.
     useEffect(() => {
         const fetchUserInfo = async () => {
-            if (recipe.author && recipe.author.id) {
-                const info = await handleGetUserInfo(recipe.author.id);
+            if (recipe.author && recipe.author) {
+                const info = await handleGetUserInfo(recipe.author);
                 setUserInfo(info);
             }
         };
         fetchUserInfo();
     }, [recipe.author]);
 
-    // Parse tags safely.
+    // Safe tags parsing.
     const safeTags: string[] = Array.isArray(recipe.tags)
         ? recipe.tags
         : typeof recipe.tags === "string"
@@ -86,32 +103,30 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
             : [];
 
     return (
-        <Card className="recipe-card">
+        <Card className="recipe-card w-80 h-96 flex flex-col">
             <CardTitle className="flex-center text-center">
-                <h1>{recipe.title}</h1>
+                <h1 className="text-lg font-bold">{recipe.title}</h1>
             </CardTitle>
-            <CardHeader className="flex-between">
+            <CardHeader className="flex justify-between items-center px-3">
                 <div className="flex items-center gap-3">
                     <Link to={`/profile/${recipe.author}`}>
                         <img
                             src={userInfo.pfp}
                             alt="creator"
-                            className="w-12 lg:h-12 rounded-full"
+                            className="w-12 h-12 rounded-full object-cover"
                         />
                     </Link>
                     <div className="flex flex-col">
                         <Link to={`/profile/${recipe.author}`}>
-                            <p className="text-light-1 lg:medium-bold">
-                                {userInfo.username}
-                            </p>
+                            <p className="text-sm font-medium">{userInfo.username}</p>
                         </Link>
-                        <div className="flex-center gap-2 text-light-3">
-                            <p className="subtle-semibold lg:small-regular">
-                                {recipe.createdAt ? multiFormatDateString(recipe.createdAt.toString()) : "Unknown date"}
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <p>
+                                {recipe.createdAt
+                                    ? multiFormatDateString(recipe.createdAt.toString())
+                                    : "Unknown date"}
                             </p>
-                            <p className="subtle-semibold lg:small-regular">
-                                {recipe.likes?.length || 0} likes
-                            </p>
+                            <p>{recipe.likes?.length || 0} likes</p>
                         </div>
                     </div>
                 </div>
@@ -120,33 +135,37 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                         <img
                             src="/assets/icons/edit.svg"
                             alt="edit"
-                            width={20}
-                            height={20}
+                            className="w-5 h-5"
                         />
                     </Link>
                 )}
             </CardHeader>
-            <CardDescription>
-                <div>
-                    <p>{recipe.description}</p>
-                </div>
-            </CardDescription>
-            <CardContent className="small-medium lg:base-medium py-2.5">
+            <CardContent className="flex-grow p-2">
                 <Link to={`/recipes/${recipe.id}`}>
                     <img
                         src={imageUrl}
-                        alt="recipe image"
-                        className="recipe-card_img"
+                        alt="recipe"
+                        className="w-full h-40 object-cover rounded"
                     />
                 </Link>
             </CardContent>
-            <CardFooter className="flex-col">
+            <CardDescription className="px-3">
+                {/* Use Tailwind's line-clamp-3 for multi-line truncation.
+            Ensure the Tailwind line-clamp plugin is enabled in your project.
+            Alternatively, you can use inline styles:
+             style={{
+               display: '-webkit-box',
+               WebkitLineClamp: 3,
+               WebkitBoxOrient: 'vertical',
+               overflow: 'hidden'
+             }} */}
+                <p className="text-sm text-gray-700 line-clamp-3">{recipe.description}</p>
+            </CardDescription>
+            <CardFooter className="mt-auto px-3">
                 <RecipeStats recipe={recipe} userId={user.id} />
-                <ul className="flex-row gap-1 mt-2">
+                <ul className="flex flex-wrap gap-1 mt-2 text-xs text-gray-500">
                     {safeTags.map((tag, idx) => (
-                        <li key={`${tag}-${idx}`} className="text-light-3 small-regular">
-                            #{tag}
-                        </li>
+                        <li key={`${tag}-${idx}`}>#{tag}</li>
                     ))}
                 </ul>
             </CardFooter>
