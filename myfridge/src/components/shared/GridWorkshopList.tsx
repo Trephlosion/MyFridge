@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { WorkshopStats } from "@/components/shared/WorkshopStats"; // Replace with the correct stats component for workshops
+import { WorkshopStats } from "@/components/cards/WorkshopStats.tsx"; // Replace with the correct stats component for workshops
 import { useUserContext } from "@/context/AuthContext";
 import { Workshop, IUser } from "@/types";
 import { useEffect, useState } from "react";

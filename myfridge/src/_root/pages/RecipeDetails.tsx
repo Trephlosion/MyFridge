@@ -33,7 +33,7 @@ import { useEffect, useState } from 'react';
                         if (id) {
                             await addDoc(collection(database, 'Recipes', id, 'Ratings'), {
                                 recipeId: id,
-                                userId: user.username,
+                                userId: user.id,
                                 comment: review,
                                 stars: rating,
                                 createdAt: new Date()

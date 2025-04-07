@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
-                import { Button } from "@/components/ui/button";
+                import { Button } from "@/components/ui/button.tsx";
                 import { IUser } from "@/types";
-                import { useFollowUser } from "@/lib/react-query/queriesAndMutations";
-                import { useUserContext } from "@/context/AuthContext";
+                import { useFollowUser } from "@/lib/react-query/queriesAndMutations.ts";
+                import { useUserContext } from "@/context/AuthContext.tsx";
                 import { useState } from "react";
-                import { Card, CardContent, CardHeader } from "@/components/ui/card";
+                import { Card, CardContent, CardHeader } from "@/components/ui/card.tsx";
                 import {
                     DropdownMenu,
                     DropdownMenuContent,
@@ -20,7 +20,7 @@ import { Link } from "react-router-dom";
                     toggleUserBan,
                     toggleUserCreator,
                     toggleUserCurator
-                } from "@/lib/firebase/api"; // Adjust the import path as needed
+                } from "@/lib/firebase/api.ts"; // Adjust the import path as needed
 
                 const formatNumber = (num: number): string => {
                     if (num < 1000) return num.toString();

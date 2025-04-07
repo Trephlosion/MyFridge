@@ -10,6 +10,9 @@ import {Button} from "@/components/ui/button.tsx";
 import {  useCreateUserAccount } from "@/lib/react-query/queriesAndMutations";
 
 
+// TODO: CHANGE USER CARD COLORS DEPENDING ON IF USER IS BANNED/DEACTIVATED
+
+
           const AllUsers = () => {
             const navigate = useNavigate();
             const { toast } = useToast();
@@ -138,7 +141,7 @@ import {  useCreateUserAccount } from "@/lib/react-query/queriesAndMutations";
                       {(user?.isAdministrator || user?.isVerified) && (
                           <>
                             {user?.isVerified && (
-                                <p className="text-sm text-green-600">verified</p>
+                                <p className="text-sm align-middle text-green-600"> Creator View</p>
                             )}
 
                           </>

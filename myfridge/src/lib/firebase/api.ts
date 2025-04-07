@@ -326,28 +326,37 @@ export async function createRecipe(recipe: INewRecipe) {
         }
 
         // Normalize tags: ensure it's always an array
-        // const tags: string = Array.isArray(recipe.tags)
-        //     ? recipe.tags.map((tag: string) => tag.trim())
-        //     : recipe.tags?.toString().split(",").map((tag: string) => tag.trim()) || [];
+        const tags: string = Array.isArray(recipe.tags) ? recipe.tags : String(recipe.tags).split(",").map(t => t.trim()).filter(Boolean);
+
+
+        const snapshot = await db.collection("Recipes").get();
+        snapshot.forEach(doc => {
+            const { tags } = doc.data();
+            if (!Array.isArray(tags)) {
+                const fixed = typeof tags === "string"
+                    ? tags.split(",").map(t => t.trim()).filter(Boolean)
+                    : [];
+                doc.ref.update({ tags: fixed });
+            }
+        });
+
 
         // Save recipe to Firestore
         const newRecipeRef = doc(collection(database, "Recipes"));
         const newRecipe = {
-            userId: doc(database, "Users", recipe?.userId),
+            author: doc(database, "Users", recipe?.userId),
             description: recipe.description,
-            mediaUrl: fileUrl, // Updated field name
-            title: recipe.title, // Updated from "dish"
-            // Convert instructions string to an array of steps
+            mediaUrl: fileUrl,
+            title: recipe.title,
             instructions: recipe.instructions,
             cookTime: recipe.cookTime,
             prepTime: recipe.prepTime,
-            servings: recipe.servings, // Updated from "serving"
-            tags: recipe.tags,
-            likes: [], // Updated to be an empty array
+            servings: recipe.servings,
+            tags: tags,
+            likes: [],
             comments: [],
             createdAt: new Date(),
-            // Optional rating fields can be added here if needed
-            mediaId: fileRef.fullPath, // Updated field name from "pfpId"
+            mediaId: fileRef.fullPath,
         };
 
         await setDoc(newRecipeRef, newRecipe);
@@ -412,9 +421,7 @@ export async function updateRecipe(recipe: IUpdateRecipe) {
         }
 
         // Normalize tags: ensure it's always an array
-        const tags = Array.isArray(recipe.tags)
-            ? recipe.tags.map((tag: string) => tag.trim())
-            : recipe.tags?.toString().split(",").map((tag: string) => tag.trim()) || [];
+        const tags: string = Array.isArray(recipe.tags) ? recipe.tags : String(recipe.tags).split(",").map(t => t.trim()).filter(Boolean);
 
         await updateDoc(doc(database, "Recipes", recipe.recipeId), {
             description: recipe.description,
@@ -908,4 +915,12 @@ export async function toggleUserBan(userId: string): Promise<void> {
         console.error("Error toggling user banned state:", error);
     }
 }
-//
+
+/* ---------------------------- New Functions ------------------- */
+
+// AI Functions
+
+// Reccomend A Recipe Based off Current User's Current Fridge Items
+// This Function is called on the Home Page
+// This function will create 3-5 generated recipes using OpenAI.
+// Then using a Recipe Card, it will display the generated recipes inside a Carousel Element.

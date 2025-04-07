@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button.tsx";
 import { IUser } from "@/types";
-import { useFollowUser, useUpdateUser } from "@/lib/react-query/queriesAndMutations";
-import { useUserContext } from "@/context/AuthContext";
+import { useFollowUser, useUpdateUser } from "@/lib/react-query/queriesAndMutations.ts";
+import { useUserContext } from "@/context/AuthContext.tsx";
 import { useState } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card.tsx";
 import { Loader } from "@/components/shared";
 import {
     DropdownMenu,

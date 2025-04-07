@@ -1,6 +1,6 @@
-import {Skeleton} from "@/components/ui/skeleton"
+import {Skeleton} from "@/components/ui/skeleton.tsx"
 // render in a Card format
-import {Card, CardContent, CardFooter, CardHeader,} from "@/components/ui/card"
+import {Card, CardContent, CardFooter, CardHeader,} from "@/components/ui/card.tsx"
 
 
 const UserSkeletonCard = () => {

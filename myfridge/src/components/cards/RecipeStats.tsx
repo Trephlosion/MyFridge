@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { checkIsLiked } from "@/lib/utils";
+import { checkIsLiked } from "@/lib/utils.ts";
 import {
     useLikeRecipe,
     useSaveRecipe,
     useDeleteSavedRecipe,
     useGetCurrentUser,
-} from "@/lib/react-query/queriesAndMutations";
+} from "@/lib/react-query/queriesAndMutations.ts";
 import { Recipe } from "@/types";
 
 type RecipeStatsProps = {
@@ -28,7 +28,7 @@ const RecipeStats = ({ recipe, userId }: RecipeStatsProps) => {
     const { data: currentUser } = useGetCurrentUser();
 
     // Check if the recipe is already saved
-    const savedRecipeRecord = currentUser?.savedRecipes?.find(
+    const savedRecipeRecord = currentUser?.likedRecipes?.find(
         (record: { recipeId: string }) => record.recipeId === recipe.id
     );
 

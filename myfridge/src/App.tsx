@@ -28,6 +28,7 @@ import { Routes, Route } from 'react-router-dom';
                                         <Route path="/update-recipe/:id/*" element={<EditRecipe />} />
                                         <Route path="/recipe/:id/*" element={<RecipeDetails />} />
                                         <Route path="/profile/:id/*" element={<Profile />} />
+                                        <Route path="/recipes/:id/*" element={<RecipeDetails />} />
                                         <Route path="/update-profile/:id/*" element={<UpdateProfile />} />
                                         <Route path="/liked-recipes/:id/*" element={<LikedRecipes />} />
                                         <Route path="/admin" element={<Admin />} />

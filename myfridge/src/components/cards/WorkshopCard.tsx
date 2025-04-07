@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getDownloadURL, ref } from "firebase/storage";
-import { useUserContext } from "@/context/AuthContext";
+import { useUserContext } from "@/context/AuthContext.tsx";
 import { Workshop } from "@/types";
-import { storage } from "@/lib/firebase/config";
-import WorkshopStats from "@/components/shared/WorkshopStats.tsx";
-import { multiFormatDateString } from "@/lib/utils"; // Assuming this helper formats date
+import { storage } from "@/lib/firebase/config.ts";
+import WorkshopStats from "@/components/cards/WorkshopStats.tsx";
+import { multiFormatDateString } from "@/lib/utils.ts"; // Assuming this helper formats date
 
 type WorkshopCardProps = {
     workshop: Workshop;

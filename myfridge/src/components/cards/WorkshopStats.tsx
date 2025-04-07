@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { checkIsLiked } from "@/lib/utils";
+import { checkIsLiked } from "@/lib/utils.ts";
 import {
     useLikeWorkshop,
     useSaveWorkshop,
     useGetCurrentUser,
-} from "@/lib/react-query/queriesAndMutations";
+} from "@/lib/react-query/queriesAndMutations.ts";
 import { Workshop } from "@/types";  // Ensure this import is correct
 
 

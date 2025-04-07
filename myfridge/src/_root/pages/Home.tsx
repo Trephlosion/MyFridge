@@ -18,6 +18,8 @@ import { RecipeCard } from "@/components/shared";
                         <div className="flex flex-1">
                             <div className="home-container">
                                 <div className="home-posts">
+                                    {/*Load AI Reccommended Recipes*/}
+
                                     <h2 className="h3-bold md:h2-bold text-left w-full">My Recipes</h2>
 
                                     {isRecipeLoading && !recipes ? (

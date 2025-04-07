@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getDownloadURL, ref } from "firebase/storage";
-import { multiFormatDateString } from "@/lib/utils";
-import { useUserContext } from "@/context/AuthContext";
+import { multiFormatDateString } from "@/lib/utils.ts";
+import { useUserContext } from "@/context/AuthContext.tsx";
 import { Recipe } from "@/types";
-import { storage } from "@/lib/firebase/config";
-import RecipeStats from "@/components/shared/RecipeStats.tsx";
+import { storage } from "@/lib/firebase/config.ts";
+import RecipeStats from "@/components/cards/RecipeStats.tsx";
 import {
     Card,
     CardContent,
@@ -13,7 +13,7 @@ import {
     CardFooter,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card.tsx"
 
 
 type RecipeCardProps = {
