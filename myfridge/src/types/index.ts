@@ -83,7 +83,7 @@ export type Recipe = {
     prepTime?: string;
     servings?: number;
     createdAt: Date;
-    updatedAt: Date;
+    updatedAt?: Date;
     mediaUrl: string; // Image URL (formerly "pfp")
     author: any;
     tags: string[];
@@ -100,11 +100,11 @@ export interface IRecipeMetadata {
     prepTime: string;
     servings?: number;
     createdAt: Date;
-    updatedAt: Date;
+    updatedAt?: Date;
     tags: string[];
     instructions: string; // Array of instructions
     mediaUrl?: string; // Updated from "imageUrl" or "pfp"
-    userId?: any;
+    author?: any;
     likes?: string[];
     comments?: string[];
     file?: File[];

@@ -29,22 +29,22 @@ const GridRecipeList = ({
       const creatorData: { [key: string]: IUser | null } = {};
 
       for (const recipe of recipes) {
-        if (recipe.userId && !creators[recipe.userId]) {
+        if (recipe.author && !creators[recipe.author]) {
           try {
-            const userDocRef = doc(database, "Users", recipe.userId);
+            const userDocRef = doc(database, "Users", recipe.author);
             const userSnap = await getDoc(userDocRef);
 
             if (userSnap.exists()) {
-              creatorData[recipe.userId] = {
+              creatorData[recipe.author] = {
                 id: userSnap.id,
                 ...(userSnap.data() as IUser),
               };
             } else {
-              creatorData[recipe.userId] = null;
+              creatorData[recipe.author] = null;
             }
           } catch (error) {
             console.error("Error fetching creator data:", error);
-            creatorData[recipe.userId] = null;
+            creatorData[recipe.author] = null;
           }
         }
       }
@@ -58,7 +58,7 @@ const GridRecipeList = ({
   return (
       <ul className="grid-container">
         {recipes.map((recipe) => {
-          const creator = creators[recipe.userId];
+          const creator = creators[recipe.author];
 
           return (
               <li key={recipe.id} className="relative min-w-80 h-80">

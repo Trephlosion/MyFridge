@@ -1,4 +1,4 @@
-export { default as RecipeCard } from "./BaseRecipeCard.tsx";
+export { default as RecipeCard } from "./RecipeCard.tsx";
 export { default as UserCard } from "./UserCard.tsx";
 export { default as RecipeStats } from "./RecipeStats.tsx";
 export { default as MiniRecipeCard } from "./RecipeCardMini.tsx";

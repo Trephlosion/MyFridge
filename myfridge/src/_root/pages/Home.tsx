@@ -1,10 +1,13 @@
-import { RecipeCard } from "@/components/shared";
+import {AiRecipeCarousel, RecipeCard} from "@/components/shared";
                 import { IRecipeMetadata } from "@/types";
                 import { useGetRecentRecipes, useCreateUserAccount } from "@/lib/react-query/queriesAndMutations";
                 import { useNavigate } from "react-router-dom";
                 import { Skeleton } from "@/components/ui/skeleton";
                 import { useUserContext } from "@/context/AuthContext";
                 import { Button } from "@/components/ui/button";
+import {Separator} from "@/components/ui/separator.tsx";
+import {Carousel} from "@/components/ui/carousel.tsx";
+import {RecipeSkeleton} from "@/components/cards";
 
                 const Home = () => {
                     const { data: recipes, isPending: isRecipeLoading, isError: isErrorRecipes } = useGetRecentRecipes();
@@ -17,10 +20,17 @@ import { RecipeCard } from "@/components/shared";
                     return (
                         <div className="flex flex-1">
                             <div className="home-container">
-                                <div className="home-posts">
-                                    {/*Load AI Reccommended Recipes*/}
+<div>
+                                {/*Load AI Reccommended Recipes*/}
+                                <h2>AI Reccommendations</h2>
+                                <AiRecipeCarousel/>
 
-                                    <h2 className="h3-bold md:h2-bold text-left w-full">My Recipes</h2>
+
+
+                            </div>
+                                <Separator/>
+                                <div className="home-posts">
+
 
                                     {isRecipeLoading && !recipes ? (
                                         <div className="flex flex-col gap-9">
@@ -39,14 +49,20 @@ import { RecipeCard } from "@/components/shared";
                                             Error fetching recipes. Please try again.
                                         </p>
                                     ) : (
-                                        /*<ul className="flex flex-col flex-1 gap-9 w-full">
-                                            {recipes?.map((recipe: IRecipeMetadata) => (
-                                                    <RecipeCard recipe={recipe} />
+                                        <>
 
-                                            ))}
-                                        </ul>*/
+
+
+
+
+                                            <h2 className="h3-bold md:h2-bold text-left w-full">My Recipes</h2>
+                                            <ul className="flex flex-col flex-1 gap-9 w-full">
+                                                {recipes?.map((recipe: IRecipeMetadata) => (
+                                                    <RecipeCard key={recipe.id} recipe={recipe} />
+                                                ))}
+                                            </ul>
                                         <p>HomeTest</p>
-
+                        </>
                                     )}
                                 </div>
                             </div>
