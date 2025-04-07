@@ -13,12 +13,7 @@ import {RecipeSkeleton} from "@/components/cards";
 // IMPORTANT: In a real application, do not expose your API key on the client.
 // Instead, implement this call on your backend and proxy the request securely.
 const generateAiRecipes = async (ingredients: string[]): Promise<Recipe[]> => {
-    // Your API key stored securely in an env variable.
-    // const apiKey = import.meta.env.REACT_APP_OPENAI_API_KEY;
-    // const apiKey = import.meta.env.MY_OPENAI_API_KEY;
-    const apiKey = "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";
-
-
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY; // Use Vite's env variables
     if (!apiKey) {
         throw new Error("OpenAI API key not found.");
     }
@@ -35,7 +30,6 @@ For each recipe, provide:
 Return the result as a JSON array where each object has the keys "title", "description", and "instructions".
   `;
 
-    // Prepare the payload for the chat completion API.
     const payload = {
         model: "gpt-3.5-turbo",
         messages: [
@@ -65,17 +59,18 @@ Return the result as a JSON array where each object has the keys "title", "descr
 
     const data = await response.json();
     // The API returns the generated content in data.choices[0].message.content.
-    const text = data.choices[0].message.content;
+    let text = data.choices[0].message.content;
 
-    // Attempt to parse the JSON string returned by the model.
+    // Sanitize the text: remove markdown code block markers if present.
+    text = text.trim().replace(/^```(json)?\s*/, "").replace(/\s*```$/, "");
+
     try {
         const recipesData = JSON.parse(text);
-        // Map the response to your Recipe type, adding default values for required fields.
         const recipes: Recipe[] = recipesData.map((item: any, index: number) => ({
             id: `ai-${Date.now()}-${index}`,
             title: item.title,
             description: item.description,
-            instructions: item.instructions, // The generated instructions.
+            instructions: item.instructions,
             mediaUrl: "/assets/icons/recipe-placeholder.svg",
             createdAt: new Date(),
             likes: [],
