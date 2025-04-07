@@ -182,23 +182,7 @@ const AiRecipeCarousel = () => {
                 <p>Generating AI recipes...</p>
                 <Carousel opts={{ align: "start" }} className="w-full max-w-sm">
                     <CarouselContent>
-                        <CarouselItem className="md:basis-1/2 lg:basis-1/3">
-                            <RecipeSkeleton/>
-                        </CarouselItem>
-
-                        <CarouselItem className="md:basis-1/2 lg:basis-1/3">
-                            <RecipeSkeleton/>
-                        </CarouselItem>
-
-                        <CarouselItem className="md:basis-1/2 lg:basis-1/3">
-                            <RecipeSkeleton/>
-                        </CarouselItem>
-
-                        <CarouselItem className="md:basis-1/2 lg:basis-1/3">
-                            <RecipeSkeleton/>
-                        </CarouselItem>
-
-                        <CarouselItem className="md:basis-1/2 lg:basis-1/3">
+                        <CarouselItem className="w-full">
                             <RecipeSkeleton/>
                         </CarouselItem>
                     </CarouselContent>
@@ -214,7 +198,7 @@ const AiRecipeCarousel = () => {
         <Carousel opts={{ align: "start" }} className="w-full max-w-sm">
             <CarouselContent>
                 {aiRecipes.map((recipe) => (
-                    <CarouselItem key={recipe.id} className="md:basis-1/2 lg:basis-1/3">
+                    <CarouselItem key={recipe.id} className="w-full">
                         <div className="p-1">
                             <RecipeCard recipe={recipe} />
                         </div>
