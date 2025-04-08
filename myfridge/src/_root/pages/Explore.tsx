@@ -18,6 +18,7 @@ import { database } from "@/lib/firebase/config";
 import { useUserContext } from "@/context/AuthContext.tsx";
 import RecipeCard from "@/components/cards/RecipeCard.tsx";
 import LoadingRecipe from "@/components/shared/LoadingRecipe.tsx";
+import { Button } from "@/components/ui/button";
 
 const Explore = () => {
     const [searchTerm, setSearchTerm] = useState("");
@@ -78,6 +79,7 @@ const Explore = () => {
         if (recipes.length > 0) {
             fetchCreators();
         }
+    }, [recipes]);
 
     useEffect(() => {
         const fetchRatingsForUserRecipes = async () => {

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { getDownloadURL, ref } from "firebase/storage";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { multiFormatDateString } from "@/lib/utils";
 import { useUserContext } from "@/context/AuthContext";
 import { Recipe } from "@/types";
@@ -33,6 +34,7 @@ type UserInfo = {
 };
 
 const RecipeCard = ({ recipe }: RecipeCardProps) => {
+    const navigate = useNavigate();
     const { user } = useUserContext();
     const [imageUrl, setImageUrl] = useState<string>("");
     const [userInfo, setUserInfo] = useState<UserInfo>({
@@ -179,6 +181,7 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                         />
                     </AspectRatio>
                 </Link>
+
             </CardContent>
 
             <CardDescription className="px-3 mt-1">
@@ -192,6 +195,34 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                         <li key={`${tag}-${idx}`}>#{tag}</li>
                     ))}
                 </ul>
+
+                {user?.isAdministrator && (
+                    <div className="flex flex-col gap-2 mt-3">
+                        <button
+                            onClick={() => navigate(`/recipe-analytics?recipeId=${recipe.id}`)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 px-3 rounded"
+                        >
+                            Get Analytics
+                        </button>
+                        <button
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                const recipeRef = doc(database, "Recipes", recipe.id);
+                                const updatedHighlight = !recipe.isRecommended;
+
+                                await updateDoc(recipeRef, {
+                                    isRecommended: updatedHighlight,
+                                });
+
+                                window.location.reload(); // refresh to show updated state
+                            }}
+                            className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-3 rounded"
+                        >
+                            {recipe.isRecommended ? "Unhighlight" : "Highlight as Seasonal"}
+                        </button>
+                    </div>
+                )}
+
             </CardFooter>
         </Card>
     );
