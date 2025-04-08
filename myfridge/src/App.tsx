@@ -7,6 +7,8 @@ import { Routes, Route } from 'react-router-dom';
                     import SigninForm from './_auth/forms/SigninForm.tsx';
                     import { Home, Explore, Saved, AllUsers, EditRecipe, RecipeDetails, CreateRecipe, Profile, UpdateProfile, LikedRecipes, Admin, Workshops } from './_root/pages';
                     import { Toaster } from '@/components/ui/toaster.tsx';
+                    import Inbox from "@/_root/pages/Inbox.tsx";
+                    import SendMessage from "@/_root/pages/SendMessage.tsx";
 
                     const App = () => {
                         const { user } = useUserContext();
@@ -33,6 +35,10 @@ import { Routes, Route } from 'react-router-dom';
                                         <Route path="/liked-recipes/:id/*" element={<LikedRecipes />} />
                                         <Route path="/admin" element={<Admin />} />
                                         <Route path="/workshops/*" element={<Workshops />} />
+                                        <Route path="/inbox" element={<Inbox />} />
+                                        <Route path="/send-message/:userId" element={<SendMessage />} />
+
+
 
                                     </Route>
                                 </Routes>

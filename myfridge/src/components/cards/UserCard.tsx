@@ -196,6 +196,15 @@ import { Link } from "react-router-dom";
                                                 {user.isDeactivated ? "Activate User" : "Deactivate User"}
                                             </Button>
                                         </DropdownMenuItem>
+
+                                        <DropdownMenuItem>
+                                            <Link to={`/send-message/${user.id}`}>
+                                                <Button type="button" size="sm" className="shad-button_primary px-5">
+                                                    Message User
+                                                </Button>
+                                            </Link>
+                                        </DropdownMenuItem>
+
                                     </>
                                 )}
                             </DropdownMenuContent>
