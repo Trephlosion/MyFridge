@@ -12,20 +12,23 @@ import {
     getDocs,
     orderBy,
     limit,
+    query,
 } from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
-import {useUserContext} from "@/context/AuthContext.tsx";
-import {Button} from "@/components/ui/button.tsx";
+import { useUserContext } from "@/context/AuthContext.tsx";
 import RecipeCard from "@/components/cards/RecipeCard.tsx";
 import LoadingRecipe from "@/components/shared/LoadingRecipe.tsx";
+import { Button } from "@/components/ui/button";
 
 const Explore = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [creators, setCreators] = useState<{ [key: string]: string }>({});
     const [suggestedRecipes, setSuggestedRecipes] = useState<any[]>([]);
     const [showMyRecipes, setShowMyRecipes] = useState(false);
+    const [ratingsMap, setRatingsMap] = useState<{ [key: string]: any[] }>({});
     const navigate = useNavigate();
-    const {user } = useUserContext();
+    const { user } = useUserContext();
+    const [highlightedRecipes, setHighlightedRecipes] = useState<string[]>([]);
 
     const { data: userRecipes, isLoading: isLoadingUserRecipes } = useGetUserRecipes(user.id);
     const { data: searchResults, isLoading: isSearching } = useSearchRecipes(searchTerm.toLowerCase());
@@ -35,8 +38,8 @@ const Explore = () => {
     useEffect(() => {
         const fetchSuggestedRecipes = async () => {
             const recipesRef = collection(database, "Recipes");
-            const suggestedQuery = orderBy("createdAt", "desc");
-            const querySnapshot = await getDocs(recipesRef, suggestedQuery, limit(6));
+            const suggestedQuery = query(recipesRef, orderBy("createdAt", "desc"), limit(6));
+            const querySnapshot = await getDocs(suggestedQuery);
             const suggested = querySnapshot.docs.map((doc) => ({
                 id: doc.id,
                 ...doc.data(),
@@ -76,8 +79,24 @@ const Explore = () => {
         if (recipes.length > 0) {
             fetchCreators();
         }
+    }, [recipes]);
 
+    useEffect(() => {
+        const fetchRatingsForUserRecipes = async () => {
+            const newRatingsMap: { [key: string]: any[] } = {};
+            for (const recipe of recipes) {
+                if (recipe.author?.id === user.id) {
+                    const ratingsRef = collection(database, "Recipes", recipe.id, "Ratings");
+                    const snapshot = await getDocs(ratingsRef);
+                    newRatingsMap[recipe.id] = snapshot.docs.map(doc => doc.data());
+                }
+            }
+            setRatingsMap(newRatingsMap);
+        };
 
+        if (recipes.length > 0) {
+            fetchRatingsForUserRecipes();
+        }
     }, [recipes]);
 
     return (
