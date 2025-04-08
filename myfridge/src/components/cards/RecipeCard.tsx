@@ -152,7 +152,7 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                 ) : null}
             </CardHeader>
             <CardContent className="flex-grow p-2">
-                <Link to={`/recipes/${recipe.id}`} state={recipe}>
+                <Link to={`/recipes/${recipe.id}`} state={JSON.parse(JSON.stringify(recipe))}>
                     <img
                         src={imageUrl}
                         alt="recipe"
