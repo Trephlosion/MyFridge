@@ -20,7 +20,10 @@ import { Link } from "react-router-dom";
                     toggleUserBan,
                     toggleUserCreator,
                     toggleUserCurator
-                } from "@/lib/firebase/api.ts"; // Adjust the import path as needed
+                } from "@/lib/firebase/api.ts";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar.tsx";
+import {AspectRatio} from "@/components/ui/aspect-ratio.tsx";
+import {Badge} from "@/components/ui/badge.tsx"; // Adjust the import path as needed
 
                 const formatNumber = (num: number): string => {
                     if (num < 1000) return num.toString();
@@ -115,45 +118,76 @@ import { Link } from "react-router-dom";
                     return (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Card className={`user-card ${user.isBanned || user.isDeactivated ? "bg-red-500" : ""}`} style={{ width: "300px", height: "400px" }}>
-                                    <CardHeader>
+                                <Card
+                                    className={`user-card relative bg-dark-4 rounded-lg shadow-md p-4 transition-all hover:scale-[1.02] ${
+                                        user.isBanned || user.isDeactivated ? "bg-red" : ""
+                                    }`}
+                                    style={{ width: "300px", height: "400px" }} // Uniform card size
+                                >
+                                    <CardHeader className="flex flex-col items-center gap-2 ">
                                         <Link to={`/profile/${user.id}`}>
-                                            <div className="relative">
-                                                <img
-                                                    src={user.pfp || "/assets/icons/profile-placeholder.svg"}
-                                                    alt="creator"
-                                                    className="rounded-full w-28 h-28"
-                                                />
-                                                {user?.isVerified && (
-                                                    <img
-                                                        src="/assets/icons/verified.svg"
-                                                        alt="verified"
-                                                        className="absolute bottom-0 right-0 w-8 h-8"
-                                                    />
-                                                )}
-                                            </div>
+                                            <Avatar className="w-16 h-16">
+                                                <AvatarImage src={user.pfp} alt={user.username} />
+                                                <AvatarFallback className={"bg-white text-black"}>{user.username.charAt(0)}</AvatarFallback>
+                                            </Avatar>
                                         </Link>
-                                        <div className="flex-center flex-col gap-1">
-                                            <p className="small-regular text-light-3 text-center line-clamp-1">
+
+                                        <div className="flex items-center justify-center gap-1">
+                                            <p className="text-light-3 text-center font-semibold truncate max-w-[180px]">
                                                 @{user.username}
                                             </p>
+
+                                            {/* Status Icons */}
+                                            {user.isVerified && (
+                                                <img
+                                                    src="/assets/icons/verified.svg"
+                                                    alt="verified"
+                                                    className="w-5 h-5"
+                                                />
+                                            )}
+                                            {user.isCurator && (
+                                                <img
+                                                    src="/assets/icons/curator-icon.svg"
+                                                    alt="curator"
+                                                    className="w-5 h-5"
+                                                />
+                                            )}
+                                            {user.isAdministrator && (
+                                                <img
+                                                    src="/assets/icons/admin-icon.svg"
+                                                    alt="admin"
+                                                    className="w-5 h-5"
+                                                />
+                                            )}
                                         </div>
                                     </CardHeader>
-                                    <CardContent>
-                                        <div className="flex gap-8 mt-1 items-center justify-center xl:justify-start flex-wrap z-20">
+
+                                    <CardContent className="flex flex-col items-center justify-between h-full mt-2">
+                                        <div className="flex flex-wrap gap-5 justify-center mt-2">
                                             <StatBlock value={user.recipes.length || 0} label="Recipes" />
-                                            <StatBlock value={user.posts.length || 0} label={"Posts"} />
+                                            <StatBlock value={user.posts.length || 0} label="Posts" />
                                             <StatBlock value={isUpdating ? 0 : followersCount} label="Followers" />
                                             <StatBlock value={isUpdating ? 0 : followingCount} label="Following" />
                                         </div>
                                     </CardContent>
+
+                                    {(user?.isDeactivated || user?.isBanned) && (
+                                        <Badge variant="destructive" className="absolute top-2 right-2">
+                                            Deactivated
+                                        </Badge>
+                                    )}
                                 </Card>
+
                             </DropdownMenuTrigger>
+
                             <DropdownMenuContent align="end" side={"top"} className={" bg-dark-4 rounded outline-black"}>
+
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
+
                                 <DropdownMenuItem>
                                     <Link to={`/profile/${user.id}`}>View User Profile</Link>
                                 </DropdownMenuItem>
+
                                 <DropdownMenuItem>
                                     {currentUser.id !== user.id && (
                                         <Button type="button" size="sm" className="shad-button_primary px-5" onClick={handleFollowClick}>
@@ -161,6 +195,7 @@ import { Link } from "react-router-dom";
                                         </Button>
                                     )}
                                 </DropdownMenuItem>
+
                                 {currentUser.isAdministrator && (
                                     <>
                                         <DropdownMenuSeparator className={"bg-dark-3"} />
@@ -196,6 +231,15 @@ import { Link } from "react-router-dom";
                                                 {user.isDeactivated ? "Activate User" : "Deactivate User"}
                                             </Button>
                                         </DropdownMenuItem>
+
+                                        <DropdownMenuItem>
+                                            <Link to={`/send-message/${user.id}`}>
+                                                <Button type="button" size="sm" className="shad-button_primary px-5">
+                                                    Message User
+                                                </Button>
+                                            </Link>
+                                        </DropdownMenuItem>
+
                                     </>
                                 )}
                             </DropdownMenuContent>

@@ -23,6 +23,10 @@ export const RecipeValidation = z.object({
         .nonempty({ message: "Instructions are required." })
         .min(2, { message: 'Too short' })
         .max(2200, { message: 'Too long' }),
+    ingredients: z.string()
+        .nonempty({ message: "Ingredients are required." })
+        .min(2, { message: 'Too short' })
+        .max(2200, { message: 'Too long' }),
     cookTime: z.string()
         .nonempty({ message: "Required Field" })
         .min(1, { message: "Cook time must be at least 1." }),

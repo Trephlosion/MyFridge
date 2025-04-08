@@ -4,6 +4,7 @@ import {useSignOutAccount} from "@/lib/react-query/queriesAndMutations.ts";
 import {useEffect} from "react";
 import {useUserContext} from "@/context/AuthContext.tsx";
 import {getCurrentUser} from "@/lib/firebase/api.ts";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar.tsx";
 
 const Topbar = () => {
     const {mutate: signOut, isSuccess} = useSignOutAccount();
@@ -47,20 +48,36 @@ const Topbar = () => {
                     </Button>
                     <Link to={`/profile/${user.id}`} className="flex-center gap-3">
                         <>
-                        <div className="relative">
-                            <img
-                                src={user.pfp || "/assets/icons/profile-placeholder.svg"}
-                                alt="creator"
-                                className="rounded-full w-8 h-8"
-                            />
-                            {user?.isVerified && (
-                                <img
-                                    src="/assets/icons/verified.svg"
-                                    alt="verified"
-                                    className="absolute bottom-0 right-0 w-2 h-2"
-                                />
-                            )}
-                        </div>
+                            <div className={"relative"}>
+                                <Avatar className="w-8 h-8">
+                                    <AvatarImage src={user.pfp} alt={user.username} />
+                                    <AvatarFallback className={"bg-white text-black "}>{user.username.charAt(0)}</AvatarFallback>
+                                </Avatar>
+
+                                {/* Status Icons */}
+                                {user.isVerified && (
+                                    <img
+                                        src="/assets/icons/verified.svg"
+                                        alt="verified"
+                                        className="w-2.5 h-2.5 absolute bottom-0.5 right-0"
+                                    />
+                                )}
+                                {user.isCurator && (
+                                    <img
+                                        src="/assets/icons/curator-icon.svg"
+                                        alt="curator"
+                                        className="w-2.5 h-2.5 absolute bottom-0.5 right-0"
+                                    />
+                                )}
+                                {user.isAdministrator && (
+                                    <img
+                                        src="/assets/icons/admin-icon.svg"
+                                        alt="admin"
+                                        className="w-2.5 h-2.5 absolute bottom-0.5 right-0"
+                                    />
+                                )}
+                            </div>
+
                                 <p className="small-regular text-light-3">@{user.username}</p>
                         </>
                     </Link>

@@ -7,7 +7,6 @@ import { Routes, Route } from 'react-router-dom';
                     import SigninForm from './_auth/forms/SigninForm.tsx';
                     import { Home, Explore, Saved, AllUsers, EditRecipe, RecipeDetails, CreateRecipe, Profile, UpdateProfile, LikedRecipes, Admin, Workshops } from './_root/pages';
                     import { Toaster } from '@/components/ui/toaster.tsx';
-import RecipeAnalytics from './_root/pages/RecipeAnalytics.tsx';
 
                     const App = () => {
                         const { user } = useUserContext();
@@ -34,7 +33,6 @@ import RecipeAnalytics from './_root/pages/RecipeAnalytics.tsx';
                                         <Route path="/liked-recipes/:id/*" element={<LikedRecipes />} />
                                         <Route path="/admin" element={<Admin />} />
                                         <Route path="/workshops/*" element={<Workshops />} />
-                                        <Route path="/recipe-analytics" element={<RecipeAnalytics />} />
 
                                     </Route>
                                 </Routes>
