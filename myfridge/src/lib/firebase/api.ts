@@ -404,52 +404,55 @@ export async function getRecipeById(recipeId?: string) {
 }
 
 // Update recipe
+
 export async function updateRecipe(recipe: IUpdateRecipe) {
-    const hasFileToUpdate = recipe.file.length > 0;
-    try {
-        // Initialize media object with current values
-        let media = {
-            mediaUrl: recipe.mediaUrl,
+  const hasFileToUpdate = recipe.file.length > 0;
+  try {
+    // Initialize media object with current values
+    let media = {
+      mediaUrl: recipe.mediaUrl,
+    };
 
-        };
-
-        // Update media if a new file is provided
-        if (hasFileToUpdate) {
-            const fileRef = ref(storage, `recipe/${recipe.file[0].name}`);
-            await uploadBytes(fileRef, recipe.file[0]);
-            const fileUrl = await getDownloadURL(fileRef);
-            media = { mediaUrl: fileUrl, mediaId: fileRef.fullPath };
-        }
-
-        // Normalize tags: ensure it's always an array
-        const tags: string = Array.isArray(recipe.tags) ? recipe.tags : String(recipe.tags).split(",").map(t => t.trim()).filter(Boolean);
-
-        await updateDoc(doc(database, "Recipes", recipe.recipeId), {
-            description: recipe.description,
-            title: recipe.title, // Updated from "dish"
-            // Convert instructions string to an array
-            instructions: recipe.instructions.split("\n").map((step: string) => step.trim()),
-            cookTime: recipe.cookTime,
-            prepTime: recipe.prepTime,
-            servings: recipe.servings, // Updated from "serving"
-            tags: tags,
-            likes: [], // Reset likes array if needed
-            comments: [],
-            updatedAt: new Date(),
-            // Optional: Remove or update rating fields as needed
-            mediaUrl: media.mediaUrl,
-            mediaId: media.mediaId,
-        });
-
-        // Delete the old media file if a new file was uploaded
-        if (hasFileToUpdate && recipe.mediaId) {
-            const oldFileRef = ref(storage, recipe.mediaId);
-            await deleteObject(oldFileRef);
-        }
-        return { status: "ok" };
-    } catch (error) {
-        console.log(error);
+    // Update media if a new file is provided
+    if (hasFileToUpdate) {
+      const fileRef = ref(storage, `recipe/${recipe.file[0].name}`);
+      await uploadBytes(fileRef, recipe.file[0]);
+      const fileUrl = await getDownloadURL(fileRef);
+      media = { mediaUrl: fileUrl, mediaId: fileRef.fullPath };
     }
+
+    // Normalize tags to always be an array
+    const tags: string[] = Array.isArray(recipe.tags)
+      ? recipe.tags
+      : String(recipe.tags)
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean);
+
+    await updateDoc(doc(database, "Recipes", recipe.recipeId), {
+      description: recipe.description,
+      title: recipe.title,
+      instructions: recipe.instructions.split("\n").map((step: string) => step.trim()),
+      cookTime: recipe.cookTime,
+      prepTime: recipe.prepTime,
+      servings: recipe.servings,
+      tags: tags,
+      likes: [],
+      comments: [],
+      updatedAt: new Date(),
+      mediaUrl: media.mediaUrl,
+      mediaId: media.mediaId,
+    });
+
+    // Delete the old media file if a new file was uploaded and previous mediaId exists
+    if (hasFileToUpdate && (recipe as IUpdateRecipe & { mediaId?: string }).mediaId) {
+      const oldFileRef = ref(storage, (recipe as IUpdateRecipe & { mediaId?: string }).mediaId!);
+      await deleteObject(oldFileRef);
+    }
+    return { status: "ok" };
+  } catch (error) {
+    console.log(error);
+  }
 }
 // Delete recipe
 export async function deleteRecipe(recipeId?: string, mediaId?: string) {
