@@ -146,7 +146,7 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                     <img
                         src={imageUrl}
                         alt="recipe"
-                        className="w-full h-40 object-cover rounded"
+                        className="w-full h-80 object-cover rounded"
                     />
                 </Link>
             </CardContent>
