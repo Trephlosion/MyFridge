@@ -100,6 +100,9 @@ const Profile = () => {
         setIsUpdating(false);
     };
 
+    const handleInboxClick = () => {
+        navigate("/inbox");
+    };
 
 
 
@@ -170,7 +173,10 @@ const Profile = () => {
                     <TabsTrigger value="recipes" className={`profile-tab rounded-l-lg !bg-dark-3 h3-bold md:h2-bold text-center`}>MyRecipes</TabsTrigger>
                     <TabsTrigger value="liked-recipes" className={`profile-tab !bg-dark-3 h3-bold md:h2-bold text-center`}>Liked Recipes</TabsTrigger>
                     {user.id === currentUser.id && (
-                    <TabsTrigger value="fridge" className={`profile-tab rounded-r-lg !bg-dark-3 h3-bold md:h2-bold text-center`}>MyFridge</TabsTrigger>
+                        <>
+                            <TabsTrigger value={"inbox"} className={`profile-tab !bg-dark-3 h3-bold md:h2-bold text-center`}>My Inbox</TabsTrigger>
+                            <TabsTrigger value="fridge" className={`profile-tab rounded-r-lg !bg-dark-3 h3-bold md:h2-bold text-center`}>MyFridge</TabsTrigger>
+                        </>
                     )}
                 </TabsList>
 
@@ -184,6 +190,17 @@ const Profile = () => {
 
                 {user.id === currentUser.id && (
                     <>
+                        <TabsContent value={"inbox"} className="w-full max-w-5xl">
+                            <div className="mb-4 flex justify-end">
+                                <Button
+                                    className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+                                    onClick={handleInboxClick}
+                                >
+                                    📬 Inbox
+                                </Button>
+                            </div>
+                        </TabsContent>
+
                         <TabsContent value={"fridge"} className="w-full max-w-5xl">
                             <div>
                                 <DataTable

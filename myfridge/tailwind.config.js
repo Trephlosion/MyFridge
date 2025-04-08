@@ -32,7 +32,9 @@ module.exports = {
   			'light-2': '#EFEFEF',
   			'light-3': '#7878A3',
   			'light-4': '#5C5C7B',
-			accentColor: { DEFAULT: '#FFB620' },
+  			accentColor: {
+  				DEFAULT: '#FFB620'
+  			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
@@ -90,7 +92,7 @@ module.exports = {
   		keyframes: {
   			'accordion-down': {
   				from: {
-  					height: 0
+  					height: '0'
   				},
   				to: {
   					height: 'var(--radix-accordion-content-height)'
@@ -101,7 +103,7 @@ module.exports = {
   					height: 'var(--radix-accordion-content-height)'
   				},
   				to: {
-  					height: 0
+  					height: '0'
   				}
   			}
   		},

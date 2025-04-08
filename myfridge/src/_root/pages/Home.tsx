@@ -34,25 +34,13 @@ const Home = () => {
     const { user } = useUserContext();
     const navigate = useNavigate();
 
-    const handleInboxClick = () => {
-        navigate("/inbox");
-    };
+
 
     return (
         <div className="flex flex-1">
             <div className="home-container">
 
-                {/* Inbox button for non-admin users */}
-                {user && !user.isAdministrator && (
-                    <div className="mb-4 flex justify-end">
-                        <Button
-                            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
-                            onClick={handleInboxClick}
-                        >
-                            📬 Inbox
-                        </Button>
-                    </div>
-                )}
+
 
                 <div>
                     {/* Top Users */}
