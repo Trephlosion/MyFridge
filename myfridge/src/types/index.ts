@@ -193,3 +193,13 @@ export type IUpdateRecipe = {
     tags: string[];
     recipeId: string;
 };
+// Notifications
+export interface INotification {
+    id: string;
+    userId: string;
+    message: string;
+    recipeId?: string;
+    type: "new_comment" | "new_recipe";
+    isRead: boolean;
+    createdAt: any; // Can use Firebase Timestamp or Date
+}

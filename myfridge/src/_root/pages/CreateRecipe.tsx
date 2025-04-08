@@ -1,46 +1,67 @@
+// src/_root/pages/CreateRecipe.tsx
 import RecipeForm from "@/components/form/RecipeForm.tsx";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, query, where } from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
 import { useUserContext } from "@/context/AuthContext.tsx";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage"; // ✅ Import Firebase Storage
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-const storage = getStorage(); // ✅ Initialize Firebase Storage
+const storage = getStorage();
 
 const CreateRecipe = () => {
     const { user } = useUserContext();
     const navigate = useNavigate();
     const { toast } = useToast();
 
-    // ✅ Function to upload image & return URL
-    const uploadImage = async (file) => {
+    // Upload image to Firebase Storage
+    const uploadImage = async (file: File) => {
         try {
-            const fileRef = ref(storage, `recipe_images/${file.name}-${Date.now()}`); // ✅ Create unique filename
-            await uploadBytes(fileRef, file); // ✅ Upload file to Firebase Storage
-            return await getDownloadURL(fileRef); // ✅ Get downloadable URL
+            const fileRef = ref(storage, `recipe_images/${file.name}-${Date.now()}`);
+            await uploadBytes(fileRef, file);
+            return await getDownloadURL(fileRef);
         } catch (error) {
             console.error("Image Upload Error:", error);
-            return null; // ✅ Return null if upload fails
+            return null;
         }
     };
 
-    // ✅ Function to handle recipe submission
-    const handleCreateRecipe = async (recipeData) => {
+    // Create notifications for all followers
+    const notifyFollowers = async (recipeId: string, recipeTitle: string) => {
+        if (!user?.followers?.length) return;
+
+        const notificationsRef = collection(database, "Notifications");
+
+        const notifications = user.followers.map((followerId) => ({
+            user_id: doc(database, "Users", followerId),
+            type: "new_recipe",
+            message: `${user.username} posted a new recipe: ${recipeTitle}`,
+            recipeId,
+            isRead: false,
+            createdAt: serverTimestamp(),
+        }));
+
+        try {
+            await Promise.all(notifications.map((notif) => addDoc(notificationsRef, notif)));
+            console.log("Notifications sent to followers.");
+        } catch (err) {
+            console.error("Failed to send notifications:", err);
+        }
+    };
+
+    // Handle Recipe Submit
+    const handleCreateRecipe = async (recipeData: any) => {
         try {
             if (!user) {
                 toast({ title: "You must be logged in to create a recipe!" });
                 return;
             }
 
-            let imageUrl = null;
-
-            // ✅ Upload image if provided
-            if (recipeData.file && recipeData.file[0]) {
-                imageUrl = await uploadImage(recipeData.file[0]); // ✅ Get image URL
+            let imageUrl = "";
+            if (recipeData.file?.[0]) {
+                imageUrl = await uploadImage(recipeData.file[0]) || "";
             }
 
-            // ✅ Prepare valid Firestore document
             const newRecipe = {
                 dish: recipeData.dish,
                 description: recipeData.description,
@@ -48,17 +69,21 @@ const CreateRecipe = () => {
                 cookTime: recipeData.cookTime,
                 prepTime: recipeData.prepTime,
                 serving: recipeData.serving,
-                media_url: imageUrl || "", // ✅ Save image URL (or empty if missing)
+                media_url: imageUrl,
                 tags: recipeData.tags,
-                author: `/Users/${user.id}`, // ✅ Correct reference format
+                author: `/Users/${user.id}`,
                 createdAt: serverTimestamp(),
             };
 
-            await addDoc(collection(database, "Recipes"), newRecipe); // ✅ Save to Firestore
+            const recipeDocRef = await addDoc(collection(database, "Recipes"), newRecipe);
+
             toast({ title: "Recipe created successfully!" });
 
+            // Send notifications
+            await notifyFollowers(recipeDocRef.id, recipeData.dish);
+
             setTimeout(() => {
-                window.location.reload(); // ✅ Refresh page after submission
+                navigate("/");
             }, 1000);
         } catch (error) {
             console.error("Error creating recipe:", error);
@@ -70,22 +95,13 @@ const CreateRecipe = () => {
         <div className="flex flex-1">
             <div className="common-container">
                 <div className="max-w-5l flex-start gap-3 justify-start">
-                    <img
-                        src="/assets/icons/add-post.svg"
-                        alt="Create Recipe"
-                        width={36}
-                        height={36}
-                    />
+                    <img src="/assets/icons/add-post.svg" alt="Create Recipe" width={36} height={36} />
                     <h2 className="h3-bold md:h2-bold text-left w-full">Create Recipe</h2>
                 </div>
-                <RecipeForm onSubmit={handleCreateRecipe} /> {/* ✅ Pass function to RecipeForm */}
+                <RecipeForm onSubmit={handleCreateRecipe} />
             </div>
         </div>
     );
 };
 
 export default CreateRecipe;
-
-
-
-

@@ -5,6 +5,7 @@ import { Routes, Route } from 'react-router-dom';
                     import RootLayout from './_root/RootLayout';
                     import SignupForm from './_auth/forms/SignupForm.tsx';
                     import SigninForm from './_auth/forms/SigninForm.tsx';
+import NotificationsPage from "./_root/pages/NotificationsPage";
                     import { Home, Explore, Saved, AllUsers, EditRecipe, RecipeDetails, CreateRecipe, Profile, UpdateProfile, LikedRecipes, Admin, Workshops } from './_root/pages';
                     import { Toaster } from '@/components/ui/toaster.tsx';
 
@@ -32,7 +33,7 @@ import { Routes, Route } from 'react-router-dom';
                                         <Route path="/liked-recipes/:id/*" element={<LikedRecipes />} />
                                         <Route path="/admin" element={<Admin />} />
                                         <Route path="/workshops/*" element={<Workshops />} />
-
+                                        <Route path="/notifications" element={<NotificationsPage />} />
                                     </Route>
                                 </Routes>
                                 <Toaster />
