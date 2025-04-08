@@ -68,12 +68,14 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                 return {
                     pfp: userData.pfp || "/assets/icons/profile-placeholder.svg",
                     username: userData.username || "Unknown",
+                    id: userData.uid
                 };
             } else {
                 console.error("User document does not exist.");
                 return {
                     pfp: "/assets/icons/profile-placeholder.svg",
                     username: "Unknown",
+                    id: "Unknown"
                 };
             }
         } catch (error) {
@@ -81,6 +83,7 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
             return {
                 pfp: "/assets/icons/profile-placeholder.svg",
                 username: "Unknown",
+                id: "Unknown"
             };
         }
     };
@@ -88,7 +91,7 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
     useEffect(() => {
         const fetchUserInfo = async () => {
             if (recipe.author || recipe.userId) {
-                const info = await handleGetUserInfo(recipe.author);
+                const info = await handleGetUserInfo(recipe.author || recipe.userId);
                 setUserInfo(info);
             }
         };
@@ -103,23 +106,21 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
             : [];
 
     return (
-        <Card className="recipe-card w-80 h-96 flex flex-col">
+        <Card className="recipe-card flex flex-col">
             <CardTitle className="flex-center text-center">
                 <h1 className="text-lg font-bold">{recipe.title}</h1>
             </CardTitle>
-            <CardHeader className="flex justify-between items-center px-3">
-                <div className="flex items-center gap-3">
-                    <Link to={`/profile/${recipe.author}`}>
+            <CardHeader className="flex justify-between px-3">
+                <div className="flex flex-col items-left gap-3">
+                    <Link to={`/profile/${userInfo.uid}`}>
                         <img
                             src={userInfo.pfp}
                             alt="creator"
-                            className="w-12 h-12 rounded-full object-cover"
+                            className="w-12 h-12 rounded-full"
                         />
+                        <p className="text-sm font-medium">{userInfo.username}</p>
                     </Link>
                     <div className="flex flex-col">
-                        <Link to={`/profile/${recipe.author}`}>
-                            <p className="text-sm font-medium">{userInfo.username}</p>
-                        </Link>
                         <div className="flex items-center gap-1 text-xs text-gray-500">
                             <p>
                                 {recipe.createdAt
@@ -159,11 +160,11 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                WebkitBoxOrient: 'vertical',
                overflow: 'hidden'
              }} */}
-                <p className="text-sm text-gray-700 line-clamp-3">{recipe.description}</p>
+                <p className="text-sm text-gray-700 line-clamp-2">{recipe.description}</p>
             </CardDescription>
             <CardFooter className="mt-auto px-5">
                 <RecipeStats recipe={recipe} userId={user.id} />
-                <ul className="flex flex-col flex-wrap gap-1 mt-2 text-xs text-gray-500">
+                <ul className="flex flex-row flex-wrap gap-1 mt-2 text-xs text-gray-500">
                     {safeTags.map((tag, idx) => (
                         <li key={`${tag}-${idx}`}>#{tag}</li>
                     ))}

@@ -349,6 +349,7 @@ export async function createRecipe(recipe: INewRecipe) {
             mediaUrl: fileUrl,
             title: recipe.title,
             instructions: recipe.instructions,
+            ingredients: [],
             cookTime: recipe.cookTime,
             prepTime: recipe.prepTime,
             servings: recipe.servings,
