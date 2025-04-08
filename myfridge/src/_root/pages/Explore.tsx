@@ -115,7 +115,7 @@ const Explore = () => {
                 ) : (
 
                     recipes.map((recipe) => (
-                        <RecipeCard key={recipe.id} recipe={recipe} onClick={() => navigate(`/recipe/${recipe.id}`)} />
+                        <RecipeCard key={recipe.id} recipe={recipe}  />
                     ))
 
                 )}

@@ -40,20 +40,26 @@ const CreateRecipe = () => {
                 imageUrl = await uploadImage(recipeData.file[0]); // ✅ Get image URL
             }
 
-            // ✅ Prepare valid Firestore document
-            const newRecipe = {
-                title: recipeData.dish,
+            // After uploading media, prepare new recipe:
+            const newRecipeRef = await addDoc(collection(database, "Recipes"), {
+                title: recipeData.title,
                 description: recipeData.description,
                 instructions: recipeData.instructions,
                 ingredients: recipeData.ingredients,
                 cookTime: recipeData.cookTime,
                 prepTime: recipeData.prepTime,
-                serving: recipeData.serving,
-                media_url: imageUrl || "", // ✅ Save image URL (or empty if missing)
+                servings: recipeData.servings,
+                mediaUrl: imageUrl || "",
                 tags: recipeData.tags,
-                author: doc(database, "Users", user?.id), // ✅ Correct reference format
+                author: doc(database, "Users", user.id),
                 createdAt: serverTimestamp(),
-            };
+            });
+
+// ✅ Add reference to user's recipe array
+            const userRef = doc(database, "Users", user.id);
+            await updateDoc(userRef, {
+                recipes: arrayUnion(newRecipeRef),
+            });
 
             await addDoc(collection(database, "Recipes"), newRecipe); // ✅ Save to Firestore
             toast({ title: "Recipe created successfully!" });
