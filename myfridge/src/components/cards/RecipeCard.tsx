@@ -26,6 +26,10 @@ type RecipeCardProps = {
 type UserInfo = {
     pfp: string;
     username: string;
+    isVerified?: boolean;
+    isCurator?: boolean;
+    isAdministrator?: boolean;
+    id?: string;
 };
 
 const RecipeCard = ({ recipe }: RecipeCardProps) => {
@@ -34,6 +38,10 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
     const [userInfo, setUserInfo] = useState<UserInfo>({
         pfp: "/assets/icons/profile-placeholder.svg",
         username: "Unknown",
+        isVerified: false,
+        isCurator: false,
+        isAdministrator: false,
+        id: "",
     });
 
     useEffect(() => {
@@ -64,10 +72,14 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
             const userRef = typeof authorId === "string" ? doc(database, "Users", authorId) : authorId;
             const userSnap = await getDoc(userRef);
             if (userSnap.exists()) {
-                const userData = userSnap.data();
+                const userData:any = userSnap.data();
                 return {
                     pfp: userData.pfp || "/assets/icons/profile-placeholder.svg",
                     username: userData.username || "Unknown",
+                    isVerified: userData.isVerified || false,
+                    isCurator: userData.isCurator || false,
+                    isAdministrator: userData.isAdministrator || false,
+                    id: userSnap.id,
                 };
             }
         } catch (error) {
@@ -85,7 +97,7 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                 setUserInfo({
                     pfp: recipe.pfp || "/assets/icons/ai-bot-icon.svg",
                     username: recipe.username || "AI Chef",
-                });
+                })
             } else if (recipe.author || recipe.userId) {
                 const authorIdentifier = recipe.author || recipe.userId;
                 const info = await handleGetUserInfo(authorIdentifier);
@@ -109,33 +121,40 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
 
             <CardHeader className="flex justify-between px-3">
                 <div className="flex flex-col items-start gap-3">
-                    <Link to={`/profile/${recipe.author || recipe.userId}`} className="flex items-center gap-3">
-                        <Avatar className="w-12 h-12 relative">
+                    <Link to={`/profile/${userInfo.id}`} className="flex items-center gap-3">
+                        <Avatar className="w-16 h-16">
                             <AvatarImage src={userInfo.pfp} alt={userInfo.username} />
-                            {user?.isVerified && (
+                            <AvatarFallback className={"bg-white text-black"}>{userInfo.username.charAt(0)}</AvatarFallback>
+                        </Avatar>
+
+                        <div className="flex items-center justify-center gap-1">
+                            <p className="text-light-3 text-center font-semibold truncate max-w-[180px]">
+                                @{userInfo.username}
+                            </p>
+
+                            {/* Status Icons */}
+                            {userInfo.isVerified && (
                                 <img
                                     src="/assets/icons/verified.svg"
                                     alt="verified"
-                                    className="absolute -bottom-4 -right-4 w-8 h-8"
+                                    className="w-5 h-5"
                                 />
                             )}
-                            {user?.isCurator && (
+                            {userInfo.isCurator && (
                                 <img
                                     src="/assets/icons/curator-icon.svg"
                                     alt="curator"
-                                    className="absolute -bottom-4 -right-4 w-8 h-8"
+                                    className="w-5 h-5"
                                 />
                             )}
-                            {user?.isAdministrator && (
+                            {userInfo.isAdministrator && (
                                 <img
                                     src="/assets/icons/admin-icon.svg"
                                     alt="admin"
-                                    className="absolute -bottom-4 -right-4 w-8 h-8"
+                                    className="w-5 h-5"
                                 />
                             )}
-                            <AvatarFallback>{userInfo.username.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <p className="text-sm font-medium">{userInfo.username}</p>
+                        </div>
                     </Link>
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                         <p>{multiFormatDateString(recipe.createdAt?.toString() || "")}</p>

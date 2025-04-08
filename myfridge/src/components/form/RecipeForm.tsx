@@ -127,10 +127,10 @@ const RecipeForm = ({ recipe }: RecipeFormProps) => {
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel className="shad-form-label">
-                                Recipe Ingredients (each step on a new line)
+                                Recipe Ingredients (separated by commas ",")
                             </FormLabel>
                             <FormControl>
-                                <Textarea placeholder="Write the recipe instructions here" {...field} className="shad-textarea custom-scrollbar" />
+                                <Textarea placeholder="Write the recipe ingredients here" {...field} className="shad-textarea custom-scrollbar" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -202,7 +202,9 @@ const RecipeForm = ({ recipe }: RecipeFormProps) => {
                     )}
                 />
                 <div className="flex gap-4 items-center justify-end">
-                    <Button type="submit" className="shad-button_primary whitespace-nowrap">Submit</Button>
+<Button type="submit" className="shad-button_primary whitespace-nowrap" disabled={isLoadingCreate}>
+    {isLoadingCreate ? "Submitting..." : "Submit"}
+</Button>
                     <Button type="button" className="shad-button_dark_4">Cancel</Button>
                 </div>
             </form>
