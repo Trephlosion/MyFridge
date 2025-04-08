@@ -50,14 +50,19 @@ const generateAiRecipes = async (ingredients: string[]): Promise<Recipe[]> => {
     }
 
     const prompt = `
-You are an innovative chef. Generate between 3 and 5 unique recipes that only use the following ingredients: ${ingredients.join(
+You are an innovative chef. Generate between 3 and 4 unique recipes that only use the following ingredients: ${ingredients.join(
         ", "
     )}.
 For each recipe, provide:
   - A title.
   - A brief description.
-  - Step-by-step instructions.
-Return the result as a JSON array where each object has the keys "title", "description", and "instructions".
+  - A list of ingredients (including the ones provided).
+  - Cooking time.
+  - Prep time.
+  - Servings size.
+  - Detailed step-by-step instructions.
+ONLY return the result, no extra text at the beginning or end of your response.
+Return the result as a JSON array where each object has the keys "title", "description", "ingredients", "cookTime", "prepTime", "servings", and "instructions".
   `;
 
     const payload = {
@@ -100,13 +105,16 @@ Return the result as a JSON array where each object has the keys "title", "descr
             title: item.title,
             description: item.description,
             instructions: item.instructions,
+            ingredients: item.ingredients,
+            prepTime: item.prepTime,
+            cookTime: item.cookTime,
+            servings: item.servings,
             mediaUrl: "/assets/icons/recipe-placeholder.svg", // initial placeholder
             createdAt: new Date(),
             likes: [],
-            author: {
-                id: "ai",
-                username: "AI Chef",
-            },
+            username: "AI Chef",
+            pfp: "/assets/icons/ai-bot-icon.svg",
+
             tags: ["AI", "Auto-generated"],
         }));
         // For each generated recipe, fetch the top image from Google and update the mediaUrl.

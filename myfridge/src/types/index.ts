@@ -87,6 +87,8 @@ export type Recipe = {
     mediaUrl: string; // Image URL (formerly "pfp")
     author: any;
     userId?: any;
+    username?: string;
+    pfp?: string;
     tags: string[];
     instructions: string[]; // Array of instruction steps
     ingredients: string[]; // Array of ingredients

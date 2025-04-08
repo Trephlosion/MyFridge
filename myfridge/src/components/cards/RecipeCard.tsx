@@ -47,7 +47,7 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                         setImageUrl(url);
                     } catch (error) {
                         console.error("Error fetching image URL:", error);
-                        setImageUrl("/assets/icons/profile-placeholder.svg");
+                        setImageUrl("/assets/icons/recipe-placeholder.svg");
                     }
                 }
             } else {
@@ -61,21 +61,25 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
     // Fetch the author's info.
     const handleGetUserInfo = async (authorId: any) => {
         try {
-            const userRef = authorId;
+            let userRef;
+            // If authorId is a string, convert it to a DocumentReference.
+            if (typeof authorId === "string") {
+                userRef = doc(database, "Users", authorId);
+            } else {
+                userRef = authorId;
+            }
             const userSnap = await getDoc(userRef);
             if (userSnap.exists()) {
                 const userData = userSnap.data();
                 return {
                     pfp: userData.pfp || "/assets/icons/profile-placeholder.svg",
                     username: userData.username || "Unknown",
-                    id: userData.uid
                 };
             } else {
                 console.error("User document does not exist.");
                 return {
                     pfp: "/assets/icons/profile-placeholder.svg",
                     username: "Unknown",
-                    id: "Unknown"
                 };
             }
         } catch (error) {
@@ -83,20 +87,26 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
             return {
                 pfp: "/assets/icons/profile-placeholder.svg",
                 username: "Unknown",
-                id: "Unknown"
             };
         }
     };
 
     useEffect(() => {
         const fetchUserInfo = async () => {
-            if (recipe.author || recipe.userId) {
-                const info = await handleGetUserInfo(recipe.author || recipe.userId);
+            // If the recipe is an AI recipe, use recipe.pfp and recipe.username directly.
+            if (recipe.tags && Array.isArray(recipe.tags) && recipe.tags.includes("AI")) {
+                setUserInfo({
+                    pfp: recipe.pfp || "/assets/icons/ai-bot-icon.svg",
+                    username: recipe.username || "AI Chef",
+                });
+            } else if (recipe.author || recipe.userId) {
+                const authorIdentifier = recipe.author || recipe.userId;
+                const info = await handleGetUserInfo(authorIdentifier);
                 setUserInfo(info);
             }
         };
         fetchUserInfo();
-    }, [recipe.author]);
+    }, [recipe.author, recipe.userId, recipe.tags, recipe.pfp, recipe.username]);
 
     // Safe tags parsing.
     const safeTags: string[] = Array.isArray(recipe.tags)
@@ -111,12 +121,12 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                 <h1 className="text-lg font-bold">{recipe.title}</h1>
             </CardTitle>
             <CardHeader className="flex justify-between px-3">
-                <div className="flex flex-col items-left gap-3">
-                    <Link to={`/profile/${userInfo.uid}`}>
+                <div className="flex flex-col items-start gap-3">
+                    <Link to={`/profile/${recipe.author || recipe.userId}`}>
                         <img
                             src={userInfo.pfp}
                             alt="creator"
-                            className="w-12 h-12 rounded-full"
+                            className="w-12 h-12 rounded-full object-cover"
                         />
                         <p className="text-sm font-medium">{userInfo.username}</p>
                     </Link>
@@ -131,7 +141,7 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                         </div>
                     </div>
                 </div>
-                {user?.id === recipe.author && (
+                {user?.id === recipe.author || user?.id === recipe.userId ? (
                     <Link to={`/update-recipe/${recipe.id}`}>
                         <img
                             src="/assets/icons/edit.svg"
@@ -139,10 +149,10 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                             className="w-5 h-5"
                         />
                     </Link>
-                )}
+                ) : null}
             </CardHeader>
             <CardContent className="flex-grow p-2">
-                <Link to={`/recipes/${recipe.id}`}>
+                <Link to={`/recipes/${recipe.id}`} state={recipe}>
                     <img
                         src={imageUrl}
                         alt="recipe"
@@ -151,16 +161,9 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                 </Link>
             </CardContent>
             <CardDescription className="px-3">
-                {/* Use Tailwind's line-clamp-3 for multi-line truncation.
-            Ensure the Tailwind line-clamp plugin is enabled in your project.
-            Alternatively, you can use inline styles:
-             style={{
-               display: '-webkit-box',
-               WebkitLineClamp: 3,
-               WebkitBoxOrient: 'vertical',
-               overflow: 'hidden'
-             }} */}
-                <p className="text-sm text-gray-700 line-clamp-2">{recipe.description}</p>
+                <p className="text-sm text-gray-700 line-clamp-2">
+                    {recipe.description}
+                </p>
             </CardDescription>
             <CardFooter className="mt-auto px-5">
                 <RecipeStats recipe={recipe} userId={user.id} />
