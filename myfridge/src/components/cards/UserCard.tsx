@@ -161,6 +161,15 @@ import { Link } from "react-router-dom";
                                         </Button>
                                     )}
                                 </DropdownMenuItem>
+
+                                <DropdownMenuItem>
+                                    <Link to={`/send-message/${user.id}`}>
+                                        <Button type="button" size="sm" className="shad-button_primary px-5">
+                                            Message User
+                                        </Button>
+                                    </Link>
+                                </DropdownMenuItem>
+
                                 {currentUser.isAdministrator && (
                                     <>
                                         <DropdownMenuSeparator className={"bg-dark-3"} />
@@ -197,13 +206,7 @@ import { Link } from "react-router-dom";
                                             </Button>
                                         </DropdownMenuItem>
 
-                                        <DropdownMenuItem>
-                                            <Link to={`/send-message/${user.id}`}>
-                                                <Button type="button" size="sm" className="shad-button_primary px-5">
-                                                    Message User
-                                                </Button>
-                                            </Link>
-                                        </DropdownMenuItem>
+
 
                                     </>
                                 )}
