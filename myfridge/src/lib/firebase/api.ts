@@ -329,7 +329,7 @@ export async function createRecipe(recipe: INewRecipe) {
         const tags: string = Array.isArray(recipe.tags) ? recipe.tags : String(recipe.tags).split(",").map(t => t.trim()).filter(Boolean);
 
 
-        const snapshot = await db.collection("Recipes").get();
+        /*const snapshot = await database.collection("Recipes").get();
         snapshot.forEach(doc => {
             const { tags } = doc.data();
             if (!Array.isArray(tags)) {
@@ -338,7 +338,7 @@ export async function createRecipe(recipe: INewRecipe) {
                     : [];
                 doc.ref.update({ tags: fixed });
             }
-        });
+        });*/
 
 
         // Save recipe to Firestore
@@ -349,7 +349,7 @@ export async function createRecipe(recipe: INewRecipe) {
             mediaUrl: fileUrl,
             title: recipe.title,
             instructions: recipe.instructions,
-            ingredients: [],
+            ingredients: recipe.ingredients,
             cookTime: recipe.cookTime,
             prepTime: recipe.prepTime,
             servings: recipe.servings,
@@ -410,7 +410,7 @@ export async function updateRecipe(recipe: IUpdateRecipe) {
         // Initialize media object with current values
         let media = {
             mediaUrl: recipe.mediaUrl,
-            mediaId: recipe.mediaId,
+
         };
 
         // Update media if a new file is provided

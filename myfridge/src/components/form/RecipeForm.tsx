@@ -25,6 +25,7 @@ type RecipeFormProps = {
         title: string;            // Changed from dish
         description: string;
         instructions: string[];   // Stored as an array in Firestore
+        ingredients: string[];    // Changed from ingredients
         cookTime: number;
         prepTime: number;
         servings: number;         // Changed from serving
@@ -46,6 +47,7 @@ const RecipeForm = ({ recipe }: RecipeFormProps) => {
             description: recipe ? recipe.description : "",
             // Join instructions array into a string for the textarea
             instructions: recipe ? recipe.instructions.join('\n') : "",
+            ingredients: recipe ? recipe.ingredients.join(',') : "",
             cookTime: recipe ? recipe.cookTime.toString() : "0",
             prepTime: recipe ? recipe.prepTime.toString() : "0",
             servings: recipe ? recipe.servings.toString() : "0",
@@ -62,6 +64,7 @@ const RecipeForm = ({ recipe }: RecipeFormProps) => {
             // Convert comma separated tags to array and instructions to an array (split on newline)
             tags: values.tags.split(',').map(tag => tag.trim()),
             instructions: values.instructions.split('\n').map(step => step.trim()),
+            ingredients: values.ingredients.split(',').map(ingredient => ingredient.trim()),
         });
         if (!newRecipe) {
             toast({
@@ -110,6 +113,21 @@ const RecipeForm = ({ recipe }: RecipeFormProps) => {
                         <FormItem>
                             <FormLabel className="shad-form-label">
                                 Recipe Instructions (each step on a new line)
+                            </FormLabel>
+                            <FormControl>
+                                <Textarea placeholder="Write the recipe instructions here" {...field} className="shad-textarea custom-scrollbar" />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="ingredients"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="shad-form-label">
+                                Recipe Ingredients (each step on a new line)
                             </FormLabel>
                             <FormControl>
                                 <Textarea placeholder="Write the recipe instructions here" {...field} className="shad-textarea custom-scrollbar" />

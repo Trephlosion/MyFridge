@@ -45,6 +45,7 @@ const CreateRecipe = () => {
                 title: recipeData.dish,
                 description: recipeData.description,
                 instructions: recipeData.instructions,
+                ingredients: recipeData.ingredients,
                 cookTime: recipeData.cookTime,
                 prepTime: recipeData.prepTime,
                 serving: recipeData.serving,

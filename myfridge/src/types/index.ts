@@ -152,6 +152,7 @@ export type INewRecipe = {
     title: string; // Changed from "dish" to "title"
     description: string;
     instructions: string[]; // Accept a single string (to be split into an array)
+    ingredients: string[]; // Changed from "ingredients" to "ingredients"
     cookTime: string;
     prepTime: string;
     servings: string; // Changed from "serving" to "servings"
@@ -162,11 +163,12 @@ export type INewRecipe = {
 export type IUpdateRecipe = {
     postId: string;
     mediaUrl: string; // Updated field name (formerly "imageUrl" or "pfp")
-    mediaId: string;  // Added storage path (formerly "pfpId")
+
     file: File[]; // Array of uploaded files
     title: string; // Changed from "dish" to "title"
     description: string;
     instructions: string; // Accept a single string (to be split into an array)
+    ingredients: string[]; // Changed from "ingredients" to "ingredients"
     cookTime: string;
     prepTime: string;
     servings: string; // Changed from "serving" to "servings"
