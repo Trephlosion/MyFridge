@@ -5,11 +5,15 @@ import {
 import { addDoc, startAfter, DocumentSnapshot, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, limit, getDocs, runTransaction, arrayUnion, arrayRemove } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { auth, database, storage,} from "@/lib/firebase/config.ts";
-import { INewRecipe, IRecipeMetadata, IUpdateRecipe, IUpdateUser, IUser } from "@/types";
+import { INewRecipe, IRecipeMetadata, IUpdateRecipe, IUpdateUser, IUser,  INewWorkshop, IUpdateWorkshop, FridgeData } from "@/types";
 import firebase from "firebase/compat/app";
 import DocumentReference = firebase.firestore.DocumentReference;
-import { INewWorkshop, IUpdateWorkshop } from "@/types";
+
 import { getFunctions, httpsCallable } from "firebase/functions";
+
+import {useToast} from "@/hooks/use-toast";
+import {useUserContext} from "@/context/AuthContext.tsx";
+import {useNavigate} from "react-router-dom";
 
 
 
@@ -259,6 +263,9 @@ export async function updateUser(user: IUpdateUser) {
             await followUser(user.id, followingId, false);
         }
 
+        //update the user's Fridge
+
+
         return { status: "ok" };
     } catch (error) {
         console.error("Error updating user:", error);
@@ -304,6 +311,8 @@ export async function followUser(currentUserId: string, profileUserId: string, i
 // Create a new recipe
 export async function createRecipe(recipe: INewRecipe) {
     try {
+
+
         const currentUser = auth.currentUser;
         if (!currentUser) {
             console.error("No user is currently signed in");
@@ -329,17 +338,7 @@ export async function createRecipe(recipe: INewRecipe) {
         const tags: string = Array.isArray(recipe.tags) ? recipe.tags : String(recipe.tags).split(",").map(t => t.trim()).filter(Boolean);
 
 
-        /*const snapshot = await database.collection("Recipes").get();
-        snapshot.forEach(doc => {
-            const { tags } = doc.data();
-            if (!Array.isArray(tags)) {
-                const fixed = typeof tags === "string"
-                    ? tags.split(",").map(t => t.trim()).filter(Boolean)
-                    : [];
-                doc.ref.update({ tags: fixed });
-            }
-        });*/
-
+        const { toast } = useToast();
 
         // Save recipe to Firestore
         const newRecipeRef = doc(collection(database, "Recipes"));
@@ -367,13 +366,22 @@ export async function createRecipe(recipe: INewRecipe) {
         await updateDoc(userRef, {
             recipes: arrayUnion(newRecipeRef),
         });
+        toast({ title: "Recipe created successfully!" });
 
-        console.log("Recipe created successfully!");
+        setTimeout(() => {
+            window.location.reload(); // ✅ Refresh page after submission
+        }, 1000);
+
+
         return newRecipeRef.id; // Return the new recipe's ID
     } catch (error) {
+        const { toast } = useToast();
         console.error("Error creating recipe:", error);
-        throw error;
+        toast({ title: "Failed to create recipe. Please try again." });
+
+
     }
+
 }
 
 // Get recipes by search term (searching within tags)
@@ -404,7 +412,6 @@ export async function getRecipeById(recipeId?: string) {
 }
 
 // Update recipe
-
 export async function updateRecipe(recipe: IUpdateRecipe) {
   const hasFileToUpdate = recipe.file.length > 0;
   try {
@@ -441,7 +448,7 @@ export async function updateRecipe(recipe: IUpdateRecipe) {
       comments: [],
       updatedAt: new Date(),
       mediaUrl: media.mediaUrl,
-      mediaId: media.mediaId,
+
     });
 
     // Delete the old media file if a new file was uploaded and previous mediaId exists
@@ -454,6 +461,7 @@ export async function updateRecipe(recipe: IUpdateRecipe) {
     console.log(error);
   }
 }
+
 // Delete recipe
 export async function deleteRecipe(recipeId?: string, mediaId?: string) {
     if (!recipeId || !mediaId) return;
@@ -466,6 +474,7 @@ export async function deleteRecipe(recipeId?: string, mediaId?: string) {
         console.log(error);
     }
 }
+
 // Like recipe
 export async function likeRecipe(recipeId: string, likesArray: string[]) {
     try {
@@ -585,6 +594,7 @@ export async function deleteFile(fileId: string) {
         console.log(error);
     }
 }
+
 //WORKSHOP FUNCTIONS
 export const createWorkshop = async (workshopData: INewWorkshop) => {
     const workshopRef = doc(collection(database, "Workshops"));
@@ -665,41 +675,12 @@ export async function createFridge(userid: string) {
     }
 }
 
-export async function getFridgeIDByUser(userid: string) {
+//Update fridge
+export async function updateFridge(fridgeId: any, fridgeData: any) {
     try {
-        const fridgeQuery = query(collection(database, "Fridges"), where("userid", "==", userid));
-        const querySnapshot = await getDocs(fridgeQuery);
+        const { ingredients, shoppingList } = fridgeData;
 
-        if (querySnapshot.empty) {
-            throw new Error("Fridge not found");
-        }
 
-        const fridgeDoc = querySnapshot.docs[0];
-        return fridgeDoc.id;
-    } catch (error) {
-        console.error("Error fetching fridge:", error);
-        return null;
-    }
-}
-
-export async function getFridgeById(fridgeId: string) {
-    try {
-        const fridgeDoc = await getDoc(doc(database, "Fridges", fridgeId));
-        if (!fridgeDoc.exists()) throw new Error("Fridge not found");
-        return fridgeDoc.data();
-    } catch (error) {
-        console.log(error);
-    }
-}
-
-export async function updateFridge(fridgeId: string, fridgeData: any) {
-    try {
-        const ingredients = fridgeData.ingredients.map((ingredientId: string) => ({
-            ingredientId: doc(database, "Ingredients", ingredientId),
-        }));
-        const shoppingList = fridgeData.shoppingList.map((ingredientId: string) => ({
-            ingredientId: doc(database, "Ingredients", ingredientId),
-        }));
 
         await updateDoc(doc(database, "Fridges", fridgeId), {
             ingredients,
@@ -712,37 +693,31 @@ export async function updateFridge(fridgeId: string, fridgeData: any) {
     }
 }
 
-export async function getAllFridgeIngredients(userid: string) {
+export async function getAllFridgeIngredients(fridgeid: any) {
     try {
+        const fridgeDocRef = doc(database, "Fridges", fridgeid);
+        const fridgeDocSnap = await getDoc(fridgeDocRef);
 
-
-        const fridgeQuery = query(collection(database, "Fridges"), where("userid", "==", userid));
-        const querySnapshot = await getDocs(fridgeQuery);
-
-        if (querySnapshot.empty) {
-            throw new Error("Fridge not found");
+        if (fridgeDocSnap.exists()) {
+            const fridgeData = fridgeDocSnap.data() as FridgeData;
+            const ingredientData = Array.isArray(fridgeData.ingredients) ? fridgeData.ingredients : [];
+            return ingredientData;
+        } else {
+            console.warn(`Fridge document with id ${fridgeid} does not exist.`);
         }
-
-        const fridgeDoc = querySnapshot.docs[0];
-        // incrementing the index of the ingredients array
-        const ingredientData = fridgeDoc.data().ingredients;
-        // const ingredientData = [getIngredientNameById(fridgeDoc.data().ingredients[0].ingredientId.id)];
-        return ingredientData;
-
-
-
-
     } catch (error) {
         console.error("Error fetching fridge:", error);
-        return null;
     }
+
+    return []; // always return an array
 }
+
 
 export async function addIngredientToFridge(fridgeId: string, ingredientId: string) {
     try {
         const fridgeDoc = doc(database, "Fridges", fridgeId);
         await updateDoc(fridgeDoc, {
-            ingredients: arrayUnion({ ingredientId: doc(database, "Ingredients", ingredientId) }),
+            ingredients: arrayUnion({ ingredientId }),
         });
         return { status: "ok" };
     } catch (error) {
@@ -762,8 +737,7 @@ export async function removeIngredientFromFridge(fridgeId: string, ingredientId:
     }
 }
 
-export async function addIngredientToShoppingList(fridgeId: string, ingredientId: string)
-{
+export async function addIngredientToShoppingList(fridgeId: string, ingredientId: string) {
     try {
         const fridgeDoc = doc(database, "Fridges", fridgeId);
         await updateDoc(fridgeDoc, {
@@ -921,6 +895,12 @@ export async function toggleUserBan(userId: string): Promise<void> {
 }
 
 /* ---------------------------- New Functions ------------------- */
+
+// Message Functions
+
+// Send a message This function will send a message to the user
+
+// Create Message Document
 
 // AI Functions
 

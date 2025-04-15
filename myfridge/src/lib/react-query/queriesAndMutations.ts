@@ -234,6 +234,7 @@ export const useDeleteSavedRecipe = () => {
 // ============================================================
 // USER QUERIES
 // ============================================================
+
 export const useGetCurrentUser = () => {
     return useQuery({
         queryKey: [QUERY_KEYS.GET_CURRENT_USER],
@@ -270,7 +271,7 @@ export const useUpdateUser = () => {
         },
     });
 };
-// Mutation for Workshops
+
 // Mutation for Workshops
 export const useCreateWorkshop = () => {
     const queryClient = useQueryClient();
@@ -409,19 +410,8 @@ export const useFollowUser = () => {
 };
 
 
-// Query for getting fridge ID by user
-export const useGetFridgeIDByUser = (userId: string) => {
-    return useQuery({
-        queryKey: [QUERY_KEYS.GET_FRIDGE_ID_BY_USER, userId],
-        queryFn: () => getFridgeIDByUser(userId),
-        enabled: !!userId,
-    });
-};
-
-
-
 // Query for getting all fridge ingredients
-export const useGetAllFridgeIngredients = (fridgeId: string) => {
+export const useGetAllFridgeIngredients = (fridgeId: any) => {
     return useQuery({
         queryKey: [QUERY_KEYS.GET_ALL_FRIDGE_INGREDIENTS, fridgeId],
         queryFn: () => getAllFridgeIngredients(fridgeId),

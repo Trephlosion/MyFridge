@@ -66,7 +66,7 @@ export default function Ingredients_dataTable<TData, TValue>({
                 />
 
             </div>
-            <div className="rounded-md border">
+            <div className="border user-card relative bg-dark-4 rounded-lg shadow-md p-4 transition-all hover:scale-[1.02]">
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (

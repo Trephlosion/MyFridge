@@ -84,6 +84,7 @@ export type Recipe = {
     servings?: number;
     createdAt: Date;
     updatedAt?: Date;
+    isReccomended?: boolean;
     mediaUrl: string; // Image URL (formerly "pfp")
     author: any;
     userId?: any;
@@ -163,7 +164,6 @@ export type INewRecipe = {
 export type IUpdateRecipe = {
     postId: string;
     mediaUrl: string; // Updated field name (formerly "imageUrl" or "pfp")
-
     file: File[]; // Array of uploaded files
     title: string; // Changed from "dish" to "title"
     description: string;
@@ -174,4 +174,11 @@ export type IUpdateRecipe = {
     servings: string; // Changed from "serving" to "servings"
     tags: string[];
     recipeId: string;
+};
+
+export type FridgeData = {
+    ingredients: string[];
+    shoppingList: string[];
+    updatedAt: any;
+    userid: any;
 };

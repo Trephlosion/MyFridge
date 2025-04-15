@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sheet";
 import { useLocation, useNavigate } from "react-router-dom";
 import { addNewIngredient, createNewIngredient, getIngredientByName } from "@/lib/firebase/api";
+import {onSnapshot} from "firebase/firestore";
 
 const FridgeForm = () => {
     const { user } = useUserContext(); // Authenticated user context
@@ -24,7 +25,7 @@ const FridgeForm = () => {
     const [ingredientName, setIngredientName] = useState("");
     const [myFridge, setMyFridge] = useState([]);
     const [confirmationMessage, setConfirmationMessage] = useState("");
-    const { data: fridge, refetch } = useGetAllFridgeIngredients(user.id);
+    const { data: fridge, refetch } = useGetAllFridgeIngredients(user.myFridge);
     const navigate = useNavigate();
 
     const handleAddIngredient = async () => {
@@ -61,10 +62,23 @@ const FridgeForm = () => {
 
 
     useEffect(() => {
-        if (fridge) {
-            setMyFridge(fridge);
+
+        let unsub = () => {};
+        if (user.myFridge) {
+            unsub = onSnapshot(user.myFridge, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    setMyFridge(data.ingredients || []);
+                } else {
+                    setMyFridge([]);
+                }
+            });
         }
-    }, [fridge]);
+
+        return () => {
+            unsub();
+        };
+    }, [user.myFridge]);
 
     const validateName = (name: string) => {
         const nameRegex = /^[A-Z][a-zA-Z]*$/;
@@ -78,7 +92,13 @@ const FridgeForm = () => {
             {myFridge.length === 0 ? (
                 <>
                     <p className="text-light-4">No current Ingredients</p>
-                    <DataTable columns={FridgeColumns} data={[]} />
+                    <DataTable
+                        columns={FridgeColumns}
+                        data={myFridge.map((ingredient, index) => ({
+                            id: index.toString(),
+                            ingredient_name: ingredient,
+                        }))}
+                    />
                 </>
             ) : (
                 <>

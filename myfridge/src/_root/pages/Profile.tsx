@@ -56,7 +56,7 @@ const Profile = () => {
     const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
 
-    const { data: fridge, isLoading: isFridgeLoading } = useGetAllFridgeIngredients(user.id);
+    const { data: fridge, isLoading: isFridgeLoading } = useGetAllFridgeIngredients(user.myFridge);
 
     useEffect(() => {
         if (currentUser) {
