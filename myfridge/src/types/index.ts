@@ -27,12 +27,12 @@ export interface IUser {
     isDeactivated: boolean; // New field
     isBanned: boolean; // New field
     isCurator: boolean; // New field
-    followers: string[];
-    following: string[];
-    likedRecipes: string[];
-    recipes: string[];
-    posts: string[];
-    comments: string[];
+    followers: any[];
+    following: any[];
+    likedRecipes: any[];
+    recipes: any[];
+    posts: any[];
+    comments: any[];
     myFridge: any;
     createdAt: Date;
     updatedAt: Date;
@@ -50,12 +50,12 @@ export interface IUpdateUser {
     isDeactivated: boolean; // New field
     isBanned: boolean; // New field
     isCurator: boolean; // New field
-    followers: string[];
-    following: string[];
-    likedRecipes: string[];
-    recipes: string[];
-    posts: string[];
-    comments: string[];
+    followers: any[];
+    following: any[];
+    likedRecipes: any[];
+    recipes: any[];
+    posts: any[];
+    comments: any[];
     myFridge: any;
     file?: File[];
 }
@@ -93,8 +93,8 @@ export type Recipe = {
     tags: string[];
     instructions: string[]; // Array of instruction steps
     ingredients: string[]; // Array of ingredients
-    likes: string[]; // Array of user IDs who liked the recipe
-    comments: string[]; // Array of comment IDs
+    likes: any[]; // Array of user IDs who liked the recipe
+    comments: any[]; // Array of comment IDs
 };
 
 export interface IRecipeMetadata {
