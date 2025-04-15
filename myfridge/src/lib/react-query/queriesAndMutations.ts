@@ -7,6 +7,7 @@ import {
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
 import {
+    generateAiRecipes,
     createRecipe,
     createUserAccount,
     getRecentRecipes,
@@ -28,7 +29,6 @@ import {
     createFridge,
     followUser,
     createFridge,
-    getFridgeIDByUser,
     getAllFridgeIngredients,
     addIngredientToFridge,
     getAllIngredients,
@@ -45,7 +45,16 @@ import {
     deleteWorkshop,
     searchWorkshops,
 } from "@/lib/firebase/api";
-import { INewRecipe, INewUser, IUpdateRecipe, IUpdateUser, INewWorkshop, IUpdateWorkshop } from "@/types";
+import {
+    INewRecipe,
+    INewUser,
+    IUpdateRecipe,
+    IUpdateUser,
+    INewWorkshop,
+    IUpdateWorkshop,
+    RemoveIngredientParams,
+    Recipe
+} from "@/types";
 import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
 import { Workshop } from "@/types";
 // Mutation for creating a new user
@@ -461,24 +470,13 @@ export const useGetIngredientById = (ingredientId: string) => {
     });
 };
 
-// Mutation for creating a new ingredient
-export const useCreateIngredient = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (ingredient: string) => createNewIngredient(ingredient),
-        onSuccess: () => {
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_ALL_INGREDIENTS],
-            });
-        },
-    });
-};
+
 
 // Mutation for removing an ingredient from the fridge
 export const useRemoveIngredientFromFridge = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ fridgeId, ingredient }: { fridgeId: string; ingredient: string }) => removeIngredientFromFridge(fridgeId, ingredient),
+        mutationFn: ({ fridgeId, ingredient }: { fridgeId: any; ingredient: string }) => removeIngredientFromFridge(fridgeId, ingredient),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
                 queryKey: [QUERY_KEYS.GET_ALL_FRIDGE_INGREDIENTS, variables.fridgeId],
@@ -493,4 +491,11 @@ export const useAddIngredientToShoppingList = () => {
         mutationFn: ({ userId, ingredient }: { userId: string; ingredient: string }) =>
             addIngredientToShoppingList(userId, ingredient),
     });
+};
+
+
+export const useGenerateAiRecipes = () => {
+    return useMutation<Recipe[], Error, string[]>((ingredients: string[]) =>
+        generateAiRecipes(ingredients)
+    );
 };

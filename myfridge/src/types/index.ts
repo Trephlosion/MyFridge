@@ -182,3 +182,8 @@ export type FridgeData = {
     updatedAt: any;
     userid: any;
 };
+
+export type RemoveIngredientParams = {
+    fridgeId: any;
+    ingredientName: string;
+};

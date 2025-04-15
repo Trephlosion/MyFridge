@@ -676,26 +676,28 @@ export async function createFridge(userid: string) {
 }
 
 //Update fridge
-export async function updateFridge(fridgeId: any, fridgeData: any) {
+export async function updateFridge(fridgeRef: DocumentReference, fridgeData: any) {
     try {
         const { ingredients, shoppingList } = fridgeData;
 
-
-
-        await updateDoc(doc(database, "Fridges", fridgeId), {
+        await updateDoc(fridgeRef, {
             ingredients,
             shoppingList,
             updatedAt: new Date(),
         });
+
         return { status: "ok" };
     } catch (error) {
-        console.log(error);
+        console.error("Error updating fridge:", error);
     }
 }
 
+
 export async function getAllFridgeIngredients(fridgeid: any) {
     try {
-        const fridgeDocRef = doc(database, "Fridges", fridgeid);
+        const fridgeDocRef = fridgeid; // Assuming fridgeid is a DocumentReference
+        // If fridgeid is a string, create a document reference
+        // const fridgeDocRef = doc(database, "Fridges", fridgeid);
         const fridgeDocSnap = await getDoc(fridgeDocRef);
 
         if (fridgeDocSnap.exists()) {
@@ -713,7 +715,7 @@ export async function getAllFridgeIngredients(fridgeid: any) {
 }
 
 
-export async function addIngredientToFridge(fridgeId: string, ingredientId: string) {
+export async function addIngredientToFridge(fridgeId: any, ingredientId: string) {
     try {
         const fridgeDoc = doc(database, "Fridges", fridgeId);
         await updateDoc(fridgeDoc, {
@@ -725,15 +727,35 @@ export async function addIngredientToFridge(fridgeId: string, ingredientId: stri
     }
 }
 
-export async function removeIngredientFromFridge(fridgeId: string, ingredientId: string) {
+
+export async function removeIngredientFromFridge(fridgeId: any, ingredientName: string) {
     try {
-        const fridgeDoc = doc(database, "Fridges", fridgeId);
-        await updateDoc(fridgeDoc, {
-            ingredients: arrayRemove({ ingredientId: doc(database, "Ingredients", ingredientId) }),
+        // Get DocumentReference if fridgeId is a string
+        const fridgeRef = typeof fridgeId === "string"
+            ? doc(database, "Fridges", fridgeId)
+            : fridgeId;
+
+        const fridgeSnap = await getDoc(fridgeRef);
+
+        if (!fridgeSnap.exists()) {
+            throw new Error("Fridge not found");
+        }
+
+        const fridgeData: any = fridgeSnap.data();
+
+        // Filter out the ingredient by name (exact string match)
+        const updatedIngredients = (Array.isArray(fridgeData.ingredients) ? fridgeData.ingredients : [])
+            .filter((item: string) => item !== ingredientName);
+
+        await updateFridge(fridgeRef, {
+            ...fridgeData,
+            ingredients: updatedIngredients,
         });
+
+        console.log("Removed Ingredient:", ingredientName);
         return { status: "ok" };
     } catch (error) {
-        console.log(error);
+        console.error("Error removing ingredient:", error);
     }
 }
 
@@ -907,4 +929,114 @@ export async function toggleUserBan(userId: string): Promise<void> {
 // Reccomend A Recipe Based off Current User's Current Fridge Items
 // This Function is called on the Home Page
 // This function will create 3-5 generated recipes using OpenAI.
+
+export const getTopImageForRecipe = async (title: string): Promise<string> => {
+    const googleApiKey = import.meta.env.VITE_GOOGLE_SEARCH_API_KEY;
+    const searchEngineId = import.meta.env.VITE_GOOGLE_SEARCH_ENGINE_ID;
+    if (!googleApiKey || !searchEngineId) {
+        console.error("Google API key or search engine ID not found.");
+        return "/assets/icons/recipe-placeholder.svg";
+    }
+    try {
+        const searchUrl = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(
+            title
+        )}&searchType=image&key=${googleApiKey}&cx=${searchEngineId}`;
+        const response = await fetch(searchUrl);
+        if (!response.ok) {
+            throw new Error("Failed to fetch from Google Custom Search API");
+        }
+        const data = await response.json();
+        if (data.items && data.items.length > 0) {
+            return data.items[0].link;
+        }
+        return "/assets/icons/recipe-placeholder.svg";
+    } catch (error) {
+        console.error("Error fetching top image for recipe:", error);
+        return "/assets/icons/recipe-placeholder.svg";
+    }
+};
+
+export const generateAiRecipes = async (ingredients: string[]): Promise<Recipe[]> => {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    if (!apiKey) {
+        throw new Error("OpenAI API key not found.");
+    }
+    const prompt = `
+You are an innovative chef. Generate between 3 and 4 unique recipes that only use the following ingredients: ${ingredients.join(
+        ", "
+    )}.
+For each recipe, provide:
+  - A title.
+  - A brief description.
+  - A list of ingredients (including the ones provided).
+  - Cooking time.
+  - Prep time.
+  - Servings size.
+  - Detailed step-by-step instructions.
+ONLY return the result, no extra text.
+Return the result as a JSON array where each object has the keys "title", "description", "ingredients", "cookTime", "prepTime", "servings", and "instructions".
+  `;
+    const payload = {
+        model: "gpt-3.5-turbo",
+        messages: [
+            {
+                role: "system",
+                content:
+                    "You are a creative and helpful chef who generates innovative recipes.",
+            },
+            { role: "user", content: prompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 800,
+    };
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`OpenAI API call failed: ${errorText}`);
+    }
+
+    const data = await response.json();
+    let text = data.choices[0].message.content;
+    text = text.trim().replace(/^```(json)?\s*/, "").replace(/\s*```$/, "");
+
+    try {
+        const recipesData = JSON.parse(text);
+        let recipes: Recipe[] = recipesData.map((item: any, index: number) => ({
+            id: `ai-${Date.now()}-${index}`,
+            title: item.title,
+            description: item.description,
+            instructions: item.instructions,
+            ingredients: item.ingredients,
+            prepTime: item.prepTime,
+            cookTime: item.cookTime,
+            servings: item.servings,
+            mediaUrl: "/assets/icons/recipe-placeholder.svg",
+            createdAt: new Date(),
+            likes: [],
+            username: "AI Chef",
+            pfp: "/assets/icons/ai-bot-icon.svg",
+            tags: ["AI", "Auto-generated"],
+        }));
+        recipes = await Promise.all(
+            recipes.map(async (recipe) => {
+                const imageUrl = await getTopImageForRecipe(recipe.title);
+                return { ...recipe, mediaUrl: imageUrl };
+            })
+        );
+        return recipes;
+    } catch (error) {
+        console.error("Failed to parse OpenAI response:", error);
+        throw new Error("Failed to parse OpenAI response.");
+    }
+};
+
 // Then using a Recipe Card, it will display the generated recipes inside a Carousel Element.

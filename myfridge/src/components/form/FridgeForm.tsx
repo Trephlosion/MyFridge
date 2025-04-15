@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useUserContext } from "@/context/AuthContext";
-import { useGetAllFridgeIngredients, useAddIngredient, useCreateIngredient } from "@/lib/react-query/queriesAndMutations";
+import { useGetAllFridgeIngredients,  } from "@/lib/react-query/queriesAndMutations";
 import { DataTable, FridgeColumns } from "@/components/DataTables";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import {
     SheetTrigger,
 } from "@/components/ui/sheet";
 import { useLocation, useNavigate } from "react-router-dom";
-import { addNewIngredient, createNewIngredient, getIngredientByName } from "@/lib/firebase/api";
+import { addNewIngredient, createNewIngredient, } from "@/lib/firebase/api";
 import {onSnapshot} from "firebase/firestore";
 
 const FridgeForm = () => {
