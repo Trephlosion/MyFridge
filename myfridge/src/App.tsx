@@ -7,9 +7,13 @@ import { Routes, Route } from 'react-router-dom';
                     import SigninForm from './_auth/forms/SigninForm.tsx';
                     import { Home, Explore, Saved, AllUsers, EditRecipe, RecipeDetails, CreateRecipe, Profile, UpdateProfile, LikedRecipes, Admin, Workshops } from './_root/pages';
                     import { Toaster } from '@/components/ui/toaster.tsx';
-import RecipeAnalytics from './_root/pages/RecipeAnalytics.tsx';
+                    import RecipeAnalytics from './_root/pages/RecipeAnalytics.tsx';
+                    import SendMessage from "@/_root/pages/SendMessage.tsx";
+                    import {Inbox} from "lucide-react";
 
-                    const App = () => {
+
+
+const App = () => {
                         const { user } = useUserContext();
                         return (
                             <main className="flex h-screen">
@@ -35,6 +39,11 @@ import RecipeAnalytics from './_root/pages/RecipeAnalytics.tsx';
                                         <Route path="/admin" element={<Admin />} />
                                         <Route path="/workshops/*" element={<Workshops />} />
                                         <Route path="/recipe-analytics" element={<RecipeAnalytics />} />
+                                        <Route path="/send-message/:userId" element={<SendMessage />} />
+                                        <Route path="/inbox" element={<Inbox />} />
+
+
+
 
                                     </Route>
                                 </Routes>
