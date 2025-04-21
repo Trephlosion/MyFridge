@@ -270,6 +270,8 @@ export const useUpdateUser = () => {
         },
     });
 };
+// Mutation for Workshops
+// Mutation for Workshops
 export const useCreateWorkshop = () => {
     const queryClient = useQueryClient();
     return useMutation({
@@ -286,29 +288,57 @@ export const useCreateWorkshop = () => {
 export const useGetWorkshops = () => {
     return useQuery({
         queryKey: [QUERY_KEYS.GET_WORKSHOPS],
-        queryFn: getWorkshops,
-    });
-};
-// Query for fetching workshops for infinite scrolling
-export const useGetInfiniteWorkshops = () => {
-    return useInfiniteQuery({
-        queryKey: [QUERY_KEYS.GET_INFINITE_WORKSHOPS],
-        queryFn: ({ pageParam = 0 }) => getWorkshops(pageParam),  // Ensure pageParam is passed to getWorkshops
-        getNextPageParam: (lastPage: any) => {
-            if (!lastPage || !lastPage.nextPage) return null;  // Modify per your data structure
-            return lastPage.nextPage;  // Return the next page identifier
+        queryFn: async (): Promise<Workshop[]> => {
+            const snapshot = await getDocs(collection(database, "Workshops"));
+            return snapshot.docs.map(doc => {
+                const data = doc.data();
+
+                return {
+                    id: doc.id,
+                    ...data,
+                    userId: data.userId as DocumentReference, // ensure it's a reference
+                } as Workshop;
+            });
         },
     });
 };
 
+// Query for fetching workshops for infinite scrolling
+export const useGetInfiniteWorkshops = () => {
+    return useInfiniteQuery({
+        queryKey: [QUERY_KEYS.GET_INFINITE_WORKSHOPS],
+        queryFn: async ({ pageParam = 0 }) => {
+            const pageSize = 10; // Example page size
+            const snapshot = await getDocs(
+                collection(database, "Workshops")
+                    .orderBy("createdAt") // Ensure proper ordering
+                    .startAfter(pageParam)
+                    .limit(pageSize)
+            );
+            const workshops = snapshot.docs.map(doc => doc.data() as Workshop);
+            const nextPage = snapshot.docs.length < pageSize ? null : snapshot.docs[snapshot.docs.length - 1].id;
+            return { workshops, nextPage };  // Return workshops and next page identifier
+        },
+        getNextPageParam: (lastPage: any) => {
+            return lastPage.nextPage || null;  // Return next page or null if no more pages
+        },
+    });
+};
 
 // Query for searching workshops
 export const useSearchWorkshops = (searchTerm: string) => {
     return useQuery<Workshop[]>({
         queryKey: [QUERY_KEYS.SEARCH_WORKSHOPS, searchTerm],
         queryFn: async () => {
-            const result = await searchWorkshops(searchTerm);
-            return result ?? []; // Ensure it always returns an array
+            if (!searchTerm) return [];
+
+            const lowercaseSearchTerm = searchTerm.toLowerCase();
+            const snapshot = await getDocs(collection(database, "Workshops"));
+            return snapshot.docs
+                .map(doc => doc.data() as Workshop)
+                .filter(workshop =>
+                    workshop.title?.toLowerCase().includes(lowercaseSearchTerm)
+                );
         },
         enabled: !!searchTerm, // Prevents query from running when searchTerm is empty
     });
@@ -339,6 +369,7 @@ export const useDeleteWorkshop = () => {
         },
     });
 };
+
 // Mutation for liking a workshop
 export const useLikeWorkshop = () => {
     const queryClient = useQueryClient();

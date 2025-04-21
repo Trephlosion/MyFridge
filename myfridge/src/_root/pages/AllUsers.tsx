@@ -1,221 +1,164 @@
-/*
+// File: src/_root/pages/AllUsers.tsx
+            import { useEffect, useState } from "react";
+            import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+            import { database } from "@/lib/firebase/config";
+            import { useUserContext } from "@/context/AuthContext";
+            import { useNavigate } from "react-router-dom";
+            import { useToast } from "@/hooks/use-toast";
+            import { Loader, UserCard, BaseLoading } from "@/components/shared";
+            import { IUser } from "@/types";
+            import { Button } from "@/components/ui/button.tsx";
+            import {
+              useCreateUserAccount,
+              useGetUserRecipes,
+              useSearchRecipes,
+            } from "@/lib/react-query/queriesAndMutations";
+            import { Input } from "@/components/ui/input.tsx";
 
-import { useEffect, useState } from "react";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
-import { database } from "@/lib/firebase/config";
-import { useUserContext } from "@/context/AuthContext";
-import { useNavigate } from "react-router-dom";
-import {IUser} from "@/types";
+            const AllUsers = () => {
+              const navigate = useNavigate();
+              const { toast } = useToast();
+              const { user } = useUserContext();
+              const [searchTerm, setSearchTerm] = useState("");
 
-const AllUsers = () => {
-  const navigate = useNavigate();
-  const { user } = useUserContext();
-  const [users , setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
-  const [search, setSearch] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+              const { data: userRecipes, isLoading: isLoadingUserRecipes } = useGetUserRecipes(user.id);
+              const { data: searchResults, isLoading: isSearching } = useSearchRecipes(searchTerm.toLowerCase());
+              const [creators, setCreators] = useState<IUser[]>([]);
+              const [isLoading, setIsLoading] = useState<boolean>(true);
+              const [isError, setIsError] = useState<boolean>(false);
+              const [isAdmin, setIsAdmin] = useState(false);
+              const { mutateAsync: createUserAccount, isPending: isCreatingUser } = useCreateUserAccount();
 
-  // ✅ Check if the logged-in user is an admin
-  useEffect(() => {
-    const checkAdmin = async () => {
-      if (!user) return;
-      try {
-        const userDoc = await getDoc(doc(database, "Users", user.id));
-        if (userDoc.exists() && userDoc.data().isAdministrator === true) {
-          setIsAdmin(true);
-        }
-      } catch (error) {
-        console.error("Error checking admin status:", error);
-      }
-    };
-    checkAdmin();
-  }, [user]);
+              const filteredUsers = creators.filter((creator) =>
+                creator.username.toLowerCase().includes(searchTerm.toLowerCase())
+              );
 
-  // ✅ Fetch all users from Firestore if admin
-  useEffect(() => {
-    if (!isAdmin) return;
+              const fetchUsers = async () => {
+                setIsLoading(true);
+                setIsError(false);
+                try {
+                  const usersCollection = collection(database, "Users");
+                  const snapshot = await getDocs(usersCollection);
+                  const users = snapshot.docs.map((doc) => {
+                    const data = doc.data() as IUser;
+                    return { id: doc.id, ...data };
+                  });
+                  setCreators(users);
+                } catch (error) {
+                  console.error("Error fetching users:", error);
+                  setIsError(true);
+                  toast({ title: "Something went wrong while fetching users." });
+                } finally {
+                  await new Promise((resolve) => setTimeout(resolve, 3000));
+                  setIsLoading(false);
+                }
+              };
 
-    const fetchUsers = async () => {
-      setIsLoading(true);
-      try {
-        const usersCollection = collection(database, "Users");
-        const snapshot = await getDocs(usersCollection);
-        const usersData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setUsers(usersData);
-        setFilteredUsers(usersData);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      }
-      setIsLoading(false);
-    };
+              const handleCreateTestUsers = async () => {
+                const dummyPassword = "Test1234!";
+                const testUsers = [];
+                for (let i = 1; i <= 5; i++) {
+                  testUsers.push({
+                    username: `Admin_Test_${i}`,
+                    email: `admin${i}@example.com`,
+                    password: dummyPassword,
+                    isAdministrator: true,
+                    isVerified: false,
+                    isCurator: false,
+                  });
+                }
+                for (let i = 1; i <= 5; i++) {
+                  testUsers.push({
+                    username: `ContentCreator_Test_${i}`,
+                    email: `contentcreator${i}@example.com`,
+                    password: dummyPassword,
+                    isAdministrator: false,
+                    isVerified: true,
+                    isCurator: false,
+                  });
+                }
+                for (let i = 1; i <= 5; i++) {
+                  testUsers.push({
+                    username: `RecipeCurator_Test_${i}`,
+                    email: `recipecurator${i}@example.com`,
+                    password: dummyPassword,
+                    isAdministrator: false,
+                    isVerified: false,
+                    isCurator: true,
+                  });
+                }
+                for (let i = 1; i <= 5; i++) {
+                  testUsers.push({
+                    username: `Regular_Test_${i}`,
+                    email: `regular${i}@example.com`,
+                    password: dummyPassword,
+                    isAdministrator: false,
+                    isVerified: false,
+                    isCurator: false,
+                  });
+                }
+                try {
+                  for (const userData of testUsers) {
+                    await createUserAccount(userData);
+                  }
+                  console.log("Test users created successfully");
+                } catch (error) {
+                  console.error("Error creating test users", error);
+                }
+              };
 
-    fetchUsers();
-  }, [isAdmin]);
+              useEffect(() => {
+                fetchUsers();
+              }, []);
 
-  // ✅ Handle search input and filter users
-  useEffect(() => {
-    const results = users.filter(
-        (user: IUser) =>
-            user.username?.toLowerCase().includes(search.toLowerCase()) ||
-            user.email?.toLowerCase().includes(search.toLowerCase())
-    );
-    setFilteredUsers(results);
-  }, [search, users]);
+              if (isError) {
+                toast({ title: "Something went wrong." });
+                return null;
+              }
 
-  /!*if (!isAdmin) {
-    return (
-        <div className="flex-center w-full h-full">
-          <p className="text-red-500 text-xl font-semibold">
-            Access to this page is restricted.
-          </p>
-        </div>
-    );
-  }*!/
-
-  return (
-      <div className="p-5">
-        <h2 className="text-2xl font-bold mb-4">User Search </h2>
-
-        { /!*🔍 Search Bar (Now Fixes Invisible Text Issue) *!/}
-        <input
-            type="text"
-            placeholder="Search users by username or email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full p-2 border rounded mb-4 text-black bg-white placeholder-gray-500"
-            style={{
-              color: "black", // ✅ Ensures text inside input is visible
-              backgroundColor: "white", // ✅ Prevents text blending with background
-              padding: "10px", // ✅ Adds better spacing
-            }}
-        />
-
-        {/!* 🔹 Display Search Results *!/}
-        <div className="grid grid-cols-3 gap-4">
-          {filteredUsers.length > 0 ? (
-              filteredUsers.map((user: IUser) => (
-                  <div
-                      key={user.id}
-                      className="p-4 border rounded cursor-pointer hover:bg-gray-100"
-                      onClick={() => navigate(`/profile/${user.id}`)}
-                  >
-                    <img
-                        src={user.pfp || "/assets/icons/profile-placeholder.svg"}
-                        alt="profile"
-                        className="w-16 h-16 rounded-full mb-2"
-                    />
-                    <h3 className="font-semibold">{user.username || "Unknown User"}</h3>
-                    <p className="text-sm text-gray-600">{user.email}</p>
+              return (
+                <div className="common-container">
+                  <div className="user-container">
+                    {/* Search Bar Spanning Full Width */}
+                    <div className="mb-4 w-full">
+                      <Input
+                        type="text"
+                        placeholder="Search Users..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <h2 className="h3-bold md:h2-bold text-left w-full">
+                        {isAdmin ? "All Users - Admin View" : "All Users"}
+                      </h2>
+                      {(user?.isAdministrator || user?.isVerified) && (
+                        <>
+                          {user?.isVerified && (
+                            <p className="text-sm align-middle text-green-600">Creator View</p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    {isLoading ? (
+                      <BaseLoading />
+                    ) : (
+                      <ul className="user-grid">
+                        {filteredUsers.length === 0 ? (
+                          <p className="text-center text-light-3 mt-4">No users found.</p>
+                        ) : (
+                          filteredUsers.map((creator) => (
+                            <li key={creator.id} className="flex-1 min-w-[200px] w-full">
+                              <UserCard user={creator} />
+                            </li>
+                          ))
+                        )}
+                      </ul>
+                    )}
                   </div>
-              ))
-          ) : (
-              <p className="text-gray-500 text-center col-span-3">No users found.</p>
-          )}
-        </div>
-      </div>
-  );
-};
+                </div>
+              );
+            };
 
-export default AllUsers;
-
-*/
-
-import { useEffect, useState } from "react";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
-import { database } from "@/lib/firebase/config";
-import { useUserContext } from "@/context/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
-import { Loader, UserCard, BaseLoading } from "@/components/shared";
-import { ExpandedUser, IUser } from "@/types";
-
-
-const AllUsers = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { user } = useUserContext()
-  const [creators, setCreators] = useState<ExpandedUser[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isError, setIsError] = useState<boolean>(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  // Check if the logged-in user is an admin
-  useEffect(() => {
-    const checkAdmin = async () => {
-      if (!user) return;
-      try {
-        const userDoc = await getDoc(doc(database, "Users", user.id));
-        if (userDoc.exists() && userDoc.data().isAdministrator === true) {
-          setIsAdmin(true);
-        }
-      } catch (error) {
-        console.error("Error checking admin status:", error);
-      }
-    };
-    checkAdmin();
-  }, [user]);
-
-
-  // Fetch all users from Firestore
-  const fetchUsers = async () => {
-    setIsLoading(true);
-    setIsError(false);
-    try {
-      const usersCollection = collection(database, "Users");
-      const snapshot = await getDocs(usersCollection);
-      const users = snapshot.docs.map((doc) => {
-        const data = doc.data() as ExpandedUser;
-        return { id: doc.id, ...data };
-      });
-      setCreators(users);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      setIsError(true);
-      toast({ title: "Something went wrong while fetching users." });
-    } finally {
-      // Simulate loading state for 3 seconds
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  if (isError) {
-    toast({ title: "Something went wrong." });
-    return null;
-  }
-
-  return (
-      <div className="common-container">
-        <div className="user-container">
-          {/* Page Title */}
-
-          <h2 className="h3-bold md:h2-bold text-left w-full ">
-            {isAdmin ? "All Users - Admin View" : "All Users"}
-          </h2>
-          {isLoading ? (
-
-              <BaseLoading />
-
-          ) : (
-              <ul className="user-grid">
-                {creators.map((creator) => (
-                    <li key={creator.id} className="flex-1 min-w-[200px] w-full">
-                      <UserCard user={creator} />
-                    </li>
-                ))}
-              </ul>
-          )}
-        </div>
-      </div>
-  );
-};
-
-export default AllUsers;
+            export default AllUsers;

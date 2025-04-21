@@ -1,12 +1,13 @@
+// RecipeStats.tsx
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { checkIsLiked } from "@/lib/utils";
+import { checkIsLiked } from "@/lib/utils.ts";
 import {
     useLikeRecipe,
     useSaveRecipe,
     useDeleteSavedRecipe,
     useGetCurrentUser,
-} from "@/lib/react-query/queriesAndMutations";
+} from "@/lib/react-query/queriesAndMutations.ts";
 import { Recipe } from "@/types";
 
 type RecipeStatsProps = {
@@ -15,6 +16,11 @@ type RecipeStatsProps = {
 };
 
 const RecipeStats = ({ recipe, userId }: RecipeStatsProps) => {
+    // If the recipe is an AI recipe, don't render like/save buttons.
+    if (Array.isArray(recipe.tags) && recipe.tags.includes("AI")) {
+        return null;
+    }
+
     const location = useLocation();
 
     // Initialize likes list from Firestore
@@ -28,7 +34,7 @@ const RecipeStats = ({ recipe, userId }: RecipeStatsProps) => {
     const { data: currentUser } = useGetCurrentUser();
 
     // Check if the recipe is already saved
-    const savedRecipeRecord = currentUser?.savedRecipes?.find(
+    const savedRecipeRecord = currentUser?.likedRecipes?.find(
         (record: { recipeId: string }) => record.recipeId === recipe.id
     );
 

@@ -7,6 +7,7 @@ import Loader from "@/components/shared/Loader.tsx";
 import {sidebarLinks} from "@/constants";
 import {INavLink} from "@/types";
 import {Skeleton} from "@/components/ui/skeleton.tsx";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar.tsx";
 
 const LeftSidebar = () => {
     const {mutate: signOut, isSuccess} = useSignOutAccount();
@@ -55,20 +56,34 @@ const LeftSidebar = () => {
                 ) : (
                     <>
                     <Link to={`/profile/${user.id}`} className="flex gap-3 items-center">
-                        <div className="relative ">
-                            <img
-                                src={user.pfp || "/assets/icons/profile-placeholder.svg"}
-                                alt="creator"
-                                className="rounded-full w-14 h-14"
-                            />
-                            {user?.isVerified && (
+                        <div className={"relative"}>
+                            <Avatar className="w-14 h-14">
+                                <AvatarImage src={user.pfp} alt={user.username} />
+                                <AvatarFallback className={"bg-white text-black "}>{user.username.charAt(0)}</AvatarFallback>
+                            </Avatar>
+
+                            {/* Status Icons */}
+                            {user.isVerified && (
                                 <img
                                     src="/assets/icons/verified.svg"
                                     alt="verified"
-                                    className="absolute bottom-0 right-0 w-4 h-4"
+                                    className="w-4 h-4 absolute bottom-0.5 right-0"
                                 />
                             )}
-
+                            {user.isCurator && (
+                                <img
+                                    src="/assets/icons/curator-icon.svg"
+                                    alt="curator"
+                                    className="w-4 h-4 absolute bottom-0.5 right-0"
+                                />
+                            )}
+                            {user.isAdministrator && (
+                                <img
+                                    src="/assets/icons/admin-icon.svg"
+                                    alt="admin"
+                                    className="w-4 h-4 absolute bottom-0.5 right-0"
+                                />
+                            )}
                         </div>
                             <div className={"flex flex-col"}>
                                 <p className="right-0 small-regular text-light-3">@{user.username}</p>

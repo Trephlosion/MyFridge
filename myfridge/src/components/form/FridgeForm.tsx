@@ -16,62 +16,66 @@ import {
     SheetTrigger,
 } from "@/components/ui/sheet";
 import { useLocation, useNavigate } from "react-router-dom";
-import { addIngredientToFridge, createNewIngredient, getIngredientByName } from "@/lib/firebase/api";
-
+import { addNewIngredient, createNewIngredient, getIngredientByName } from "@/lib/firebase/api";
 
 const FridgeForm = () => {
     const { user } = useUserContext(); // Authenticated user context
     const { pathname } = useLocation();
     const [ingredientName, setIngredientName] = useState("");
-    const [refresh, setRefresh] = useState(false);
+    const [myFridge, setMyFridge] = useState([]);
+    const [confirmationMessage, setConfirmationMessage] = useState("");
     const { data: fridge, refetch } = useGetAllFridgeIngredients(user.id);
-    // const addIngredientMutation = useAddIngredient();
-    // const createIngredientMutation = useCreateIngredient();
     const navigate = useNavigate();
 
-    useEffect(() => {
-        if (refresh) {
-            refetch();
-            setRefresh(false);
+    const handleAddIngredient = async () => {
+        // Validate the ingredient name (must be one word, start with a capital letter, and contain no numbers)
+        if (!validateName(ingredientName)) {
+            alert("Invalid ingredient name. It must be one word, start with a capital letter, and contain no numbers.");
+            return;
         }
-    }, [refresh, refetch]);
+
+        // Check if the ingredient already exists in the fridge (myFridge is now an array of strings)
+        if (myFridge.includes(ingredientName)) {
+            alert("Ingredient already exists in your fridge.");
+            return;
+        }
+
+        try {
+            // Update the user's fridge document in Firebase by adding the ingredient string to the ingredients array.
+            await addNewIngredient(user.myFridge, ingredientName);
+
+            // Update local state to reflect the change, so that the table re-renders with the new ingredient.
+            const updatedFridge = [...myFridge, ingredientName];
+            setMyFridge(updatedFridge);
+            setConfirmationMessage("Ingredient added to your fridge.");
+        } catch (error) {
+            console.error("Error adding ingredient:", error);
+            alert("Failed to add ingredient. Please try again.");
+        }
+
+        // Clear the confirmation message after 3 seconds
+        setTimeout(() => {
+            setConfirmationMessage("");
+        }, 3000);
+    };
+
+
+    useEffect(() => {
+        if (fridge) {
+            setMyFridge(fridge);
+        }
+    }, [fridge]);
 
     const validateName = (name: string) => {
         const nameRegex = /^[A-Z][a-zA-Z]*$/;
         return nameRegex.test(name);
     };
 
-    const handleAddIngredient = async () => {
-        if (!validateName(ingredientName)) {
-            alert("Invalid ingredient name. It must be one word, start with a capital letter, and contain no numbers.");
-            return;
-        }
 
-
-        // Check if ingredient already exists
-        const existingIngredient = await getIngredientByName(ingredientName);
-        if (existingIngredient) {
-            // Add ingredient to user's fridge
-            const existingInFridge = fridge?.find((item) => item.ingredientId.id === existingIngredient.id);
-            if (existingInFridge) {
-                alert("Ingredient already exists in your fridge.");
-            } else {
-                await addIngredientToFridge(user.id, existingIngredient.id);
-                alert("Ingredient added to your fridge.");
-                setRefresh(true);
-            }
-        } else {
-            // Create new ingredient document
-            await createNewIngredient(ingredientName);
-            const newIngredient = await getIngredientByName(ingredientName);
-            await addIngredientToFridge(user.id, newIngredient.id);
-            alert("New ingredient created and added to your fridge.");
-            setRefresh(true);
-        }    };
 
     return (
         <div>
-            {Array.isArray(fridge) && fridge.length === 0 ? (
+            {myFridge.length === 0 ? (
                 <>
                     <p className="text-light-4">No current Ingredients</p>
                     <DataTable columns={FridgeColumns} data={[]} />
@@ -79,8 +83,19 @@ const FridgeForm = () => {
             ) : (
                 <>
                     <h1 className="h3-bold text-dark-1">Edit MyFridge</h1>
-                    <DataTable columns={FridgeColumns} data={fridge} />
+                    <DataTable
+                        columns={FridgeColumns}
+                        data={myFridge.map((ingredient, index) => ({
+                            id: index.toString(),
+                            ingredient_name: ingredient,
+                        }))}
+                    />
                 </>
+            )}
+
+            {/* Show confirmation message */}
+            {confirmationMessage && (
+                <p className="text-green-500">{confirmationMessage}</p>
             )}
 
             {/* Show Sheet component only if the current path is /update-profile/${user.id} */}

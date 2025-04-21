@@ -1,117 +1,221 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
+// RecipeDetails.tsx
+import { useEffect, useState } from "react";
+import { doc, getDoc, addDoc, collection, getDocs, query, orderBy } from "firebase/firestore";
+import { database } from "@/lib/firebase/config";
+import { useParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Loader, GridRecipeList, RecipeStats } from "@/components/shared";
-import { useGetRecipeById, useGetRecentRecipes, useDeleteRecipe } from "@/lib/react-query/queriesAndMutations";
-import { multiFormatDateString } from "@/lib/utils";
 import { useUserContext } from "@/context/AuthContext";
+import { Recipe } from "@/types";
+import {
+    Carousel,
+    CarouselContent,
+    CarouselItem,
+    CarouselPrevious,
+    CarouselNext,
+} from "@/components/ui/carousel";
 
 const RecipeDetails = () => {
-    const navigate = useNavigate();
-    const { id } = useParams(); // Recipe ID from URL
+    const { id } = useParams<{ id: string }>();
+    const location = useLocation();
     const { user } = useUserContext();
+    const [recipe, setRecipe] = useState<Recipe | null>(null);
+    const [review, setReview] = useState("");
+    const [rating, setRating] = useState(0);
+    const [submitted, setSubmitted] = useState(false);
+    const [reviews, setReviews] = useState<any[]>([]);
 
-    // Fetch the recipe details and related recipes
-    const { data: recipe, isLoading } = useGetRecipeById(id);
-    const { data: userRecipes, isLoading: isUserRecipeLoading } = useGetRecentRecipes();
-    const { mutate: deleteRecipe } = useDeleteRecipe();
+    // Fetch recipe data (either from location.state or Firestore)
+    useEffect(() => {
+        if (location.state && (location.state as Recipe).id) {
+            setRecipe(location.state as Recipe);
+        } else {
+            const fetchRecipe = async () => {
+                if (id) {
+                    const recipeDoc = await getDoc(doc(database, "Recipes", id));
+                    if (recipeDoc.exists()) {
+                        setRecipe({ id: recipeDoc.id, ...recipeDoc.data() } as Recipe);
+                    }
+                }
+            };
+            fetchRecipe();
+        }
+    }, [id, location.state]);
 
-    // Filter related recipes excluding the current one
-    const relatedRecipes = userRecipes?.filter((userRecipe) => userRecipe.id !== id);
+    // Fetch reviews from the "Ratings" subcollection for this recipe
+    useEffect(() => {
+        const fetchReviews = async () => {
+            if (id) {
+                try {
+                    const reviewsQuery = query(
+                        collection(database, "Recipes", id, "Ratings"),
+                        orderBy("createdAt", "desc")
+                    );
+                    const reviewsSnap = await getDocs(reviewsQuery);
+                    const reviewsList = reviewsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setReviews(reviewsList);
+                } catch (error) {
+                    console.error("Error fetching reviews:", error);
+                }
+            }
+        };
+        // Fetch reviews when recipe id is known or when a review is submitted
+        fetchReviews();
+    }, [id, submitted]);
 
-    // Handle delete recipe
-    const handleDeleteRecipe = () => {
-        if (recipe) {
-            deleteRecipe({ recipeId: id, imageId: recipe.imageId });
-            navigate(-1); // Navigate back
+    const handleSubmitReview = async () => {
+        if (!user || !review || rating === 0) return;
+        try {
+            if (id) {
+                await addDoc(collection(database, "Recipes", id, "Ratings"), {
+                    recipeId: id,
+                    userId: user.id,
+                    comment: review,
+                    stars: rating,
+                    createdAt: new Date(),
+                });
+                setSubmitted(true);
+                setReview("");
+                setRating(0);
+            }
+        } catch (error) {
+            console.error("Error submitting a review:", error);
         }
     };
 
+    if (!recipe)
+        return (
+            <div className="text-white text-center mt-10">Loading recipe...</div>
+        );
+
     return (
-        <div className="recipe_details-container">
-            {/* Back Button */}
-            <div className="hidden md:flex max-w-5xl w-full">
-                <Button onClick={() => navigate(-1)} variant="ghost" className="shad-button_ghost">
-                    <img src="/assets/icons/back.svg" alt="back" width={24} height={24} />
-                    <p className="small-medium lg:base-medium">Back</p>
-                </Button>
+        <div className="p-6 max-w-4xl mx-auto text-white">
+            <img
+                src={recipe.mediaUrl || "/assets/icons/recipe-placeholder.svg"}
+                alt={recipe.title}
+                className="w-full h-96 object-cover rounded-2xl shadow-lg"
+            />
+
+            <h1 className="text-4xl font-bold text-center mt-6">{recipe.title}</h1>
+
+            <div className="flex justify-around text-lg my-4">
+                <p>
+                    <span className="font-semibold">Prep:</span> {recipe.prepTime || "N/A"}
+                </p>
+                <p>
+                    <span className="font-semibold">Cook:</span> {recipe.cookTime || "N/A"}
+                </p>
+                <p>
+                    <span className="font-semibold">Yield:</span> {recipe.servings || "N/A"}
+                </p>
             </div>
 
-            {/* Recipe Details */}
-            {isLoading || !recipe ? (
-                <Loader />
-            ) : (
-                <div className="recipe_details-card">
-                    <img src={recipe.imageUrl} alt="recipe" className="recipe_details-img" />
-                    <div className="recipe_details-info">
-                        <div className="flex-between w-full">
-                            {/* Creator Profile Link */}
-                            <Link to={`/profile/${recipe.userId}`} className="flex items-center gap-3">
-                                <img
-                                    src={recipe.pfpId || "/assets/icons/profile-placeholder.svg"}
-                                    alt="creator"
-                                    className="w-8 h-8 lg:w-12 lg:h-12 rounded-full"
-                                />
-                                <div className="flex gap-1 flex-col">
-                                    <p className="base-medium lg:body-bold text-light-1">
-                                        {recipe.first_name} {recipe.last_name}
-                                    </p>
-                                    <div className="flex-center gap-2 text-light-3">
-                                        <p className="subtle-semibold lg:small-regular">{multiFormatDateString(recipe.createdAt)}</p>
-                                    </div>
-                                </div>
-                            </Link>
+            <div className="bg-gray-800 p-6 rounded-xl my-6">
+                <h2 className="text-2xl font-semibold mb-4">Description</h2>
+                <p className="leading-relaxed italic">
+                    {recipe.description || "No description provided."}
+                </p>
+            </div>
 
-                            {/* Edit and Delete Buttons */}
-                            <div className="flex-center gap-4">
-                                {user.id === recipe.userId && (
-                                    <>
-                                        <Link to={`/update-recipe/${recipe.id}`}>
-                                            <img src="/assets/icons/edit.svg" alt="edit" width={24} height={24} />
-                                        </Link>
-                                        <Button
-                                            onClick={handleDeleteRecipe}
-                                            variant="ghost"
-                                            className="ost_details-delete_btn"
-                                        >
-                                            <img src="/assets/icons/delete.svg" alt="delete" width={24} height={24} />
-                                        </Button>
-                                    </>
-                                )}
-                            </div>
-                        </div>
+            <div>
+                <h3 className="text-2xl font-semibold mb-2">Ingredients</h3>
+                <ul className="list-disc pl-6">
+                    {recipe.ingredients &&
+                        recipe.ingredients.map((ingredient, index) => (
+                            <li key={index} className="text-lg">
+                                {ingredient}
+                            </li>
+                        ))}
+                </ul>
+            </div>
 
-                        <hr className="border w-full border-dark-4/80" />
-
-                        {/* Recipe Description */}
-                        <div className="flex flex-col flex-1 w-full small-medium lg:base-regular">
-                            <p>{recipe.description}</p>
-                            <ul className="flex gap-1 mt-2">
-                                {recipe.tags?.map((tag: string, index: number) => (
-                                    <li key={`${tag}-${index}`} className="text-light-3 small-regular">
-                                        #{tag}
+            <div className="mt-6">
+                <h3 className="text-2xl font-semibold mb-2">Instructions</h3>
+                <ol className="list-decimal pl-6">
+                    {recipe.instructions ? (
+                        Array.isArray(recipe.instructions)
+                            ? recipe.instructions.map((instruction, index) => (
+                                <li key={index} className="text-lg">
+                                    {instruction}
+                                </li>
+                            ))
+                            : // If instructions is a string, split by newline and display each line.
+                            recipe.instructions
+                                .split("\n")
+                                .filter(line => line.trim() !== "")
+                                .map((instruction, index) => (
+                                    <li key={index} className="text-lg">
+                                        {instruction}
                                     </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        {/* Recipe Stats */}
-                        <div className="w-full">
-                            <RecipeStats recipe={recipe} userId={user.id} />
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Related Recipes */}
-            <div className="w-full max-w-5xl">
-                <hr className="border w-full border-dark-4/80" />
-                <h3 className="body-bold md:h3-bold w-full my-10">More Related Recipes</h3>
-                {isUserRecipeLoading || !relatedRecipes ? (
-                    <Loader />
-                ) : (
-                    <GridRecipeList recipes={relatedRecipes} />
-                )}
+                                ))
+                    ) : null}
+                </ol>
             </div>
+
+            {/* Render review section only for curators */}
+            {user.isCurator && (
+                <>
+                    <div className="bg-gray-900 p-6 rounded-xl mt-6">
+                        <h2 className="text-2xl font-semibold mb-4">Leave a Review</h2>
+                        <textarea
+                            value={review}
+                            onChange={(e) => setReview(e.target.value)}
+                            placeholder="Write your review here..."
+                            className="w-full p-3 rounded-md text-black mb-4"
+                        />
+                        <div className="flex items-center gap-2 mb-4">
+                            {[1, 2, 3, 4, 5].map((num) => (
+                                <span
+                                    key={num}
+                                    onClick={() => setRating(num)}
+                                    className={`cursor-pointer text-2xl ${
+                                        rating >= num ? "text-yellow-400" : "text-gray-500"
+                                    }`}
+                                >
+                  ★
+                </span>
+                            ))}
+                        </div>
+                        <Button
+                            onClick={handleSubmitReview}
+                            disabled={submitted}
+                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
+                        >
+                            {submitted ? "Review Submitted" : "Submit Review"}
+                        </Button>
+                    </div>
+
+                    {/* Horizontal carousel to display submitted reviews */}
+                    {reviews.length > 0 && (
+                        <div className="mt-6">
+                            <h2 className="text-2xl font-semibold mb-4">Submitted Reviews</h2>
+                            <Carousel opts={{ align: "start" }} className="w-full">
+                                <CarouselContent>
+                                    {reviews.map((rev) => (
+                                        <CarouselItem key={rev.id} className="w-full max-w-xs">
+                                            <div className="p-3 bg-gray-800 rounded-md shadow">
+                                                <p className="text-lg">{rev.comment}</p>
+                                                <div className="flex mt-2">
+                                                    {Array.from({ length: rev.stars }, (_, i) => (
+                                                        <span key={i} className="text-yellow-400 text-xl">★</span>
+                                                    ))}
+                                                </div>
+                                                <p className="text-sm mt-2">
+                                                    By: {rev.userId}
+                                                </p>
+                                                <p className="text-xs text-gray-400">
+                                                    {new Date(rev.createdAt.seconds * 1000).toLocaleString()}
+                                                </p>
+                                            </div>
+                                        </CarouselItem>
+                                    ))}
+                                </CarouselContent>
+                                <CarouselPrevious />
+                                <CarouselNext />
+                            </Carousel>
+                        </div>
+                    )}
+                </>
+            )}
         </div>
     );
 };

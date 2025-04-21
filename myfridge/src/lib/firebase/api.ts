@@ -4,8 +4,18 @@ import {
 } from "firebase/auth";
 import { addDoc, startAfter, DocumentSnapshot, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, limit, getDocs, runTransaction, arrayUnion, arrayRemove } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { auth, database, storage } from "@/lib/firebase/config.ts";
+import { auth, database, storage,} from "@/lib/firebase/config.ts";
 import { INewRecipe, IRecipeMetadata, IUpdateRecipe, IUpdateUser, IUser } from "@/types";
+import firebase from "firebase/compat/app";
+import DocumentReference = firebase.firestore.DocumentReference;
+import { INewWorkshop, IUpdateWorkshop } from "@/types";
+import { getFunctions, httpsCallable } from "firebase/functions";
+
+
+
+const functions = getFunctions();
+// const toggleUserActivation = httpsCallable(functions, 'toggleUserActivation');
+
 
 // AUTHENTICATION FUNCTIONS
 
@@ -34,42 +44,47 @@ export const signOutAccount = async () => {
 
 // USER FUNCTIONS
 
+ // assuming createFridge is exported elsewhere
+
 export const createUserAccount = async (userData: any) => {
-    const { email, password, username } = userData;
+  const { email, password, username } = userData;
+  const isAdministrator = userData.isAdministrator ?? false;
+  const isVerified = userData.isVerified ?? false;
+  const isCurator = userData.isCurator ?? false;
 
-    try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
 
-        const myFridge = await createFridge(user.uid);
+    const myFridgeId = await createFridge(user.uid);
 
-        const userDocRef = doc(database, "Users", user.uid);
-        await setDoc(userDocRef, {
-            email,
-            username,
-            bio: "Hey I'm new here!",
-            pfp: "",
-            isPrivate: false,
-            isVerified: false,
-            isAdministrator: false,
-            isDeactivated: false, // New field
-            isBanned: false, // New field
-            isCurator: false, // New field
-            followers: [],
-            following: [],
-            recipes: [],
-            posts: [],
-            comments: [],
-            myFridge: doc(database, "Fridges", myFridge), // Ensure this is a reference
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        });
+    const userDocRef = doc(database, "Users", user.uid);
+    await setDoc(userDocRef, {
+      email,
+      username,
+      bio: "Hey I'm new here!",
+      pfp: "",
+      isPrivate: false,
+      isVerified: isVerified,
+      isAdministrator: isAdministrator,
+      isDeactivated: false,
+      isBanned: false,
+      isCurator: isCurator,
+      followers: [],
+      following: [],
+      recipes: [],
+      posts: [],
+      comments: [],
+      myFridge: doc(database, "Fridges", myFridgeId),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
 
-        return user;
-    } catch (error) {
-        console.error("Error creating user:", error);
-        throw error;
-    }
+    return user;
+  } catch (error) {
+    console.error("Error creating user:", error);
+    throw error;
+  }
 };
 
 // Get current user
@@ -92,6 +107,9 @@ export async function getCurrentUser(): Promise<IUser | Error> {
             isPrivate: userData.isPrivate ?? false,
             isVerified: userData.isVerified ?? false,
             isAdministrator: userData.isAdministrator ?? false,
+            isDeactivated: userData.isDeactivated ?? false,
+            isBanned: userData.isBanned ?? false,
+            isCurator: userData.isCurator ?? false,
             followers: userData.followers || [],
             following: userData.following || [],
             likedRecipes: userData.likedRecipes || [],
@@ -106,6 +124,7 @@ export async function getCurrentUser(): Promise<IUser | Error> {
         return error instanceof Error ? new Error(error.message) : new Error("An unknown error occurred");
     }
 }
+
 
 // Check if a user is authenticated and retrieve their Firestore document
 export const checkAuthUser = async (): Promise<any> => {
@@ -307,31 +326,48 @@ export async function createRecipe(recipe: INewRecipe) {
         }
 
         // Normalize tags: ensure it's always an array
-        const tags: string = Array.isArray(recipe.tags)
-            ? recipe.tags.map((tag: string) => tag.trim())
-            : recipe.tags?.toString().split(",").map((tag: string) => tag.trim()) || [];
+        const tags: string = Array.isArray(recipe.tags) ? recipe.tags : String(recipe.tags).split(",").map(t => t.trim()).filter(Boolean);
+
+
+        /*const snapshot = await database.collection("Recipes").get();
+        snapshot.forEach(doc => {
+            const { tags } = doc.data();
+            if (!Array.isArray(tags)) {
+                const fixed = typeof tags === "string"
+                    ? tags.split(",").map(t => t.trim()).filter(Boolean)
+                    : [];
+                doc.ref.update({ tags: fixed });
+            }
+        });*/
+
 
         // Save recipe to Firestore
         const newRecipeRef = doc(collection(database, "Recipes"));
         const newRecipe = {
-            userId: recipe.userId,
+            author: doc(database, "Users", recipe?.userId),
             description: recipe.description,
-            mediaUrl: fileUrl, // Updated field name
-            title: recipe.title, // Updated from "dish"
-            // Convert instructions string to an array of steps
-            instructions: recipe.instructions.split("\n").map((step: string) => step.trim()),
+            mediaUrl: fileUrl,
+            title: recipe.title,
+            instructions: recipe.instructions,
+            ingredients: recipe.ingredients,
             cookTime: recipe.cookTime,
             prepTime: recipe.prepTime,
-            servings: recipe.servings, // Updated from "serving"
+            servings: recipe.servings,
             tags: tags,
-            likes: [], // Updated to be an empty array
+            likes: [],
             comments: [],
             createdAt: new Date(),
-            // Optional rating fields can be added here if needed
-            mediaId: fileRef.fullPath, // Updated field name from "pfpId"
+            mediaId: fileRef.fullPath,
         };
 
         await setDoc(newRecipeRef, newRecipe);
+
+        // add new recipe to the user's recipe array
+        const userRef = doc(database, "Users", recipe.userId);
+        await updateDoc(userRef, {
+            recipes: arrayUnion(newRecipeRef),
+        });
+
         console.log("Recipe created successfully!");
         return newRecipeRef.id; // Return the new recipe's ID
     } catch (error) {
@@ -368,54 +404,55 @@ export async function getRecipeById(recipeId?: string) {
 }
 
 // Update recipe
+
 export async function updateRecipe(recipe: IUpdateRecipe) {
-    const hasFileToUpdate = recipe.file.length > 0;
-    try {
-        // Initialize media object with current values
-        let media = {
-            mediaUrl: recipe.mediaUrl,
-            mediaId: recipe.mediaId,
-        };
+  const hasFileToUpdate = recipe.file.length > 0;
+  try {
+    // Initialize media object with current values
+    let media = {
+      mediaUrl: recipe.mediaUrl,
+    };
 
-        // Update media if a new file is provided
-        if (hasFileToUpdate) {
-            const fileRef = ref(storage, `recipe/${recipe.file[0].name}`);
-            await uploadBytes(fileRef, recipe.file[0]);
-            const fileUrl = await getDownloadURL(fileRef);
-            media = { mediaUrl: fileUrl, mediaId: fileRef.fullPath };
-        }
-
-        // Normalize tags: ensure it's always an array
-        const tags = Array.isArray(recipe.tags)
-            ? recipe.tags.map((tag: string) => tag.trim())
-            : recipe.tags?.toString().split(",").map((tag: string) => tag.trim()) || [];
-
-        await updateDoc(doc(database, "Recipes", recipe.recipeId), {
-            description: recipe.description,
-            title: recipe.title, // Updated from "dish"
-            // Convert instructions string to an array
-            instructions: recipe.instructions.split("\n").map((step: string) => step.trim()),
-            cookTime: recipe.cookTime,
-            prepTime: recipe.prepTime,
-            servings: recipe.servings, // Updated from "serving"
-            tags: tags,
-            likes: [], // Reset likes array if needed
-            comments: [],
-            updatedAt: new Date(),
-            // Optional: Remove or update rating fields as needed
-            mediaUrl: media.mediaUrl,
-            mediaId: media.mediaId,
-        });
-
-        // Delete the old media file if a new file was uploaded
-        if (hasFileToUpdate && recipe.mediaId) {
-            const oldFileRef = ref(storage, recipe.mediaId);
-            await deleteObject(oldFileRef);
-        }
-        return { status: "ok" };
-    } catch (error) {
-        console.log(error);
+    // Update media if a new file is provided
+    if (hasFileToUpdate) {
+      const fileRef = ref(storage, `recipe/${recipe.file[0].name}`);
+      await uploadBytes(fileRef, recipe.file[0]);
+      const fileUrl = await getDownloadURL(fileRef);
+      media = { mediaUrl: fileUrl, mediaId: fileRef.fullPath };
     }
+
+    // Normalize tags to always be an array
+    const tags: string[] = Array.isArray(recipe.tags)
+      ? recipe.tags
+      : String(recipe.tags)
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean);
+
+    await updateDoc(doc(database, "Recipes", recipe.recipeId), {
+      description: recipe.description,
+      title: recipe.title,
+      instructions: recipe.instructions.split("\n").map((step: string) => step.trim()),
+      cookTime: recipe.cookTime,
+      prepTime: recipe.prepTime,
+      servings: recipe.servings,
+      tags: tags,
+      likes: [],
+      comments: [],
+      updatedAt: new Date(),
+      mediaUrl: media.mediaUrl,
+      mediaId: media.mediaId,
+    });
+
+    // Delete the old media file if a new file was uploaded and previous mediaId exists
+    if (hasFileToUpdate && (recipe as IUpdateRecipe & { mediaId?: string }).mediaId) {
+      const oldFileRef = ref(storage, (recipe as IUpdateRecipe & { mediaId?: string }).mediaId!);
+      await deleteObject(oldFileRef);
+    }
+    return { status: "ok" };
+  } catch (error) {
+    console.log(error);
+  }
 }
 // Delete recipe
 export async function deleteRecipe(recipeId?: string, mediaId?: string) {
@@ -429,7 +466,6 @@ export async function deleteRecipe(recipeId?: string, mediaId?: string) {
         console.log(error);
     }
 }
-
 // Like recipe
 export async function likeRecipe(recipeId: string, likesArray: string[]) {
     try {
@@ -689,9 +725,7 @@ export async function getAllFridgeIngredients(userid: string) {
 
         const fridgeDoc = querySnapshot.docs[0];
         // incrementing the index of the ingredients array
-        const ingredientData = fridgeDoc.data().ingredients.map((ingredient: any) => {
-            return getIngredientNameById(ingredient.ingredientId.id);
-        });
+        const ingredientData = fridgeDoc.data().ingredients;
         // const ingredientData = [getIngredientNameById(fridgeDoc.data().ingredients[0].ingredientId.id)];
         return ingredientData;
 
@@ -728,7 +762,8 @@ export async function removeIngredientFromFridge(fridgeId: string, ingredientId:
     }
 }
 
-export async function addIngredientToShoppingList(fridgeId: string, ingredientId: string) {
+export async function addIngredientToShoppingList(fridgeId: string, ingredientId: string)
+{
     try {
         const fridgeDoc = doc(database, "Fridges", fridgeId);
         await updateDoc(fridgeDoc, {
@@ -739,6 +774,20 @@ export async function addIngredientToShoppingList(fridgeId: string, ingredientId
         console.log(error);
     }
 }
+
+export async function addNewIngredient(fridgeRef: DocumentReference, ingredientName: string) {
+    try {
+        const ingredientRef = doc(database, "Ingredients", ingredientName);
+        await setDoc(ingredientRef, { name: ingredientName });
+        await updateDoc(fridgeRef, {
+            ingredients: arrayUnion(ingredientName),
+        });
+        return { status: ok };
+    } catch (error) {
+        console.log(error);
+    }
+}
+
 // INGREDIENT FUNCTIONS
 
 export async function getAllIngredients() {
@@ -802,5 +851,80 @@ export async function createNewIngredient(ingredient: string) {
     }
 }
 
+/*toggleUserActivation({ uid: "USER_ID_HERE" })
+    .then((result) => {
+        console.log("New disabled state:", result.data.disabled);
+    })
+    .catch((error) => {
+        console.error("Error calling function:", error);
+    });*/
 
-//
+
+// Toggle user deactivation
+export async function toggleUserActivation(userId: string): Promise<void> {
+    try {
+        const userRef = doc(database, "Users", userId);
+        const userSnap = await getDoc(userRef);
+        const currentStatus = userSnap.data()?.isDeactivated;
+        await updateDoc(userRef, { isDeactivated: !currentStatus });
+    } catch (error) {
+        console.error("Error toggling user disabled state:", error);
+    }
+}
+
+// Toggle admin status
+export async function toggleUserAdmin(userId: string): Promise<void> {
+    try {
+        const userRef = doc(database, "Users", userId);
+        const userSnap = await getDoc(userRef);
+        const currentStatus = userSnap.data()?.isAdministrator;
+        await updateDoc(userRef, { isAdministrator: !currentStatus });
+    } catch (error) {
+        console.error("Error toggling user admin state:", error);
+    }
+}
+
+// Toggle creator status
+export async function toggleUserCreator(userId: string): Promise<void> {
+    try {
+        const userRef = doc(database, "Users", userId);
+        const userSnap = await getDoc(userRef);
+        const currentStatus = userSnap.data()?.isVerified;
+        await updateDoc(userRef, { isVerified: !currentStatus });
+    } catch (error) {
+        console.error("Error toggling user verified state:", error);
+    }
+}
+
+// Toggle curator status
+export async function toggleUserCurator(userId: string): Promise<void> {
+    try {
+        const userRef = doc(database, "Users", userId);
+        const userSnap = await getDoc(userRef);
+        const currentStatus = userSnap.data()?.isCurator;
+        await updateDoc(userRef, { isCurator: !currentStatus });
+    } catch (error) {
+        console.error("Error toggling user curator state:", error);
+    }
+}
+
+// Toggle ban status
+export async function toggleUserBan(userId: string): Promise<void> {
+    try {
+        const userRef = doc(database, "Users", userId);
+        const userSnap = await getDoc(userRef);
+        const currentStatus = userSnap.data()?.isBanned;
+        await updateDoc(userRef, { isBanned: !currentStatus });
+    } catch (error) {
+        console.error("Error toggling user banned state:", error);
+    }
+}
+
+/* ---------------------------- New Functions ------------------- */
+
+// AI Functions
+
+// Reccomend A Recipe Based off Current User's Current Fridge Items
+// This Function is called on the Home Page
+// This function will create 3-5 generated recipes using OpenAI.
+// Then using a Recipe Card, it will display the generated recipes inside a Carousel Element.

@@ -5,6 +5,7 @@ import { collection, onSnapshot, query, where, orderBy } from "firebase/firestor
 import { database } from "@/lib/firebase/config";
 import { useUserContext } from "@/context/AuthContext";
 import NotificationItem from "./NotificationItem";
+import { doc } from "firebase/firestore"; // 🔁 import this at the top
 
 type Notification = {
     id: string;
@@ -24,7 +25,7 @@ const Notifications = () => {
 
         const q = query(
             collection(database, "Notifications"),
-            where("userId", "==", user.id),
+            where("user_id", "==", user.id)),
             orderBy("createdAt", "desc")
         );
 

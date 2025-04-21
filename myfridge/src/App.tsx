@@ -5,10 +5,10 @@ import { Routes, Route } from 'react-router-dom';
                     import RootLayout from './_root/RootLayout';
                     import SignupForm from './_auth/forms/SignupForm.tsx';
                     import SigninForm from './_auth/forms/SigninForm.tsx';
-import NotificationsPage from "./_root/pages/NotificationsPage";
+                    import NotificationsPage from "./_root/pages/NotificationsPage";
                     import { Home, Explore, Saved, AllUsers, EditRecipe, RecipeDetails, CreateRecipe, Profile, UpdateProfile, LikedRecipes, Admin, Workshops } from './_root/pages';
                     import { Toaster } from '@/components/ui/toaster.tsx';
-
+                    import RecipeAnalytics from './_root/pages/RecipeAnalytics.tsx';
                     const App = () => {
                         const { user } = useUserContext();
                         return (
@@ -29,11 +29,13 @@ import NotificationsPage from "./_root/pages/NotificationsPage";
                                         <Route path="/update-recipe/:id/*" element={<EditRecipe />} />
                                         <Route path="/recipe/:id/*" element={<RecipeDetails />} />
                                         <Route path="/profile/:id/*" element={<Profile />} />
+                                        <Route path="/recipes/:id/*" element={<RecipeDetails />} />
                                         <Route path="/update-profile/:id/*" element={<UpdateProfile />} />
                                         <Route path="/liked-recipes/:id/*" element={<LikedRecipes />} />
                                         <Route path="/admin" element={<Admin />} />
                                         <Route path="/workshops/*" element={<Workshops />} />
                                         <Route path="/notifications" element={<NotificationsPage />} />
+                                        <Route path="/recipe-analytics" element={<RecipeAnalytics />} />
                                     </Route>
                                 </Routes>
                                 <Toaster />

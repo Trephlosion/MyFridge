@@ -1,6 +1,5 @@
-// src/_root/pages/CreateRecipe.tsx
 import RecipeForm from "@/components/form/RecipeForm.tsx";
-import { collection, addDoc, serverTimestamp, getDocs, query, where } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, query, where,doc  } from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
 import { useUserContext } from "@/context/AuthContext.tsx";
 import { useNavigate } from "react-router-dom";
@@ -17,15 +16,14 @@ const CreateRecipe = () => {
     // Upload image to Firebase Storage
     const uploadImage = async (file: File) => {
         try {
-            const fileRef = ref(storage, `recipe_images/${file.name}-${Date.now()}`);
-            await uploadBytes(fileRef, file);
-            return await getDownloadURL(fileRef);
+            const fileRef = ref(storage, `recipe_images/${file.name}-${Date.now()}`); // ✅ Create unique filename
+            await uploadBytes(fileRef, file); // ✅ Upload file to Firebase Storage
+            return await getDownloadURL(fileRef); // ✅ Get downloadable URL
         } catch (error) {
             console.error("Image Upload Error:", error);
-            return null;
+            return null; // ✅ Return null if upload fails
         }
     };
-
     // Create notifications for all followers
     const notifyFollowers = async (recipeId: string, recipeTitle: string) => {
         if (!user?.followers?.length) return;
@@ -48,42 +46,51 @@ const CreateRecipe = () => {
             console.error("Failed to send notifications:", err);
         }
     };
-
-    // Handle Recipe Submit
-    const handleCreateRecipe = async (recipeData: any) => {
+    // ✅ Function to handle recipe submission
+    const handleCreateRecipe = async (recipeData) => {
         try {
             if (!user) {
                 toast({ title: "You must be logged in to create a recipe!" });
                 return;
             }
 
-            let imageUrl = "";
-            if (recipeData.file?.[0]) {
-                imageUrl = await uploadImage(recipeData.file[0]) || "";
+            let imageUrl = null;
+
+            // ✅ Upload image if provided
+            if (recipeData.file && recipeData.file[0]) {
+                imageUrl = await uploadImage(recipeData.file[0]); // ✅ Get image URL
             }
 
-            const newRecipe = {
-                dish: recipeData.dish,
+            // After uploading media, prepare new recipe:
+            const newRecipeRef = await addDoc(collection(database, "Recipes"), {
+                title: recipeData.title,
                 description: recipeData.description,
                 instructions: recipeData.instructions,
+                ingredients: recipeData.ingredients,
                 cookTime: recipeData.cookTime,
                 prepTime: recipeData.prepTime,
-                serving: recipeData.serving,
-                media_url: imageUrl,
+                servings: recipeData.servings,
+                mediaUrl: imageUrl || "",
                 tags: recipeData.tags,
-                author: `/Users/${user.id}`,
+                author: doc(database, "Users", user.id),
                 createdAt: serverTimestamp(),
-            };
+            });
 
+// ✅ Add reference to user's recipe array
+            const userRef = doc(database, "Users", user.id);
+            await updateDoc(userRef, {
+                recipes: arrayUnion(newRecipeRef),
+            });
             const recipeDocRef = await addDoc(collection(database, "Recipes"), newRecipe);
 
+            await addDoc(collection(database, "Recipes"), newRecipe); // ✅ Save to Firestore
             toast({ title: "Recipe created successfully!" });
 
             // Send notifications
             await notifyFollowers(recipeDocRef.id, recipeData.dish);
 
             setTimeout(() => {
-                navigate("/");
+                navigate("/"); // ✅ Refresh page after submission
             }, 1000);
         } catch (error) {
             console.error("Error creating recipe:", error);
@@ -94,14 +101,24 @@ const CreateRecipe = () => {
     return (
         <div className="flex flex-1">
             <div className="common-container">
-                <div className="max-w-5l flex-start gap-3 justify-start">
-                    <img src="/assets/icons/add-post.svg" alt="Create Recipe" width={36} height={36} />
+                <div className="max-w-5l flex-start gap-3 justify-start h-full">
+                    <img
+                        src="/assets/icons/add-post.svg"
+                        alt="Create Recipe"
+                        width={36}
+                        height={36}
+                    />
                     <h2 className="h3-bold md:h2-bold text-left w-full">Create Recipe</h2>
                 </div>
-                <RecipeForm onSubmit={handleCreateRecipe} />
+
+                <RecipeForm /> {/* ✅ Pass function to RecipeForm */}
             </div>
         </div>
     );
 };
 
 export default CreateRecipe;
+
+
+
+
