@@ -1,66 +1,10 @@
-// src/components/cards/WorkshopCard.tsx
+import { useEffect, useState } from "react"; import { useNavigate } from "react-router-dom"; import { getDownloadURL, ref } from "firebase/storage"; import { Workshop } from "@/types"; import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription, } from "@/components/ui/card"; import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; import { AspectRatio } from "@/components/ui/aspect-ratio"; import { multiFormatDateString } from "@/lib/utils"; import { storage } from "@/lib/firebase/config";
 
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { getDoc, doc } from "firebase/firestore";
-import { getDownloadURL, ref } from "firebase/storage";
-import { database, storage } from "@/lib/firebase/config";
-import { Workshop } from "@/types";
-import {
-    Card,
-    CardContent,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-} from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { multiFormatDateString } from "@/lib/utils";
+type Props = { workshop: Workshop; };
 
-type Props = {
-    workshop: Workshop;
-};
-
-const WorkshopCard = ({ workshop }: Props) => {
-    const navigate = useNavigate();
-    const [creator, setCreator] = useState<any>({
-        pfp: "/assets/icons/profile-placeholder.svg",
-        username: "Unknown",
-    });
-
-    const [imageUrl, setImageUrl] = useState<string>("");
+const WorkshopCard = ({ workshop }: Props) => { const navigate = useNavigate(); const [imageUrl, setImageUrl] = useState<string>("");
 
     useEffect(() => {
-        const fetchCreator = async () => {
-            try {
-                let userRef;
-
-                if (typeof workshop.userId === "string") {
-                    userRef = doc(database, "Users", workshop.userId);
-                } else if (workshop.userId && typeof workshop.userId === "object" && "_key" in workshop.userId) {
-                    userRef = workshop.userId;
-                } else {
-                    console.warn("❌ Invalid userId:", workshop.userId);
-                    return;
-                }
-
-                const creatorSnap = await getDoc(userRef);
-
-                if (creatorSnap.exists()) {
-                    const data = creatorSnap.data();
-                    setCreator({
-                        pfp: data.pfp || "/assets/icons/profile-placeholder.svg",
-                        username: data.username || "Unknown",
-                    });
-                } else {
-                    console.warn("User doc not found");
-                }
-            } catch (err) {
-                console.error("Error fetching creator info:", err);
-            }
-        };
-
         const fetchImage = async () => {
             if (workshop.media_url?.startsWith("http")) {
                 setImageUrl(workshop.media_url);
@@ -76,18 +20,8 @@ const WorkshopCard = ({ workshop }: Props) => {
             }
         };
 
-        console.log("🧪 Received workshop.userId:", workshop.userId);
-        fetchCreator();
         fetchImage();
-    }, [workshop]);
-
-    const formattedDate = multiFormatDateString(
-        workshop.date instanceof Date
-            ? workshop.date
-            : typeof workshop.date?.toDate === "function"
-                ? workshop.date.toDate()
-                : new Date(workshop.date)
-    );
+    }, [workshop.media_url]);
 
     return (
         <Card className="recipe-card flex flex-col">
@@ -98,14 +32,18 @@ const WorkshopCard = ({ workshop }: Props) => {
             <CardHeader className="flex items-center justify-between px-3">
                 <div className="flex items-center gap-3">
                     <Avatar className="w-12 h-12">
-                        <AvatarImage src={creator.pfp} />
+                        <AvatarImage src={workshop.creatorPfp || "/assets/icons/profile-placeholder.svg"} />
                         <AvatarFallback className="bg-white text-black">
-                            {creator.username.charAt(0)}
+                            {(workshop.creatorUsername || "U").charAt(0)}
                         </AvatarFallback>
                     </Avatar>
-                    <p className="text-light-3 text-sm font-semibold">@{creator.username}</p>
+                    <p className="text-light-3 text-sm font-semibold">
+                        @{workshop.creatorUsername || "Unknown"}
+                    </p>
                 </div>
-                <p className="text-xs text-gray-500">{formattedDate}</p>
+                <p className="text-xs text-gray-500">
+                    {multiFormatDateString(workshop.date?.toString() || "")}
+                </p>
             </CardHeader>
 
             <CardContent className="p-2">

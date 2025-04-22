@@ -9,7 +9,9 @@ import { Routes, Route } from 'react-router-dom';
                     import { Home, Explore, Saved, AllUsers, EditRecipe, RecipeDetails, CreateRecipe, Profile, UpdateProfile, LikedRecipes, Admin, Workshops } from './_root/pages';
                     import { Toaster } from '@/components/ui/toaster.tsx';
                     import RecipeAnalytics from './_root/pages/RecipeAnalytics.tsx';
-                    const App = () => {
+                    import WorkshopDetails from './_root/pages/WorkshopDetails';
+
+const App = () => {
                         const { user } = useUserContext();
                         return (
                             <main className="flex h-screen">
@@ -36,6 +38,8 @@ import { Routes, Route } from 'react-router-dom';
                                         <Route path="/workshops/*" element={<Workshops />} />
                                         <Route path="/notifications" element={<NotificationsPage />} />
                                         <Route path="/recipe-analytics" element={<RecipeAnalytics />} />
+                                        <Route path="/workshop/:id" element={<WorkshopDetails />} />
+
                                     </Route>
                                 </Routes>
                                 <Toaster />
