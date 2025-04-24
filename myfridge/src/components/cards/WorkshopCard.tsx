@@ -1,8 +1,27 @@
-import { useEffect, useState } from "react"; import { useNavigate } from "react-router-dom"; import { getDownloadURL, ref } from "firebase/storage"; import { Workshop } from "@/types"; import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription, } from "@/components/ui/card"; import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; import { AspectRatio } from "@/components/ui/aspect-ratio"; import { multiFormatDateString } from "@/lib/utils"; import { storage } from "@/lib/firebase/config";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { getDownloadURL, ref } from "firebase/storage";
+import { Workshop } from "@/types";
+import {
+    Card,
+    CardContent,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { multiFormatDateString } from "@/lib/utils";
+import { storage } from "@/lib/firebase/config";
 
-type Props = { workshop: Workshop; };
+type Props = {
+    workshop: Workshop;
+};
 
-const WorkshopCard = ({ workshop }: Props) => { const navigate = useNavigate(); const [imageUrl, setImageUrl] = useState<string>("");
+const WorkshopCard = ({ workshop }: Props) => {
+    const navigate = useNavigate();
+    const [imageUrl, setImageUrl] = useState<string>("");
 
     useEffect(() => {
         const fetchImage = async () => {

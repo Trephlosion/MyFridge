@@ -25,9 +25,10 @@ const Notifications = () => {
 
         const q = query(
             collection(database, "Notifications"),
-            where("user_id", "==", user.id)),
+            where("user_id", "==", user.id),
             orderBy("createdAt", "desc")
         );
+
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const notifData = snapshot.docs.map((doc) => ({

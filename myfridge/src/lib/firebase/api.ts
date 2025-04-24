@@ -10,7 +10,7 @@ import firebase from "firebase/compat/app";
 import DocumentReference = firebase.firestore.DocumentReference;
 import { INewWorkshop, IUpdateWorkshop } from "@/types";
 import { getFunctions, httpsCallable } from "firebase/functions";
-
+import {getDoc} from "firebase/firestore";
 
 
 const functions = getFunctions();
@@ -266,6 +266,7 @@ export async function updateUser(user: IUpdateUser) {
     }
 }
 // Follow/unfollow user
+
 export async function followUser(currentUserId: string, profileUserId: string, isFollowing: boolean) {
     const currentUserRef = doc(database, "Users", currentUserId);
     const profileUserRef = doc(database, "Users", profileUserId);
@@ -294,11 +295,21 @@ export async function followUser(currentUserId: string, profileUserId: string, i
             transaction.update(profileUserRef, {
                 followers: arrayUnion(currentUserId),
             });
+
+            // ✅ Create a "new_follower" notification
+            const currentUserData = currentUserDoc.data();
+            const username = currentUserData?.username || "Someone";
+
+            await addDoc(collection(database, "Notifications"), {
+                user_id: profileUserRef, // recipient of notification
+                type: "new_follower",
+                message: `${username} started following you.`,
+                isRead: false,
+                createdAt: serverTimestamp(),
+            });
         }
     });
 }
-
-
 // RECIPE FUNCTIONS
 
 // Create a new recipe

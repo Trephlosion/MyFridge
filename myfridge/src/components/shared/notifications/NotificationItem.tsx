@@ -1,14 +1,17 @@
 // src/components/shared/notifications/NotificationItem.tsx
 
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { updateDoc, doc } from "firebase/firestore";
+import { updateDoc, doc, getDoc } from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
 
 type NotificationItemProps = {
     id: string;
-    type: "new_recipe" | "new_comment";
-    message: string;
+    type: "new_recipe" | "new_comment" | "new_workshop" | "new_follower";
+    message?: string;
     recipeId?: string;
+    workshopId?: string;
+    followerId?: string;
     isRead: boolean;
 };
 
@@ -17,27 +20,55 @@ const NotificationItem = ({
                               type,
                               message,
                               recipeId,
+                              workshopId,
+                              followerId,
                               isRead,
                           }: NotificationItemProps) => {
     const navigate = useNavigate();
+    const [followerUsername, setFollowerUsername] = useState<string>("");
+
+    useEffect(() => {
+        const fetchFollowerUsername = async () => {
+            if (type === "new_follower" && followerId) {
+                const userRef = doc(database, "Users", followerId);
+                const snap = await getDoc(userRef);
+                if (snap.exists()) {
+                    const data = snap.data();
+                    setFollowerUsername(data.username || "Unknown");
+                }
+            }
+        };
+        fetchFollowerUsername();
+    }, [type, followerId]);
 
     const handleNotificationClick = async () => {
         try {
-            // Mark notification as read
-            if (!isRead) {
-                const notifRef = doc(database, "Notifications", id);
-                await updateDoc(notifRef, { isRead: true });
-            }
+            const notifRef = doc(database, "Notifications", id);
+            if (!isRead) await updateDoc(notifRef, { isRead: true });
 
-            // Navigate if recipeId is available
-            if (recipeId) {
-                navigate(`/recipe/${recipeId}`);
-            } else {
-                console.warn("No recipeId provided in this notification:", id);
+            switch (type) {
+                case "new_recipe":
+                    if (recipeId) navigate(`/recipe/${recipeId}`);
+                    break;
+                case "new_workshop":
+                    if (workshopId) navigate(`/workshop/${workshopId}`);
+                    break;
+                case "new_follower":
+                    if (followerId) navigate(`/profile/${followerId}`);
+                    break;
+                default:
+                    console.warn("Unhandled notification type:", type);
             }
         } catch (error) {
             console.error("Failed to handle notification click:", error);
         }
+    };
+
+    const renderMessage = () => {
+        if (type === "new_follower" && followerUsername) {
+            return `@${followerUsername} started following you.`;
+        }
+        return message || "You have a new notification.";
     };
 
     return (
@@ -47,7 +78,7 @@ const NotificationItem = ({
                 isRead ? "bg-white text-gray-700" : "bg-blue-50 text-blue-800"
             } hover:bg-blue-100 transition-colors`}
         >
-            <p className="text-sm">{message}</p>
+            <p className="text-sm">{renderMessage()}</p>
         </div>
     );
 };
