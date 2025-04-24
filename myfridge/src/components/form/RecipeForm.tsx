@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -15,9 +15,22 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import FileUploader from "@/components/shared/FileUploader.tsx";
 import { RecipeValidation } from "@/lib/validation";
-import { useCreateRecipe } from "@/lib/react-query/queriesAndMutations.ts";
+import { useCreateRecipe, useUpdateRecipe, useDeleteRecipe } from "@/lib/react-query/queriesAndMutations.ts";
 import { useUserContext } from "@/context/AuthContext.tsx";
 import { useToast } from "@/hooks/use-toast.ts";
+import {
+    AlertDialog,
+    AlertDialogTrigger,
+    AlertDialogContent,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogCancel,
+    AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import {firebaseConfig} from "@/lib/firebase/config.ts";
+
 
 type RecipeFormProps = {
     recipe?: {
@@ -36,9 +49,31 @@ type RecipeFormProps = {
 
 const RecipeForm = ({ recipe }: RecipeFormProps) => {
     const { mutateAsync: createRecipe, isPending: isLoadingCreate } = useCreateRecipe();
+
     const { user } = useUserContext();
     const { toast } = useToast();
     const navigate = useNavigate();
+
+    const location = useLocation();
+
+
+    const { mutateAsync: deleteRecipeFn, isPending: isDeleting } = useDeleteRecipe();
+
+    const handleDelete = async () => {
+        if (!recipe?.id || !recipe?.mediaUrl) return;
+
+        const mediaId = decodeURIComponent(new URL(recipe.mediaUrl).pathname.replace(firebaseConfig.storageBucket, ""));
+        await deleteRecipeFn({ recipeId: recipe.id, mediaId });
+
+
+        toast({
+            title: "Recipe Deleted",
+            description: "The recipe and its data have been removed.",
+        });
+
+        console.log("Recipe deleted:", recipe.id);
+        navigate("/");
+    };
 
     const form = useForm<z.infer<typeof RecipeValidation>>({
         resolver: zodResolver(RecipeValidation),
@@ -202,10 +237,32 @@ const RecipeForm = ({ recipe }: RecipeFormProps) => {
                     )}
                 />
                 <div className="flex gap-4 items-center justify-end">
-<Button type="submit" className="shad-button_primary whitespace-nowrap" disabled={isLoadingCreate}>
-    {isLoadingCreate ? "Submitting..." : "Submit"}
-</Button>
+                    <Button type="submit" className="shad-button_primary whitespace-nowrap" disabled={isLoadingCreate}>
+                        {isLoadingCreate ? "Submitting..." : "Submit"}
+                    </Button>
                     <Button type="button" className="shad-button_dark_4">Cancel</Button>
+
+                    {recipe! && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button type="button" className="bg-red text-white">Delete</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete the recipe and all associated data.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction>
+                                        <Button type="button" className="bg-red text-white">Delete Permanently</Button>
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
                 </div>
             </form>
         </Form>

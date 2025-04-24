@@ -19,6 +19,7 @@ import { useUserContext } from "@/context/AuthContext.tsx";
 import RecipeCard from "@/components/cards/RecipeCard.tsx";
 import LoadingRecipe from "@/components/shared/LoadingRecipe.tsx";
 import { Button } from "@/components/ui/button";
+import {GridRecipeList} from "@/components/shared";
 
 const Explore = () => {
     const [searchTerm, setSearchTerm] = useState("");
@@ -99,11 +100,14 @@ const Explore = () => {
         }
     }, [recipes]);
 
+    console.log("Recipes:", recipes);
+
     return (
         <div className="p-5">
             <h2 className="text-2xl font-bold mb-4 text-center">Explore Recipes</h2>
+            <GridRecipeList recipes={recipes} />
 
-            <div className="flex justify-center mb-4 gap-4">
+            {/*<div className="flex justify-center mb-4 gap-4">
                 <Input
                     type="text"
                     placeholder="Search recipes..."
@@ -138,7 +142,7 @@ const Explore = () => {
                     ))
 
                 )}
-            </div>
+            </div>*/}
         </div>
     );
 };

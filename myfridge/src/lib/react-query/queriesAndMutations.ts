@@ -94,17 +94,17 @@ export const useCreateRecipe = () => {
     });
 };
 
-export const useGetUserRecipes = (userId?: any) => {
+export const useGetUserRecipes = (userRef?: any) => {
     return useQuery({
-        queryKey: [QUERY_KEYS.GET_USER_RECIPES, userId],
+        queryKey: [QUERY_KEYS.GET_USER_RECIPES, userRef?.id],
         queryFn: () => {
-            if (!userId) {
-                console.error("useGetUserRecipes called with an undefined userId!");
+            if (!userRef) {
+                console.error("useGetUserRecipes called with an undefined userRef!");
                 return [];
             }
-            return getUserRecipes(userId);
+            return getUserRecipes(userRef);
         },
-        enabled: !!userId,
+        enabled: !!userRef,
     });
 };
 
@@ -191,6 +191,7 @@ export const useDeleteRecipe = () => {
         },
     });
 };
+
 
 // Mutation for liking a recipe
 export const useLikeRecipe = () => {

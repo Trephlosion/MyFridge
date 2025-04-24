@@ -16,6 +16,9 @@ import FridgeForm from "@/components/form/FridgeForm";
 import { onSnapshot } from "firebase/firestore";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar.tsx";
 import { useGetUserRecipes } from "@/lib/react-query/queriesAndMutations";
+import LoadingRecipe from "@/components/shared/LoadingRecipe.tsx";
+import {Input} from "@/components/ui/input.tsx";
+import RecipeCard from "../../components/cards/RecipeCard.tsx";
 
 
 
@@ -56,12 +59,7 @@ const Profile = () => {
     const [followersCount, setFollowersCount] = useState<number>(0);
     const [followingCount, setFollowingCount] = useState<number>(0);
     const [isUpdating, setIsUpdating] = useState<boolean>(false);
-    const {
-        data: profileUserRecipes,
-        isLoading: isLoadingProfileUserRecipes,
-    } = useGetUserRecipes(currentUser?.id);
-
-
+    const { data: profileUserRecipes, isLoading: isLoadingRecipes } = useGetUserRecipes(currentUser?.id);
 
     const { data: fridge, isLoading: isFridgeLoading } = useGetAllFridgeIngredients(user.myFridge);
 
@@ -107,7 +105,6 @@ const Profile = () => {
         setFollowersCount((prev) => (isFollowing ? prev - 1 : prev + 1));
         setIsUpdating(false);
     };
-
 
 
 
@@ -210,12 +207,14 @@ const Profile = () => {
                 </TabsList>
 
                 <TabsContent value={"recipes"} className="w-full max-w-5xl">
-                    {isLoadingProfileUserRecipes ? (
-                        <p className="text-center text-gray-500">Loading recipes...</p>
-                    ) : profileUserRecipes?.length === 0 ? (
-                        <p className="text-center text-gray-500">No recipes found for this user.</p>
+                    {isLoadingRecipes ? (
+                        <LoadingRecipe />
                     ) : (
-                        <GridRecipeList recipes={profileUserRecipes} />
+                        <>
+
+                            <GridRecipeList recipes={profileUserRecipes} />
+                        </>
+
                     )}
                 </TabsContent>
 

@@ -195,26 +195,44 @@ export async function getUserById(userId: string): Promise<IUser | null> {
 }
 
 // Get user's recipes
-export async function getUserRecipes(userId: any): Promise<Recipe[]> {
-    if (!userId) throw new Error("User ID is required to fetch recipes.");
-
+export const getUserRecipes = async (userId: string): Promise<Recipe[]> => {
     try {
-        const recipesQuery = query(
-            collection(database, "Recipes"),
-            where("author", "==", userId),
-            orderBy("createdAt", "desc")
-        );
-        const querySnapshot = await getDocs(recipesQuery);
+        const userRef = doc(database, "Users", userId);
+        const userSnap = await getDoc(userRef);
 
-        return querySnapshot.docs.map((doc) => ({
-            id: doc.id, // Include Firestore document ID
-            ...doc.data(),
-        })) as IRecipeMetadata[];
+        if (!userSnap.exists()) {
+            console.warn(`User with ID ${userId} not found.`);
+            return [];
+        }
+
+        const userData = userSnap.data();
+
+        // Check if recipes is an array of DocumentReferences
+        const recipeRefs = userData.recipes as DocumentReference<Recipe>[];
+        if (!Array.isArray(recipeRefs)) {
+            console.warn(`recipes field is not an array for user ${userId}`);
+            return [];
+        }
+
+        // Fetch each recipe document in parallel
+        const recipeSnaps = await Promise.all(recipeRefs.map(ref => getDoc(ref)));
+
+        // Extract data from each document snapshot
+        const recipes: Recipe[] = recipeSnaps
+            .filter(snap => snap.exists())
+            .map(snap => ({
+                id: snap.id,
+                ...snap.data(),
+            } as Recipe));
+
+        return recipes;
+
     } catch (error) {
         console.error("Error fetching user recipes:", error);
         return [];
     }
-}
+};
+
 
 // Update user
 export async function updateUser(user: IUpdateUser) {
@@ -338,7 +356,7 @@ export async function createRecipe(recipe: INewRecipe) {
         const tags: string = Array.isArray(recipe.tags) ? recipe.tags : String(recipe.tags).split(",").map(t => t.trim()).filter(Boolean);
 
 
-        const { toast } = useToast();
+
 
         // Save recipe to Firestore
         const newRecipeRef = doc(collection(database, "Recipes"));
@@ -352,7 +370,7 @@ export async function createRecipe(recipe: INewRecipe) {
             cookTime: recipe.cookTime,
             prepTime: recipe.prepTime,
             servings: recipe.servings,
-            isReccomended: false,
+            isRecommended: false,
             tags: tags,
             likes: [],
             comments: [],
@@ -367,7 +385,8 @@ export async function createRecipe(recipe: INewRecipe) {
         await updateDoc(userRef, {
             recipes: arrayUnion(newRecipeRef),
         });
-        toast({ title: "Recipe created successfully!" });
+        console.log("Recipe created successfully:", newRecipeRef.id);
+
 
         setTimeout(() => {
             window.location.reload(); // ✅ Refresh page after submission
@@ -464,17 +483,45 @@ export async function updateRecipe(recipe: IUpdateRecipe) {
 }
 
 // Delete recipe
-export async function deleteRecipe(recipeId?: string, mediaId?: string) {
-    if (!recipeId || !mediaId) return;
+export const deleteRecipe = async (recipeId?: string, mediaId?: string) => {
+    if (!recipeId) return;
+
     try {
-        await deleteDoc(doc(database, "Recipes", recipeId));
-        const fileRef = ref(storage, mediaId);
-        await deleteObject(fileRef);
-        return { status: "Ok" };
+        const recipeRef = doc(database, "Recipes", recipeId);
+        const recipeSnap = await getDoc(recipeRef);
+
+        if (!recipeSnap.exists()) return;
+
+        // Delete media from storage
+        if (mediaId) {
+            const mediaRef = ref(storage, mediaId);
+            await deleteObject(mediaRef).catch((err) => {
+                console.error("Error deleting media from storage:", err);
+            });
+        }
+
+        // Delete ratings (subcollection)
+        const ratingsSnap = await getDocs(collection(recipeRef, "Ratings"));
+        for (const docSnap of ratingsSnap.docs) {
+            await deleteDoc(docSnap.ref);
+        }
+
+        // Remove recipe reference from users
+        const usersSnap = await getDocs(collection(database, "Users"));
+        for (const userDoc of usersSnap.docs) {
+            await updateDoc(userDoc.ref, {
+                recipes: arrayRemove(recipeRef),
+                comments: arrayRemove(recipeId),
+            });
+        }
+
+        // Finally, delete the recipe document
+        await deleteDoc(recipeRef);
     } catch (error) {
-        console.log(error);
+        console.error("Error deleting recipe:", error);
+        throw error; // Optionally rethrow to be handled by the mutation hook
     }
-}
+};
 
 // Like recipe
 export async function likeRecipe(recipeId: string, userRef: any) {
