@@ -25,7 +25,8 @@ const AiRecipeCarousel = () => {
     const [loading, setLoading] = useState(false);
     const [hasIngredients, setHasIngredients] = useState(true);
     const [ingredients, setIngredients] = useState<string[]>([]);
-    const { generateAiRecipes } = useGenerateAiRecipes();
+    const generateAiRecipesMutation = useGenerateAiRecipes();
+
 
     useEffect(() => {
         let unsubscribe = () => {};
@@ -47,7 +48,7 @@ const AiRecipeCarousel = () => {
                         setHasIngredients(true);
                         setLoading(true);
                         try {
-                            const generated = await generateAiRecipes(fridgeIngredients);
+                            const generated = await generateAiRecipesMutation.mutateAsync(fridgeIngredients);
                             setAiRecipes(generated);
                         } catch (error) {
                             console.error("Error generating AI recipes:", error);

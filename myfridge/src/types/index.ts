@@ -84,7 +84,7 @@ export type Recipe = {
     servings?: number;
     createdAt: Date;
     updatedAt?: Date;
-    isReccomended?: boolean;
+    isRecommended: boolean;
     mediaUrl: string; // Image URL (formerly "pfp")
     author: any;
     userId?: any;
@@ -95,26 +95,33 @@ export type Recipe = {
     ingredients: string[]; // Array of ingredients
     likes: any[]; // Array of user IDs who liked the recipe
     comments: any[]; // Array of comment IDs
+    file?: File[]; // Array of uploaded files
+    avgRating?: number;
+
 };
 
 export interface IRecipeMetadata {
     id: string; // Firestore document ID
-    title: string;
-    description: string;
-    cookTime: string;
-    prepTime: string;
+    title: string; // Recipe title (formerly "dish")
+    description?: string;
+    cookTime?: string;
+    prepTime?: string;
     servings?: number;
     createdAt: Date;
     updatedAt?: Date;
-    tags: string[];
-    instructions: string; // Array of instructions
-    ingredients: string[]; // Array of ingredients
-    mediaUrl?: string; // Updated from "imageUrl" or "pfp"
+    isRecommended: boolean;
+    mediaUrl: string; // Image URL (formerly "pfp")
     author: any;
     userId?: any;
-    likes?: string[];
-    comments?: string[];
-    file?: File[];
+    username?: string;
+    pfp?: string;
+    tags: string[];
+    instructions: string[]; // Array of instruction steps
+    ingredients: string[]; // Array of ingredients
+    likes: any[]; // Array of user IDs who liked the recipe
+    comments: any[]; // Array of comment IDs
+    file?: File[]; // Array of uploaded files
+    avgRating?: number;
 }
 // types/workshop.ts
 export type Workshop = {
@@ -169,11 +176,13 @@ export type IUpdateRecipe = {
     description: string;
     instructions: string; // Accept a single string (to be split into an array)
     ingredients: string[]; // Changed from "ingredients" to "ingredients"
+    isRecommended: boolean;
     cookTime: string;
     prepTime: string;
     servings: string; // Changed from "serving" to "servings"
     tags: string[];
     recipeId: string;
+    avgRating: number;
 };
 
 export type FridgeData = {
@@ -186,4 +195,26 @@ export type FridgeData = {
 export type RemoveIngredientParams = {
     fridgeId: any;
     ingredientName: string;
+};
+
+
+export type IRate = {
+    recipeId: any,
+    userId: any,
+    comment: string,
+    stars: any,
+    createdAt: Date,
+}
+
+export type RecipeCardProps = {
+    recipe: Recipe;
+};
+
+export type UserInfo = {
+    pfp: string;
+    username: string;
+    isVerified?: boolean;
+    isCurator?: boolean;
+    isAdministrator?: boolean;
+    id?: string;
 };

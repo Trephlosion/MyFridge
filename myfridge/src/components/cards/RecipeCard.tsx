@@ -19,19 +19,9 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Button } from "@/components/ui/button";
+import { RecipeCardProps, UserInfo } from "@/types";
 
-type RecipeCardProps = {
-    recipe: Recipe;
-};
-
-type UserInfo = {
-    pfp: string;
-    username: string;
-    isVerified?: boolean;
-    isCurator?: boolean;
-    isAdministrator?: boolean;
-    id?: string;
-};
 
 const RecipeCard = ({ recipe }: RecipeCardProps) => {
     const navigate = useNavigate();
@@ -76,7 +66,7 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
             if (userSnap.exists()) {
                 const userData:any = userSnap.data();
                 return {
-                    pfp: userData.pfp || "/assets/icons/profile-placeholder.svg",
+                    pfp: userData.pfp,
                     username: userData.username || "Unknown",
                     isVerified: userData.isVerified || false,
                     isCurator: userData.isCurator || false,

@@ -15,6 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FridgeForm from "@/components/form/FridgeForm";
 import { onSnapshot } from "firebase/firestore";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar.tsx";
+import { useGetUserRecipes } from "@/lib/react-query/queriesAndMutations";
+
 
 
 const formatNumber = (num: number): string => {
@@ -54,6 +56,11 @@ const Profile = () => {
     const [followersCount, setFollowersCount] = useState<number>(0);
     const [followingCount, setFollowingCount] = useState<number>(0);
     const [isUpdating, setIsUpdating] = useState<boolean>(false);
+    const {
+        data: profileUserRecipes,
+        isLoading: isLoadingProfileUserRecipes,
+    } = useGetUserRecipes(currentUser?.id);
+
 
 
     const { data: fridge, isLoading: isFridgeLoading } = useGetAllFridgeIngredients(user.myFridge);
@@ -112,26 +119,26 @@ const Profile = () => {
                 <div className="flex xl:flex-row flex-col max-xl:items-center flex-1 gap-7">
                     <div className={"relative"}>
                     <Avatar className="w-28 h-28">
-                        <AvatarImage src={user.pfp} alt={user.username} />
-                        <AvatarFallback className={"bg-white text-black text-2xl"}>{user.username.charAt(0)}</AvatarFallback>
+                        <AvatarImage src={currentUser.pfp} alt={currentUser.username} />
+                        <AvatarFallback className={"bg-white text-black text-2xl"}>{currentUser.username.charAt(0)}</AvatarFallback>
                     </Avatar>
 
                         {/* Status Icons */}
-                        {user.isVerified && (
+                        {currentUser.isVerified && (
                             <img
                                 src="/assets/icons/verified.svg"
                                 alt="verified"
                                 className="w-9 h-9 absolute bottom-0.5 right-0"
                             />
                         )}
-                        {user.isCurator && (
+                        {currentUser.isCurator && (
                             <img
                                 src="/assets/icons/curator-icon.svg"
                                 alt="curator"
                                 className="w-9 h-9 absolute bottom-0.5 right-0"
                             />
                         )}
-                        {user.isAdministrator && (
+                        {currentUser.isAdministrator && (
                             <img
                                 src="/assets/icons/admin-icon.svg"
                                 alt="admin"
@@ -203,7 +210,13 @@ const Profile = () => {
                 </TabsList>
 
                 <TabsContent value={"recipes"} className="w-full max-w-5xl">
-                    <GridRecipeList recipes={currentUser.recipes}  />
+                    {isLoadingProfileUserRecipes ? (
+                        <p className="text-center text-gray-500">Loading recipes...</p>
+                    ) : profileUserRecipes?.length === 0 ? (
+                        <p className="text-center text-gray-500">No recipes found for this user.</p>
+                    ) : (
+                        <GridRecipeList recipes={profileUserRecipes} />
+                    )}
                 </TabsContent>
 
                 <TabsContent value={"liked-recipes"} className="w-full max-w-5xl">

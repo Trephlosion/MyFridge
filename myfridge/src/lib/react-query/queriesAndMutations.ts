@@ -28,13 +28,11 @@ import {
     getInfiniteRecipes, // Updated function for infinite scroll
     createFridge,
     followUser,
-    createFridge,
     getAllFridgeIngredients,
     addIngredientToFridge,
     getAllIngredients,
     getIngredientByName,
     getIngredientById,
-    createNewIngredient,
     removeIngredientFromFridge,
     addIngredientToShoppingList,
     likeWorkshop,
@@ -96,9 +94,9 @@ export const useCreateRecipe = () => {
     });
 };
 
-export const useGetUserRecipes = (userId?: string) => {
+export const useGetUserRecipes = (userId?: any) => {
     return useQuery({
-        queryKey: [QUERY_KEYS.GET_USER_RECIPES, userId || "guest"],
+        queryKey: [QUERY_KEYS.GET_USER_RECIPES, userId],
         queryFn: () => {
             if (!userId) {
                 console.error("useGetUserRecipes called with an undefined userId!");
@@ -494,8 +492,7 @@ export const useAddIngredientToShoppingList = () => {
 };
 
 
-export const useGenerateAiRecipes = () => {
-    return useMutation<Recipe[], Error, string[]>((ingredients: string[]) =>
-        generateAiRecipes(ingredients)
-    );
-};
+export const useGenerateAiRecipes = () =>
+    useMutation<Recipe[], Error, string[], unknown>({
+        mutationFn: generateAiRecipes,
+    });

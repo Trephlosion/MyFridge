@@ -5,7 +5,7 @@ import {
 import { addDoc, startAfter, DocumentSnapshot, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, limit, getDocs, runTransaction, arrayUnion, arrayRemove } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { auth, database, storage,} from "@/lib/firebase/config.ts";
-import { INewRecipe, IRecipeMetadata, IUpdateRecipe, IUpdateUser, IUser,  INewWorkshop, IUpdateWorkshop, FridgeData } from "@/types";
+import { INewRecipe, IRecipeMetadata, IUpdateRecipe, IUpdateUser, IUser,  INewWorkshop, IUpdateWorkshop, FridgeData, Recipe } from "@/types";
 import firebase from "firebase/compat/app";
 import DocumentReference = firebase.firestore.DocumentReference;
 
@@ -195,13 +195,13 @@ export async function getUserById(userId: string): Promise<IUser | null> {
 }
 
 // Get user's recipes
-export async function getUserRecipes(userId: string): Promise<IRecipeMetadata[]> {
+export async function getUserRecipes(userId: any): Promise<Recipe[]> {
     if (!userId) throw new Error("User ID is required to fetch recipes.");
 
     try {
         const recipesQuery = query(
             collection(database, "Recipes"),
-            where("userId", "==", userId),
+            where("author", "==", userId),
             orderBy("createdAt", "desc")
         );
         const querySnapshot = await getDocs(recipesQuery);
@@ -352,6 +352,7 @@ export async function createRecipe(recipe: INewRecipe) {
             cookTime: recipe.cookTime,
             prepTime: recipe.prepTime,
             servings: recipe.servings,
+            isReccomended: false,
             tags: tags,
             likes: [],
             comments: [],
@@ -1131,3 +1132,9 @@ Return the result as a JSON array where each object has the keys "title", "descr
 };
 
 // Then using a Recipe Card, it will display the generated recipes inside a Carousel Element.
+
+
+// Create Curator Review
+
+
+// Create User Comments
