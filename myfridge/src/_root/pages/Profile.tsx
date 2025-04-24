@@ -56,7 +56,7 @@ const Profile = () => {
     const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
 
-    const { data: fridge, isLoading: isFridgeLoading } = useGetAllFridgeIngredients(user.id);
+    const { data: fridge, isLoading: isFridgeLoading } = useGetAllFridgeIngredients(user.myFridge);
 
     useEffect(() => {
         if (currentUser) {
@@ -203,7 +203,7 @@ const Profile = () => {
                 </TabsList>
 
                 <TabsContent value={"recipes"} className="w-full max-w-5xl">
-                    <GridRecipeList recipes={currentUser.recipes} showUser={false} />
+                    <GridRecipeList recipes={currentUser.recipes}  />
                 </TabsContent>
 
                 <TabsContent value={"liked-recipes"} className="w-full max-w-5xl">

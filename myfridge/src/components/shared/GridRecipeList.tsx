@@ -3,23 +3,26 @@ import RecipeCard from "@/components/cards/RecipeCard";
 import { Recipe } from "@/types";
 
 type GridRecipeListProps = {
-  recipes: Recipe[]; // List of recipes
+  recipes: Recipe[]; // List of all available recipes
 };
 
 const GridRecipeList = ({ recipes }: GridRecipeListProps) => {
   const { user } = useUserContext();
-  const filteredRecipes = recipes.filter(
-    (recipe) => recipe.author === user.id
+
+  const likedRecipeIds = user?.likedRecipes?.map((ref: any) => ref.id) || [];
+
+  const filteredRecipes = recipes.filter((recipe) =>
+      likedRecipeIds.includes(recipe.id)
   );
 
   return (
-    <ul className="grid-container">
-      {filteredRecipes.map((recipe) => (
-        <li key={recipe.id} className="relative min-w-80 h-80">
-          <RecipeCard recipe={recipe} />
-        </li>
-      ))}
-    </ul>
+      <ul className="grid-container">
+        {filteredRecipes.map((recipe) => (
+            <li key={recipe.id} className="relative min-w-80 h-80">
+              <RecipeCard recipe={recipe} />
+            </li>
+        ))}
+      </ul>
   );
 };
 

@@ -162,13 +162,15 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                         <p>{multiFormatDateString(recipe.createdAt?.toString() || "")}</p>
                         <p>{recipe.likes?.length || 0} likes</p>
                     </div>
+
+                    {user.username === userInfo.username ? (
+                        <Link to={`/update-recipe/${recipe.id}`}>
+                            <img src="/assets/icons/edit.svg" alt="edit" className="w-5 h-5" />
+                        </Link>
+                    ) : null}
                 </div>
 
-                {user?.id === recipe.author || user?.id === recipe.userId ? (
-                    <Link to={`/update-recipe/${recipe.id}`}>
-                        <img src="/assets/icons/edit.svg" alt="edit" className="w-5 h-5" />
-                    </Link>
-                ) : null}
+
             </CardHeader>
 
             <CardContent className="p-2">

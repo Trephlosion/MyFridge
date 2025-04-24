@@ -5,16 +5,40 @@ import { useGetAllFridgeIngredients, useGetUserById } from "@/lib/react-query/qu
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useUserContext } from "@/context/AuthContext.tsx";
 import { Button } from "@/components/ui/button";
+import {useEffect, useState} from "react";
+import {onSnapshot} from "firebase/firestore";
 
 const UpdateProfile = () => {
     const { user } = useUserContext(); // Authenticated user context
     const navigate = useNavigate();
+    const [myFridge, setMyFridge] = useState([]);
+    const { data: fridge, isLoading: isFridgeLoading } = useGetAllFridgeIngredients(user.myFridge);
 
-    // This function should include any saving logic if necessary.
-    // For this example, we assume that the ProfileForm and FridgeForm save changes automatically,
+    useEffect(() => {
+
+        let unsub = () => {};
+        if (user.myFridge) {
+            unsub = onSnapshot(user.myFridge, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    setMyFridge(data.ingredients || []);
+                } else {
+                    setMyFridge([]);
+                }
+            });
+        }
+
+        return () => {
+            unsub();
+        };
+    }, [user.myFridge]);
+
+
+
     // so we simply navigate back to the profile page.
     const handleUpdateProfile = async () => {
-        // Optionally, add any save logic here (e.g. call an API to update the user profile)
+
+
         navigate(`/profile/${user.id}`);
     };
 

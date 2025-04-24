@@ -27,12 +27,12 @@ export interface IUser {
     isDeactivated: boolean; // New field
     isBanned: boolean; // New field
     isCurator: boolean; // New field
-    followers: string[];
-    following: string[];
-    likedRecipes: string[];
-    recipes: string[];
-    posts: string[];
-    comments: string[];
+    followers: any[];
+    following: any[];
+    likedRecipes: any[];
+    recipes: any[];
+    posts: any[];
+    comments: any[];
     myFridge: any;
     createdAt: Date;
     updatedAt: Date;
@@ -50,12 +50,12 @@ export interface IUpdateUser {
     isDeactivated: boolean; // New field
     isBanned: boolean; // New field
     isCurator: boolean; // New field
-    followers: string[];
-    following: string[];
-    likedRecipes: string[];
-    recipes: string[];
-    posts: string[];
-    comments: string[];
+    followers: any[];
+    following: any[];
+    likedRecipes: any[];
+    recipes: any[];
+    posts: any[];
+    comments: any[];
     myFridge: any;
     file?: File[];
 }
@@ -84,6 +84,7 @@ export type Recipe = {
     servings?: number;
     createdAt: Date;
     updatedAt?: Date;
+    isReccomended?: boolean;
     mediaUrl: string; // Image URL (formerly "pfp")
     author: any;
     userId?: any;
@@ -92,8 +93,8 @@ export type Recipe = {
     tags: string[];
     instructions: string[]; // Array of instruction steps
     ingredients: string[]; // Array of ingredients
-    likes: string[]; // Array of user IDs who liked the recipe
-    comments: string[]; // Array of comment IDs
+    likes: any[]; // Array of user IDs who liked the recipe
+    comments: any[]; // Array of comment IDs
 };
 
 export interface IRecipeMetadata {
@@ -130,7 +131,6 @@ export type Workshop = {
     creatorPfp: string;      // ✅ Added for display optimization
 };
 
-
 export interface INewWorkshop {
     title: string;
     description: string;
@@ -166,7 +166,6 @@ export type INewRecipe = {
 export type IUpdateRecipe = {
     postId: string;
     mediaUrl: string; // Updated field name (formerly "imageUrl" or "pfp")
-
     file: File[]; // Array of uploaded files
     title: string; // Changed from "dish" to "title"
     description: string;
@@ -188,3 +187,15 @@ export interface INotification {
     isRead: boolean;
     createdAt: any; // Can use Firebase Timestamp or Date
 }
+
+export type FridgeData = {
+    ingredients: string[];
+    shoppingList: string[];
+    updatedAt: any;
+    userid: any;
+};
+
+export type RemoveIngredientParams = {
+    fridgeId: any;
+    ingredientName: string;
+};
