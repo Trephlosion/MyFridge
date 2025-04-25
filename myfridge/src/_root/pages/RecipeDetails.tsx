@@ -1,12 +1,46 @@
 // RecipeDetails.tsx
                     import React, {useEffect, useState} from "react";
-                    import {doc, getDoc, addDoc, collection, getDocs, query, orderBy} from "firebase/firestore";
+                    import {doc, getDoc, addDoc, collection, getDocs, query, orderBy, where, serverTimestamp, updateDoc, arrayUnion, DocumentReference} from "firebase/firestore";
                     import {database} from "@/lib/firebase/config";
                     import {useParams, useLocation, Link} from "react-router-dom";
                     import {useUserContext} from "@/context/AuthContext";
                     import {Recipe} from "@/types";
                     import {Button} from "@/components/ui/button";
                     import {UserInfo} from "@/types";
+
+
+import {
+    Dialog,
+    DialogTrigger,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+    DialogClose,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+
+
+import {
+    Drawer,
+    DrawerTrigger,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerDescription,
+    DrawerFooter,
+    DrawerClose,
+} from "@/components/ui/drawer";
+import {
+    Card,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+    CardContent,
+    CardFooter,
+} from "@/components/ui/card";
+
 
                     import {
                         Carousel,
@@ -15,9 +49,10 @@
                         CarouselPrevious,
                         CarouselNext,
                     } from "@/components/ui/carousel";
-                    import {RatingSystem} from "@/components/shared";
+
                     import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar.tsx";
                     import {multiFormatDateString} from "@/lib/utils.ts";
+
 
                     const RecipeDetails = () => {
                         const {id} = useParams<{ id: string }>();
@@ -37,6 +72,111 @@
                             isAdministrator: false,
                             id: "",
                         });
+
+                        // State for the “Add Review” dialog
+                        const [showReviewDialog, setShowReviewDialog] = useState(false);
+                        const [reviewText, setReviewText]       = useState("");
+                        const [reviewLoading, setReviewLoading] = useState(false);
+
+// Handler to submit the review
+                        const handleSubmitReview = async () => {
+                            if (!rating || !reviewText.trim()) return;
+                            setReviewLoading(true);
+                            try {
+                                await addDoc(
+                                    collection(database, "Recipes", id!, "Ratings"),
+                                    {
+                                        comment:   reviewText.trim(),
+                                        stars:     rating,
+                                        createdAt: serverTimestamp(),
+                                        recipeId:  id,
+                                        userId:    user.id,
+                                    }
+                                );
+                                // trigger re-fetch of reviews
+                                setSubmitted((s) => !s);
+                                setShowReviewDialog(false);
+                                setReviewText("");
+                                setRating(0);
+                            } catch (err) {
+                                console.error("Error submitting review:", err);
+                            } finally {
+                                setReviewLoading(false);
+                            }
+                        };
+
+
+                        const [commentText, setCommentText] = useState("");
+                        const [loadingComment, setLoadingComment] = useState(false);
+                        const [dialogOpen, setDialogOpen] = useState(false);
+
+                        const handleSubmitComment = async () => {
+                            if (!commentText.trim()) return;
+                            setLoadingComment(true);
+                            try {
+                                // 1) create the comment doc
+                                const commentData = {
+                                    content: commentText.trim(),
+                                    created_at: serverTimestamp(),
+                                    recipe_id: doc(database, "Recipes", recipe!.id),
+                                    user_id: doc(database, "Users", user.id),
+                                    workshop_id: null,
+                                };
+                                const commentRef = await addDoc(
+                                    collection(database, "Comments"),
+                                    commentData
+                                );
+
+                                // 2) append to user's comments array
+                                const userRef = doc(database, "Users", user.id);
+                                // 3) append to recipe's comments array
+                                const recipeRef = doc(database, "Recipes", recipe!.id);
+
+                                await Promise.all([
+                                    updateDoc(userRef, { comments: arrayUnion(commentRef) }),
+                                    updateDoc(recipeRef, { comments: arrayUnion(commentRef) }),
+                                ]);
+
+                                // reset & close
+                                setCommentText("");
+                                setDialogOpen(false);
+                            } catch (error) {
+                                console.error("Error posting comment:", error);
+                            } finally {
+                                setLoadingComment(false);
+                            }
+                        };
+
+
+                        const [comments, setComments] = useState<any[]>([]);
+
+// fetch comments for this recipe
+                        useEffect(() => {
+                            const fetchComments = async () => {
+                                if (!id) return;
+                                const commentsQuery = query(
+                                    collection(database, "Comments"),
+                                    where("recipe_id", "==", doc(database, "Recipes", id)),
+                                    orderBy("created_at", "desc")
+                                );
+                                const snap = await getDocs(commentsQuery);
+                                const list = await Promise.all(
+                                    snap.docs.map(async (docSnap) => {
+                                        const data: any = docSnap.data();
+                                        const userInfo = await handleGetUserInfo(data.user_id);
+                                        return {
+                                            id: docSnap.id,
+                                            content: data.content,
+                                            createdAt: data.created_at,
+                                            username: userInfo.username,
+                                            userPfp: userInfo.pfp,
+                                        };
+                                    })
+                                );
+                                setComments(list);
+                            };
+                            fetchComments();
+                        }, [id]);
 
     // Fetch recipe data (either from location.state or Firestore)
     useEffect(() => {
@@ -58,44 +198,80 @@
                         // Fetch reviews from the "Ratings" subcollection for this recipe
                         useEffect(() => {
                             const fetchReviews = async () => {
-                                if (id) {
-                                    try {
-                                        const reviewsQuery = query(
-                                            collection(database, "Recipes", id, "Ratings"),
-                                            orderBy("createdAt", "desc")
-                                        );
-                                        const reviewsSnap = await getDocs(reviewsQuery);
-                                        const reviewsList = reviewsSnap.docs.map(doc => ({id: doc.id, ...doc.data()}));
-                                        setReviews(reviewsList);
-                                    } catch (error) {
-                                        console.error("Error fetching reviews:", error);
-                                    }
+                                if (!id) return;
+                                try {
+                                    const reviewsQuery = query(
+                                        collection(database, "Recipes", id, "Ratings"),
+                                        orderBy("createdAt", "desc")
+                                    );
+                                    const reviewsSnap = await getDocs(reviewsQuery);
+
+                                    // ← enriched snippet here
+                                    const enriched = await Promise.all(
+                                        reviewsSnap.docs.map(async (docSnap) => {
+                                            const data: any = docSnap.data();
+                                            const info = await handleGetUserInfo(data.userId);
+                                            return {
+                                                id:        docSnap.id,
+                                                comment:   data.comment,
+                                                stars:     data.stars,
+                                                createdAt: data.createdAt,
+                                                username:  info.username,
+                                                userPfp:   info.pfp,
+                                            };
+                                        })
+                                    );
+                                    setReviews(enriched);
+
+                                } catch (error) {
+                                    console.error("Error fetching reviews:", error);
                                 }
                             };
-                            // Fetch reviews when recipe id is known or when a review is submitted
+
                             fetchReviews();
                         }, [id, submitted]);
 
-                        const handleGetUserInfo = async (authorId: any) => {
+
+                        const handleGetUserInfo = async (
+                            authorId: any | DocumentReference | { id: string }
+                        ): Promise<UserInfo> => {
                             try {
-                                const userRef = typeof authorId === "string" ? doc(database, "Users", authorId) : authorId;
+                                let userRef: DocumentReference;
+
+                                if (typeof authorId === "string") {
+                                    // you passed in the UID
+                                    userRef = doc(database, "Users", authorId);
+                                } else if (
+                                    typeof authorId === "object" &&
+                                    "id" in authorId &&
+                                    typeof authorId.id === "string"
+                                ) {
+                                    // JSON-stringified object form
+                                    userRef = doc(database, "Users", authorId.id);
+                                } else {
+                                    // already a true DocumentReference
+                                    userRef = authorId as DocumentReference;
+                                }
+
                                 const userSnap = await getDoc(userRef);
                                 if (userSnap.exists()) {
-                                    const userData:any = userSnap.data();
+                                    const data: any = userSnap.data();
                                     return {
-                                        pfp: userData.pfp,
-                                        username: userData.username || "Unknown",
-                                        isVerified: userData.isVerified || false,
-                                        isCurator: userData.isCurator || false,
-                                        isAdministrator: userData.isAdministrator || false,
-                                        id: userSnap.id,
+                                        pfp:              data.pfp,
+                                        username:         data.username  || "Unknown",
+                                        isVerified:       data.isVerified  || false,
+                                        isCurator:        data.isCurator   || false,
+                                        isAdministrator:  data.isAdministrator || false,
+                                        id:               userSnap.id,
                                     };
                                 }
                             } catch (error) {
                                 console.error("Error fetching user info:", error);
                             }
+
+                            // fallback
                             return {
-                                pfp: "/assets/icons/profile-placeholder.svg",
+                                pfp:      "/assets/icons/profile-placeholder.svg",
                                 username: "Unknown",
                             };
                         };
@@ -105,10 +281,15 @@
                                 if (!recipe) return;
                                 if (recipe.tags?.includes("AI")) {
                                     setUserInfo({
-                                        pfp: recipe.pfp || "/assets/icons/ai-bot-icon.svg",
+                                        pfp:      recipe.pfp  || "/assets/icons/ai-bot-icon.svg",
                                         username: recipe.username || "AI Chef",
-                                    })
-                                } else if (recipe.author || recipe.userId) {
+                                        isVerified: false,
+                                        isCurator:  false,
+                                        isAdministrator: false,
+                                        id: "",
+                                    });
+                                } else {
+                                    // recipe.author could be string, object, or DocumentReference
                                     const authorIdentifier = recipe.author || recipe.userId;
                                     const info = await handleGetUserInfo(authorIdentifier);
                                     setUserInfo(info);
@@ -122,7 +303,10 @@
                                 <div className="text-white text-center mt-10">Loading recipe...</div>
                             );
 
+
+
                         return (
+                            <>
                             <div className="p-6 max-w-4xl mx-auto text-white">
                                 <img
                                     src={recipe.mediaUrl || "/assets/icons/recipe-placeholder.svg"}
@@ -136,7 +320,9 @@
                                         <Link to={`/profile/${userInfo.id}`} className="flex items-center gap-3">
                                             <Avatar className="w-16 h-16">
                                                 <AvatarImage src={userInfo.pfp} alt={userInfo.username} />
-                                                <AvatarFallback className={"bg-white text-black"}>{userInfo.username.charAt(0)}</AvatarFallback>
+                                                <AvatarFallback className="bg-white text-black">
+                                                    {userInfo.username?.charAt(0) ?? ""}
+                                                </AvatarFallback>
                                             </Avatar>
 
                                             <div className="flex items-center justify-center gap-1">
@@ -243,76 +429,219 @@
                                     </ol>
                                 </div>
 
-                                {/* Render review section only for curators */}
-                                {user.isCurator && (
+                                <div className={"flex flex-col justify-center items-center mt-6"}>
+                                    <div className={"flex flex-col items-center"}>
+                                        {/* Render review section only for curators */}
+                                        {user.isCurator || user.isAdministrator && (
 
-                                    <>
-                                        <div className="bg-gray-900 p-6 rounded-xl mt-6">
-                                            <div className="grid w-full gap-2">
-                                                <h2 className="text-2xl font-semibold mb-4">Leave a Review</h2>
-                                                <div className="flex items-center gap-2 mb-4">
-                                                    {[1, 2, 3, 4, 5].map((num) => (
-                                                        <span
-                                                            key={num}
-                                                            onClick={() => setRating(num)}
-                                                            className={`cursor-pointer text-2xl ${
-                                                                rating >= num ? "text-yellow-400" : "text-gray-500"
-                                                            }`}
-                                                        >
-                                      ★
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-
-
-                                        {/* Horizontal carousel to display submitted reviews */}
-                                        {reviews.length > 0 && (
                                             <>
-                                                <div className="mt-6">
-                                                    <h2 className="text-2xl font-semibold mb-4">Submitted Reviews</h2>
-                                                    <Carousel opts={{align: "start"}} className="w-full">
+
+
+
+                                                <h2 className="text-2xl font-semibold mb-4">Submitted Reviews</h2>
+                                                {/* Horizontal carousel to display submitted reviews */}
+                                                {reviews.length > 0 ? (
+                                                    <Carousel className="w-full">
                                                         <CarouselContent>
                                                             {reviews.map((rev) => (
-                                                                <CarouselItem key={rev.id} className="w-full max-w-xs">
-                                                                    <div className="p-3 bg-gray-800 rounded-md shadow">
-                                                                        <p className="text-lg">{rev.comment}</p>
-                                                                        <div className="flex mt-2">
-                                                                            {Array.from({length: rev.stars}, (_, i) => (
-                                                                                <span key={i} className="text-yellow-400 text-xl">★</span>
-                                                                            ))}
-                                                                        </div>
-                                                                        <p className="text-sm mt-2">
-                                                                            By: {rev.userId}
-                                                                        </p>
-                                                                        <p className="text-xs text-gray-400">
-                                                                            {new Date(rev.createdAt.seconds * 1000).toLocaleString()}
-                                                                        </p>
-                                                                    </div>
+                                                                <CarouselItem key={rev.id} className="flex justify-center">
+                                                                    <Card className="max-w-xs bg-card bg-dark-4 rounded-3xl">
+                                                                        <CardHeader className="flex items-center space-x-3">
+                                                                            <Avatar className="w-10 h-10">
+                                                                                <AvatarImage src={rev.userPfp} alt={rev.username} />
+                                                                                <AvatarFallback className={"bg-white text-black"}>
+                                                                                    {rev.username.charAt(0)}
+                                                                                </AvatarFallback>
+                                                                            </Avatar>
+                                                                            <div>
+                                                                                <CardTitle>{rev.username}</CardTitle>
+                                                                                <CardDescription>
+                                                                                    {multiFormatDateString(
+                                                                                        rev.createdAt.toDate().toString()
+                                                                                    )}
+                                                                                </CardDescription>
+                                                                            </div>
+                                                                        </CardHeader>
+                                                                        <CardContent>
+                                                                            <p>{rev.comment}</p>
+                                                                        </CardContent>
+                                                                        <CardFooter>
+                                                                            <div className="flex items-center gap-2 text-yellow-400">
+                                                                                {Array.from({ length: rev.stars }).map((_, i) => (
+                                                                                    <span key={i}>★</span>
+                                                                                ))}
+                                                                            </div>
+                                                                        </CardFooter>
+                                                                    </Card>
                                                                 </CarouselItem>
                                                             ))}
                                                         </CarouselContent>
-                                                        <CarouselPrevious/>
-                                                        <CarouselNext/>
+                                                        <CarouselPrevious />
+                                                        <CarouselNext />
                                                     </Carousel>
+                                                ) : (
+                                                    <p className="p-4 text-center">No reviews yet.</p>
+                                                )}
+
+
+                                                {/* Add Review Button + Dialog */}
+                                                <div className="flex justify-center mt-6">
+                                                    <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+                                                        <DialogTrigger asChild>
+                                                            <Button className={"shad-button_primary "}>Add Review</Button>
+                                                        </DialogTrigger>
+
+                                                        <DialogContent>
+                                                            <DialogHeader>
+                                                                <DialogTitle>Leave a Review</DialogTitle>
+                                                                <DialogDescription>
+                                                                    Pick a star rating and write your thoughts on this recipe.
+                                                                </DialogDescription>
+                                                            </DialogHeader>
+
+                                                            {/* Star picker */}
+                                                            <div className="flex items-center gap-2 mb-4">
+                                                                {[1, 2, 3, 4, 5].map((num) => (
+                                                                    <span
+                                                                        key={num}
+                                                                        onClick={() => setRating(num)}
+                                                                        className={`cursor-pointer text-3xl ${
+                                                                            rating >= num ? "text-yellow-400" : "text-gray-500"
+                                                                        }`}
+                                                                    >
+                ★
+              </span>
+                                                                ))}
+                                                            </div>
+
+                                                            {/* Review text area */}
+                                                            <Textarea
+                                                                value={reviewText}
+                                                                onChange={(e) => setReviewText(e.target.value)}
+                                                                placeholder="Write your review here…"
+                                                                className="w-full h-24 mb-4"
+                                                            />
+
+                                                            <DialogFooter>
+                                                                <Button
+                                                                    onClick={handleSubmitReview}
+                                                                    disabled={!rating || !reviewText.trim() || reviewLoading}
+                                                                >
+                                                                    {reviewLoading ? "Submitting…" : "Submit Review"}
+                                                                </Button>
+                                                                <DialogClose asChild>
+                                                                    <Button variant="outline" className="ml-2">
+                                                                        Cancel
+                                                                    </Button>
+                                                                </DialogClose>
+                                                            </DialogFooter>
+                                                        </DialogContent>
+                                                    </Dialog>
                                                 </div>
+
                                             </>
                                         )}
+                                    </div>
+
+                                    <div className={"flex flex-col items-center ml-6"}>
 
 
-                                    </>
+
+
+                                <h2 className="text-2xl font-semibold mb-4">User Comments & Reviews</h2>
+                                {/* Horizontal carousel to display submitted reviews */}
+                                {comments.length > 0 ? (
+                                    <Carousel className="w-full">
+                                        <CarouselContent>
+                                            {comments.map((com) => (
+                                                <CarouselItem key={com.id} className="flex justify-center">
+                                                    <Card className="max-w-xs bg-card bg-dark-4 rounded-3xl">
+                                                        <CardHeader className="flex items-center space-x-3">
+                                                            <Avatar className="w-10 h-10">
+                                                                <AvatarImage src={com.userPfp} alt={com.username} />
+                                                                <AvatarFallback>
+                                                                    {com.username.charAt(0)}
+                                                                </AvatarFallback>
+                                                            </Avatar>
+                                                            <div>
+                                                                <CardTitle>{com.username}</CardTitle>
+                                                                <CardDescription>
+                                                                    {multiFormatDateString(
+                                                                        com.createdAt.toDate().toString()
+                                                                    )}
+                                                                </CardDescription>
+                                                            </div>
+                                                        </CardHeader>
+                                                        <CardContent>
+                                                            <p>{com.content}</p>
+                                                        </CardContent>
+                                                    </Card>
+                                                </CarouselItem>
+                                            ))}
+                                        </CarouselContent>
+                                        <CarouselPrevious />
+                                        <CarouselNext />
+                                    </Carousel>
+                                ) : (
+                                    <p className="p-4 text-center">No comments yet.</p>
                                 )}
+
+
+                                {/*–– Add Comment Button + Dialog ––*/}
+                                <div className="flex justify-center mt-6">
+                                    <Dialog open={dialogOpen} onOpenChange={setDialogOpen} >
+                                        <DialogTrigger asChild>
+                                            <Button className={"shad-button_primary"}>Add Comment</Button>
+                                        </DialogTrigger>
+                                        <DialogContent className={"user-card bg-dark-4 text-white"}>
+                                            <DialogHeader>
+                                                <DialogTitle>Add a Comment</DialogTitle>
+                                                <DialogDescription>
+                                                    Share your thoughts with the community.
+                                                </DialogDescription>
+                                            </DialogHeader>
+
+                                            <Textarea
+                                                value={commentText}
+                                                onChange={(e) => setCommentText(e.target.value)}
+                                                placeholder="Write your comment here…"
+                                                className="w-full h-32 mb-4 bg-dark-3 text-white"
+                                            />
+
+                                            <DialogFooter>
+                                                <Button className={"shad-button_primary"}
+                                                    onClick={handleSubmitComment}
+                                                    disabled={!commentText.trim() || loadingComment}
+                                                >
+                                                    {loadingComment ? "Posting…" : "Post Comment"}
+                                                </Button>
+                                                <DialogClose asChild>
+                                                    <Button variant="outline" className="ml-2">
+                                                        Cancel
+                                                    </Button>
+                                                </DialogClose>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
+                                    </div>
+
+
                                 <div className="flex justify-center mt-6">
                                     <Button
                                         onClick={() => window.history.back()}
-                                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
+                                        className="bg-dark-4 hover:bg-red text-white px-4 py-2 rounded-md"
                                     >
                                         Back
                                     </Button>
+                                </div>
+
 
                                 </div>
                             </div>
+
+
+                        </>
                         )
                     }
 
