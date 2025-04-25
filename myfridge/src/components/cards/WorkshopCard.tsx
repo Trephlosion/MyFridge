@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDownloadURL, ref } from "firebase/storage";
+import {
+    doc,
+    updateDoc,
+    getDoc,
+    arrayUnion,
+    arrayRemove,
+} from "firebase/firestore";
 import { Workshop } from "@/types";
 import {
     Card,
@@ -10,10 +17,12 @@ import {
     CardTitle,
     CardDescription,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { multiFormatDateString } from "@/lib/utils";
-import { storage } from "@/lib/firebase/config";
+import { database, storage } from "@/lib/firebase/config";
+import { useUserContext } from "@/context/AuthContext";
 
 type Props = {
     workshop: Workshop;
@@ -21,7 +30,10 @@ type Props = {
 
 const WorkshopCard = ({ workshop }: Props) => {
     const navigate = useNavigate();
+    const { user } = useUserContext();
     const [imageUrl, setImageUrl] = useState<string>("");
+    const [enrolled, setEnrolled] = useState(false);
+    const [participantsCount, setParticipantsCount] = useState<number>(workshop.participants?.length || 0);
 
     useEffect(() => {
         const fetchImage = async () => {
@@ -39,8 +51,48 @@ const WorkshopCard = ({ workshop }: Props) => {
             }
         };
 
+        const checkEnrollment = async () => {
+            if (!user || !workshop.id) return;
+            const workshopRef = doc(database, "Workshops", workshop.id);
+            const snap = await getDoc(workshopRef);
+            const data = snap.data();
+            if (data?.participants?.includes(user.id)) {
+                setEnrolled(true);
+            }
+            setParticipantsCount(data?.participants?.length || 0);
+        };
+
         fetchImage();
-    }, [workshop.media_url]);
+        checkEnrollment();
+    }, [workshop.media_url, user, workshop.id]);
+
+    const handleEnroll = async () => {
+        if (!user || !workshop.id) return;
+        if (participantsCount >= workshop.maxParticipants) {
+            alert("Workshop is full");
+            return;
+        }
+
+        const refDoc = doc(database, "Workshops", workshop.id);
+        await updateDoc(refDoc, {
+            participants: arrayUnion(user.id),
+        });
+
+        setEnrolled(true);
+        setParticipantsCount((prev) => prev + 1);
+    };
+
+    const handleUnenroll = async () => {
+        if (!user || !workshop.id) return;
+
+        const refDoc = doc(database, "Workshops", workshop.id);
+        await updateDoc(refDoc, {
+            participants: arrayRemove(user.id),
+        });
+
+        setEnrolled(false);
+        setParticipantsCount((prev) => Math.max(0, prev - 1));
+    };
 
     return (
         <Card className="recipe-card flex flex-col">
@@ -84,8 +136,24 @@ const WorkshopCard = ({ workshop }: Props) => {
                 {workshop.description}
             </CardDescription>
 
-            <CardFooter className="mt-auto px-3 pb-3">
+            <CardFooter className="mt-auto flex flex-col gap-2 px-3 pb-3">
                 <p className="text-sm text-gray-500">Location: {workshop.location}</p>
+                {!user?.isVerified && (
+                    <>
+                        {enrolled ? (
+                            <Button onClick={handleUnenroll} className="bg-red-600 hover:bg-red-700 text-white w-full">
+                                Unenroll
+                            </Button>
+                        ) : (
+                            <Button onClick={handleEnroll} className="bg-green-600 hover:bg-green-700 text-white w-full">
+                                Enroll
+                            </Button>
+                        )}
+                        <p className="text-xs text-gray-400 text-center">
+                            Enrolled: {participantsCount} / {workshop.maxParticipants}
+                        </p>
+                    </>
+                )}
             </CardFooter>
         </Card>
     );

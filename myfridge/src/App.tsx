@@ -10,6 +10,8 @@ import { Routes, Route } from 'react-router-dom';
                     import RecipeAnalytics from './_root/pages/RecipeAnalytics.tsx';
                     import WorkshopDetails from './_root/pages/WorkshopDetails';
                     import NotificationsPage from "./_root/pages/NotificationsPage";
+                    import CreateWorkshop from "./_root/pages/CreateWorkshop"; // ✅ Adjust path as needed
+
 import SendMessage from "@/_root/pages/SendMessage.tsx";
                     const App = () => {
                         const { user } = useUserContext();
@@ -41,6 +43,7 @@ import SendMessage from "@/_root/pages/SendMessage.tsx";
                                         <Route path="/workshop/:id" element={<WorkshopDetails />} />
                                         <Route path={"/inbox"} element={<Inbox/>}/>
                                         <Route path={"/send-message/:userId"} element={<SendMessage/>}/>
+                                        <Route path="/create-workshop" element={<CreateWorkshop />} />
 
                                     </Route>
                                 </Routes>
