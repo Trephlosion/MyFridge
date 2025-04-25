@@ -27,14 +27,11 @@ export const RecipeValidation = z.object({
         .nonempty({ message: "Ingredients are required." })
         .min(2, { message: 'Too short' })
         .max(2200, { message: 'Too long' }),
-    cookTime: z.string()
-        .nonempty({ message: "Required Field" })
+    cookTime: z.number()
         .min(1, { message: "Cook time must be at least 1." }),
-    prepTime: z.string()
-        .nonempty({ message: "Required Field" })
+    prepTime: z.number()
         .min(1, { message: "Prep time must be at least 1." }),
-    servings: z.string()
-        .nonempty({ message: "Required Field" })
+    servings: z.number()
         .min(1, { message: "Serving size must be at least 1." }),
     tags: z.string()
         .nonempty({ message: 'Tags are required.' }),

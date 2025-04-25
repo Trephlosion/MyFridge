@@ -131,9 +131,9 @@ const RecipeForm = ({ recipe }: RecipeFormProps  ) => {
             // Join instructions array into a string for the textarea
             instructions: recipe ? recipe.instructions.join('\n') : "",
             ingredients: recipe ? recipe.ingredients.join(',') : "",
-            cookTime: recipe ? recipe.cookTime.toString() : "0",
-            prepTime: recipe ? recipe.prepTime.toString() : "0",
-            servings: recipe ? recipe.servings.toString() : "0",
+            cookTime: recipe ? recipe.cookTime : 0,
+            prepTime: recipe ? recipe.prepTime : 0,
+            servings: recipe ? recipe.servings : 0,
             file: [],
             tags: recipe ? recipe.tags.join(',') : '',
         },
@@ -149,7 +149,7 @@ const RecipeForm = ({ recipe }: RecipeFormProps  ) => {
             instructions: values.instructions.split('\n').map(step => step.trim()),
             ingredients: values.ingredients.split(',').map(ingredient => ingredient.trim()),
             updatedAt: new Date(),
-            createdAt: new Date(),
+            createdAt:  new Date(),
         });
         if (!recipe) {
             toast({
@@ -228,7 +228,7 @@ const RecipeForm = ({ recipe }: RecipeFormProps  ) => {
                         <FormItem>
                             <FormLabel>Cook Time in minutes</FormLabel>
                             <FormControl>
-                                <Input type="text" placeholder="Enter the cook time in minutes" className="shad-input" {...field} />
+                                <Input type="number" placeholder="Enter the cook time in minutes" className="shad-input" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -241,7 +241,7 @@ const RecipeForm = ({ recipe }: RecipeFormProps  ) => {
                         <FormItem>
                             <FormLabel>Prep Time in minutes</FormLabel>
                             <FormControl>
-                                <Input type="text" placeholder="Enter the prep time in minutes" className="shad-input" {...field} />
+                                <Input type="number" placeholder="Enter the prep time in minutes" className="shad-input" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -254,7 +254,7 @@ const RecipeForm = ({ recipe }: RecipeFormProps  ) => {
                         <FormItem>
                             <FormLabel>Serving Size – serves _ people</FormLabel>
                             <FormControl>
-                                <Input type="text" placeholder="Enter the average serving size" className="shad-input" {...field} />
+                                <Input type="number" placeholder="Enter the average serving size" className="shad-input" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
