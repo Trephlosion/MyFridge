@@ -31,11 +31,12 @@ export interface IUser {
     following: any[];
     likedRecipes: any[];
     recipes: any[];
-    posts: any[];
+    workshops: any[];
     comments: any[];
     myFridge: any;
     createdAt: Date;
     updatedAt: Date;
+
 }
 
 export interface IUpdateUser {
@@ -54,7 +55,7 @@ export interface IUpdateUser {
     following: any[];
     likedRecipes: any[];
     recipes: any[];
-    posts: any[];
+    workshops: any[];
     comments: any[];
     myFridge: any;
     file?: File[];
@@ -79,8 +80,8 @@ export type Recipe = {
     id: string; // Firestore document ID
     title: string; // Recipe title (formerly "dish")
     description?: string;
-    cookTime?: string;
-    prepTime?: string;
+    cookTime?: number;
+    prepTime?: number;
     servings?: number;
     createdAt: Date;
     updatedAt?: Date;
@@ -104,8 +105,8 @@ export interface IRecipeMetadata {
     id: string; // Firestore document ID
     title: string; // Recipe title (formerly "dish")
     description?: string;
-    cookTime?: string;
-    prepTime?: string;
+    cookTime?: number;
+    prepTime?: number;
     servings?: number;
     createdAt: Date;
     updatedAt?: Date;
@@ -155,34 +156,42 @@ export interface IUpdateWorkshop {
 
 // New Recipe Post Type
 export type INewRecipe = {
-    userId: any;
+    author: any;
     file: File[]; // Array of uploaded files
     title: string; // Changed from "dish" to "title"
     description: string;
     instructions: string[]; // Accept a single string (to be split into an array)
     ingredients: string[]; // Changed from "ingredients" to "ingredients"
-    cookTime: string;
-    prepTime: string;
-    servings: string; // Changed from "serving" to "servings"
+    cookTime: number;
+    prepTime: number;
+    servings: number; // Changed from "serving" to "servings"
     tags: string[];
+    createdAt: Date;
+    updatedAt: Date;
 };
 
 // Update Recipe Type
 export type IUpdateRecipe = {
-    postId: string;
-    mediaUrl: string; // Updated field name (formerly "imageUrl" or "pfp")
-    file: File[]; // Array of uploaded files
-    title: string; // Changed from "dish" to "title"
-    description: string;
-    instructions: string; // Accept a single string (to be split into an array)
-    ingredients: string[]; // Changed from "ingredients" to "ingredients"
-    isRecommended: boolean;
-    cookTime: string;
-    prepTime: string;
-    servings: string; // Changed from "serving" to "servings"
-    tags: string[];
-    recipeId: string;
-    avgRating: number;
+    id?: string; // Firestore document ID
+    title: string; // Recipe title (formerly "dish")
+    description?: string;
+    cookTime?: number;
+    prepTime?: number;
+    servings?: number;
+    createdAt?: Date;
+    updatedAt: Date;
+    isRecommended?: boolean;
+    mediaUrl?: string; // Image URL (formerly "pfp")
+    author?: any;
+    username?: string;
+    pfp?: string;
+    tags?: string[];
+    instructions?: string[]; // Array of instruction steps
+    ingredients?: string[]; // Array of ingredients
+    likes?: any[]; // Array of user IDs who liked the recipe
+    comments?: any[]; // Array of comment IDs
+    file?: File[]; // Array of uploaded files
+    avgRating?: number;
 };
 
 export type FridgeData = {

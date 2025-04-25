@@ -150,7 +150,7 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                     </Link>
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                         <p>{multiFormatDateString(recipe.createdAt?.toString() || "")}</p>
-                        <p>{recipe.likes?.length || 0} likes</p>
+                        <p>{recipe.likes.length} likes</p>
                     </div>
 
                     {user.username === userInfo.username ? (

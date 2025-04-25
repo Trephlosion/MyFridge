@@ -1,13 +1,11 @@
 // RecipeStats.tsx
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { checkIsLiked } from "@/lib/utils.ts";
 import {
     useLikeRecipe,
-    useSaveRecipe,
-    useDeleteSavedRecipe,
+    useUnlikeRecipe,
     useGetCurrentUser,
-} from "@/lib/react-query/queriesAndMutations.ts";
+} from "@/lib/react-query/queriesAndMutations";
 import { Recipe } from "@/types";
 
 type RecipeStatsProps = {
@@ -15,98 +13,81 @@ type RecipeStatsProps = {
     userId: string;
 };
 
-const RecipeStats = ({ recipe, userId }: RecipeStatsProps) => {
-    // If the recipe is an AI recipe, don't render like/save buttons.
+export default function RecipeStats({ recipe, userId }: RecipeStatsProps) {
+    // AI recipes don’t get like buttons
     if (Array.isArray(recipe.tags) && recipe.tags.includes("AI")) {
         return null;
     }
 
     const location = useLocation();
-
-    // Initialize likes list from Firestore
-    const [likes, setLikes] = useState<string[]>(recipe.likes || []);
-    const [isSaved, setIsSaved] = useState(false);
-
-    // React Query hooks for liking and saving recipes
-    const { mutate: likeRecipe } = useLikeRecipe();
-    const { mutate: saveRecipe } = useSaveRecipe();
-    const { mutate: deleteSaveRecipe } = useDeleteSavedRecipe();
     const { data: currentUser } = useGetCurrentUser();
+    const { mutate: like }   = useLikeRecipe();
+    const { mutate: unlike } = useUnlikeRecipe();
 
-    // Check if the recipe is already saved
-    const savedRecipeRecord = currentUser?.likedRecipes?.find(
-        (record: { recipeId: string }) => record.recipeId === recipe.id
+    // Local UI state
+    const [isLiked, setIsLiked]       = useState(false);
+    const [likesCount, setLikesCount] = useState(
+        // if `recipe.likes` is loaded, use its length, otherwise fallback to 0
+        Array.isArray(recipe.likes)
+            ? recipe.likes.length
+            : 0
     );
 
+    // On mount (or whenever recipe.likes or currentUser.likedRecipes changes),
+    // figure out whether this user has already liked it.
     useEffect(() => {
-        setIsSaved(!!savedRecipeRecord);
-    }, [currentUser, savedRecipeRecord]);
+        let liked = false;
 
-    const handleLikeRecipe = (e: React.MouseEvent<HTMLImageElement, MouseEvent>) => {
-        e.stopPropagation();
-
-        let likesArray = [...likes];
-        if (likesArray.includes(userId)) {
-            // Remove like
-            likesArray = likesArray.filter((id) => id !== userId);
-        } else {
-            // Add like
-            likesArray.push(userId);
+        if (Array.isArray(recipe.likes)) {
+            // if the recipe came with a `likes: (string|DocumentReference)[]`
+            const ids = recipe.likes.map((l) =>
+                typeof l === "string" ? l : l.id
+            );
+            liked = ids.includes(userId);
+        } else if (Array.isArray(currentUser?.likedRecipes)) {
+            // otherwise fall back to the user's own list
+            liked = currentUser.likedRecipes.includes(recipe.id);
         }
-        setLikes(likesArray);
 
-        // Update likes in Firestore
-        likeRecipe({ recipeId: recipe.id, likesArray });
-    };
+        setIsLiked(liked);
+    }, [recipe.likes, currentUser?.likedRecipes, recipe.id, userId]);
 
-    const handleSaveRecipe = (e: React.MouseEvent<HTMLImageElement, MouseEvent>) => {
+    const handleLikeClick = (e: React.MouseEvent) => {
         e.stopPropagation();
 
-        if (savedRecipeRecord) {
-            // Delete saved recipe
-            setIsSaved(false);
-            deleteSaveRecipe(savedRecipeRecord.id);
+        if (isLiked) {
+            // optimistic UI
+            setIsLiked(false);
+            setLikesCount((c) => c - 1);
+            unlike({ recipeId: recipe.id, userId });
         } else {
-            // Save recipe
-            saveRecipe({ userId: userId, recipeId: recipe.id });
-            setIsSaved(true);
+            setIsLiked(true);
+            setLikesCount((c) => c + 1);
+            like({ recipeId: recipe.id, userId });
         }
     };
 
-    const containerStyles = location.pathname.startsWith("/profile") ? "w-full" : "";
+    const containerStyles = location.pathname.startsWith("/profile")
+        ? "w-full"
+        : "";
 
     return (
         <div className={`flex justify-between items-center z-20 ${containerStyles}`}>
-            {/* Likes Section */}
             <div className="flex gap-2 mr-5">
                 <img
-                    src={`${
-                        checkIsLiked(likes, userId)
+                    src={
+                        isLiked
                             ? "/assets/icons/liked.svg"
                             : "/assets/icons/like.svg"
-                    }`}
+                    }
                     alt="like"
                     width={20}
                     height={20}
-                    onClick={(e) => handleLikeRecipe(e)}
+                    onClick={handleLikeClick}
                     className="cursor-pointer"
                 />
-                <p className="small-medium lg:base-medium">{likes.length}</p>
-            </div>
-
-            {/* Save Section */}
-            <div className="flex gap-2">
-                <img
-                    src={isSaved ? "/assets/icons/saved.svg" : "/assets/icons/save.svg"}
-                    alt="save"
-                    width={20}
-                    height={20}
-                    className="cursor-pointer"
-                    onClick={(e) => handleSaveRecipe(e)}
-                />
+                <p className="small-medium lg:base-medium">{likesCount}</p>
             </div>
         </div>
     );
-};
-
-export default RecipeStats;
+}

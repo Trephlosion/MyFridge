@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import {useLocation, useNavigate, useParams} from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -15,7 +15,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import FileUploader from "@/components/shared/FileUploader.tsx";
 import { RecipeValidation } from "@/lib/validation";
-import { useCreateRecipe, useUpdateRecipe, useDeleteRecipe } from "@/lib/react-query/queriesAndMutations.ts";
+import {
+    useCreateRecipe,
+
+    useDeleteRecipe,
+    useGetRecipeById
+} from "@/lib/react-query/queriesAndMutations.ts";
 import { useUserContext } from "@/context/AuthContext.tsx";
 import { useToast } from "@/hooks/use-toast.ts";
 import {
@@ -30,6 +35,8 @@ import {
     AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import {firebaseConfig} from "@/lib/firebase/config.ts";
+import {useState} from "react";
+import {Loader} from "@/components/shared";
 
 
 type RecipeFormProps = {
@@ -47,33 +54,74 @@ type RecipeFormProps = {
     }
 };
 
-const RecipeForm = ({ recipe }: RecipeFormProps) => {
+import { Recipe } from "@/types";
+
+const RecipeForm = ({ recipe }: RecipeFormProps  ) => {
+    const { id: routeId } = useParams();
+
     const { mutateAsync: createRecipe, isPending: isLoadingCreate } = useCreateRecipe();
 
     const { user } = useUserContext();
     const { toast } = useToast();
     const navigate = useNavigate();
 
-    const location = useLocation();
 
-
-    const { mutateAsync: deleteRecipeFn, isPending: isDeleting } = useDeleteRecipe();
+    const { mutateAsync: deleteRecipeMutation } = useDeleteRecipe();
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const handleDelete = async () => {
-        if (!recipe?.id || !recipe?.mediaUrl) return;
+        console.log("handleDelete fired");
+        console.log("check recipe", recipe);
+        console.log("check routeId", routeId);
+        if (!recipe && !routeId) return;
 
-        const mediaId = decodeURIComponent(new URL(recipe.mediaUrl).pathname.replace(firebaseConfig.storageBucket, ""));
-        await deleteRecipeFn({ recipeId: recipe.id, mediaId });
 
+        const recipeId = recipe?.id || routeId;
 
-        toast({
-            title: "Recipe Deleted",
-            description: "The recipe and its data have been removed.",
-        });
+        console.log("recipeId", recipeId);
 
-        console.log("Recipe deleted:", recipe.id);
-        navigate("/");
+        let mediaId: string | undefined = undefined;
+
+        console.log("recipe?.mediaUrl", recipe?.mediaUrl);
+
+        if (recipe?.mediaUrl) {
+            try {
+                const urlParts = recipe.mediaUrl.split("/o/");
+                const pathEncoded = urlParts[1]?.split("?")[0];
+                mediaId = decodeURIComponent(pathEncoded);
+            } catch (err) {
+                console.warn("⚠️ Failed to extract media path:", err);
+            }
+        }
+
+        setIsDeleting(true);
+        console.log("delete starting");
+        console.log("Entering try catch");
+        try {
+
+            console.log("Trying to delete:", recipe, recipeId, mediaId,);
+            await deleteRecipeMutation({
+                id: recipeId,
+                mediaUrl: recipe?.mediaUrl,
+            } as any); // If you're enforcing type safety strictly, define a wrapper Recipe type here
+
+            toast({
+                title: "Recipe Deleted",
+                description: "Recipe and associated content were successfully deleted.",
+            });
+
+            navigate("/");
+        } catch (error) {
+            console.error("Delete failed:", error);
+            toast({
+                title: "Deletion Failed",
+                description: "Something went wrong while deleting the recipe.",
+            });
+        } finally {
+            setIsDeleting(false);
+        }
     };
+
 
     const form = useForm<z.infer<typeof RecipeValidation>>({
         resolver: zodResolver(RecipeValidation),
@@ -93,15 +141,17 @@ const RecipeForm = ({ recipe }: RecipeFormProps) => {
 
     async function onSubmit(values: z.infer<typeof RecipeValidation>) {
         // If you need to store instructions as an array, split them here
-        const newRecipe = await createRecipe({
+        const recipe = await createRecipe({
             ...values,
-            userId: user.id,
+            author: user.id,
             // Convert comma separated tags to array and instructions to an array (split on newline)
             tags: values.tags.split(',').map(tag => tag.trim()),
             instructions: values.instructions.split('\n').map(step => step.trim()),
             ingredients: values.ingredients.split(',').map(ingredient => ingredient.trim()),
+            updatedAt: new Date(),
+            createdAt: new Date(),
         });
-        if (!newRecipe) {
+        if (!recipe) {
             toast({
                 title: "Recipe Creation Failed",
                 description: "Please try again",
@@ -245,19 +295,21 @@ const RecipeForm = ({ recipe }: RecipeFormProps) => {
                     {recipe! && (
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button type="button" className="bg-red text-white">Delete</Button>
+                                <Button type="button" className="bg-red text-white" disabled={isDeleting}>
+                                    {isDeleting ? <Loader /> : "Delete"}
+                                </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete the recipe and all associated data.
+                                        This action cannot be undone. This will delete your recipe, media, ratings, and comments permanently.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction>
-                                        <Button type="button" className="bg-red text-white">Delete Permanently</Button>
+                                    <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className={"bg-red text-white"}>
+                                        {isDeleting ? <Loader /> : "Delete Recipe"}
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>

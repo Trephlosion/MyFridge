@@ -5,23 +5,32 @@ import {Input} from "@/components/ui/input.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import LoadingRecipe from "@/components/shared/LoadingRecipe.tsx";
 import {useEffect, useState} from "react";
-import {useNavigate} from "react-router-dom";
+import {useLocation, useNavigate} from "react-router-dom";
 import {useGetUserRecipes, useSearchRecipes} from "@/lib/react-query/queriesAndMutations.ts";
-import {collection, doc, getDoc, getDocs, limit, orderBy, query} from "firebase/firestore";
+import {collection, doc, getDoc, getDocs, limit, orderBy, query, DocumentReference } from "firebase/firestore";
 import {database} from "@/lib/firebase/config.ts";
+import {getUserRecipes} from "@/lib/firebase/api.ts";
+import {firestore} from "firebase-admin";
+
 
 type GridRecipeListProps = {
-  recipes: Recipe[]; // List of all available recipes
+  recipes: any[]; // List of all available recipes
 };
 
 const GridRecipeList = ({ recipes }: GridRecipeListProps) => {
   const { user } = useUserContext();
+
+
+
+  const { data: userRecipes, isLoading: isLoadingUserRecipes } = useGetUserRecipes(recipes);
 
   const likedRecipeIds = user?.likedRecipes?.map((ref: any) => ref.id) || [];
 
   const filteredRecipes = recipes.filter((recipe) =>
       likedRecipeIds.includes(recipe.id)
   );
+    const [showLikedRecipes, setShowLikedRecipes] = useState(false);
+
 
   const [searchTerm, setSearchTerm] = useState("");
   const [creators, setCreators] = useState<{ [key: string]: string }>({});
@@ -31,7 +40,6 @@ const GridRecipeList = ({ recipes }: GridRecipeListProps) => {
   const navigate = useNavigate();
   const [highlightedRecipes, setHighlightedRecipes] = useState<string[]>([]);
 
-  const { data: userRecipes, isLoading: isLoadingUserRecipes } = useGetUserRecipes(user.id);
   const { data: searchResults, isLoading: isSearching } = useSearchRecipes(searchTerm.toLowerCase());
 
 
@@ -51,15 +59,6 @@ const GridRecipeList = ({ recipes }: GridRecipeListProps) => {
     fetchSuggestedRecipes();
   }, []);
 
-
-
-  const recipesz = showMyRecipes
-      ? userRecipes ?? []
-      : searchTerm
-          ? (searchResults ?? []).filter((recipe) =>
-              recipe.id?.toLowerCase().includes(searchTerm.toLowerCase())
-          )
-          : suggestedRecipes;
 
   const noResults = searchTerm && recipes.length === 0;
 
@@ -86,7 +85,7 @@ const GridRecipeList = ({ recipes }: GridRecipeListProps) => {
     const fetchRatingsForUserRecipes = async () => {
       const newRatingsMap: { [key: string]: any[] } = {};
       for (const recipe of recipes) {
-        if (recipe.author?.id === user.id) {
+        if (recipe.author === user.id) {
           const ratingsRef = collection(database, "Recipes", recipe.id, "Ratings");
           const snapshot = await getDocs(ratingsRef);
           newRatingsMap[recipe.id] = snapshot.docs.map(doc => doc.data());
@@ -100,7 +99,8 @@ const GridRecipeList = ({ recipes }: GridRecipeListProps) => {
     }
   }, [recipes]);
 
-
+  const location = useLocation();
+  const isProfilePage = location.pathname.includes("/profile");
 
   return (
 
@@ -119,20 +119,28 @@ const GridRecipeList = ({ recipes }: GridRecipeListProps) => {
       </div>
 
   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-    {isLoadingUserRecipes || isSearching ? (
-        <LoadingRecipe/>
+    {isProfilePage ? (
+        isLoadingUserRecipes ? (
+            <LoadingRecipe />
+        ) : userRecipes && userRecipes.length > 0 ? (
+            userRecipes.map((recipe) => (
+                <RecipeCard key={recipe.id} recipe={recipe} />
+            ))
+        ) : (
+            <p className="col-span-full text-center text-gray-500">
+              No recipes found on your profile.
+            </p>
+        )
+    ) : isLoadingUserRecipes || isSearching ? (
+        <LoadingRecipe />
     ) : noResults ? (
         <p className="col-span-full text-center text-gray-500">
           No recipes found. Try another search term.
-
-
         </p>
     ) : (
-
         recipes.map((recipe) => (
-            <RecipeCard key={recipe.id} recipe={recipe}  />
+            <RecipeCard key={recipe.id} recipe={recipe} />
         ))
-
     )}
   </div>
 

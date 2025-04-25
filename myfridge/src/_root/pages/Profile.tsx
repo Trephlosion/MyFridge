@@ -53,6 +53,8 @@ const Profile = () => {
 
 
 
+
+
     const { data: currentUser, isLoading } = useGetUserById(id || "");
     const followMutation = useFollowUser();
 
@@ -108,7 +110,7 @@ const Profile = () => {
 
 
 
-
+    console.log("currentUser.recipes", currentUser.recipes)
 
     return (
         <div className="profile-container">
@@ -154,7 +156,7 @@ const Profile = () => {
 
                         <div className="flex gap-8 mt-10 items-center justify-center xl:justify-start flex-wrap z-20">
                             <StatBlock value={currentUser.recipes.length || 0} label="Recipes" />
-                            <StatBlock value={currentUser.posts.length || 0} label={"Posts"} />
+                            <StatBlock value={currentUser.workshops.length || 0} label={"Posts"} />
                             <StatBlock value={isUpdating ? 0 : followersCount} label="Followers" />
                             <StatBlock value={isUpdating ? 0 : followingCount} label="Following" />
                         </div>
@@ -211,15 +213,24 @@ const Profile = () => {
                         <LoadingRecipe />
                     ) : (
                         <>
+                            {currentUser.recipes.length === 0 && (
+                                <p className="text-light-4">I have no Recipes!</p>
+                            )}
 
-                            <GridRecipeList recipes={profileUserRecipes} />
+                            <GridRecipeList recipes={currentUser.recipes} />
                         </>
 
                     )}
                 </TabsContent>
 
                 <TabsContent value={"liked-recipes"} className="w-full max-w-5xl">
-                    <LikedRecipes />
+                    <>
+                        {currentUser.likedRecipes.length === 0 && (
+                            <p className="text-light-4">No liked recipes</p>
+                        )}
+
+                        <GridRecipeList recipes={currentUser.likedRecipes} />
+                    </>
                 </TabsContent>
 
                 {user.id === currentUser.id && (

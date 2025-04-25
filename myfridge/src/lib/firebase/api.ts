@@ -8,6 +8,7 @@ import { auth, database, storage,} from "@/lib/firebase/config.ts";
 import { INewRecipe, IRecipeMetadata, IUpdateRecipe, IUpdateUser, IUser,  INewWorkshop, IUpdateWorkshop, FridgeData, Recipe } from "@/types";
 import firebase from "firebase/compat/app";
 import DocumentReference = firebase.firestore.DocumentReference;
+import { ref as storageRef,} from "firebase/storage";
 
 import { getFunctions, httpsCallable } from "firebase/functions";
 
@@ -92,7 +93,7 @@ export const createUserAccount = async (userData: any) => {
 };
 
 // Get current user
-export async function getCurrentUser(): Promise<IUser | Error> {
+export async function getCurrentUser(): Promise<IUser> {
     try {
         const currentUser = auth.currentUser;
         if (!currentUser) throw new Error("No user is currently signed in");
@@ -104,28 +105,50 @@ export async function getCurrentUser(): Promise<IUser | Error> {
 
         return {
             id: currentUser.uid,
-            username: userData.username || "",
-            email: userData.email || "",
-            pfp: userData.pfp || "",
-            bio: userData.bio || "",
-            isPrivate: userData.isPrivate ?? false,
-            isVerified: userData.isVerified ?? false,
-            isAdministrator: userData.isAdministrator ?? false,
-            isDeactivated: userData.isDeactivated ?? false,
-            isBanned: userData.isBanned ?? false,
-            isCurator: userData.isCurator ?? false,
-            followers: userData.followers || [],
-            following: userData.following || [],
-            likedRecipes: userData.likedRecipes || [],
-            recipes: userData.recipes || [],
-            posts: userData.posts || [],
-            comments: userData.comments || [],
+            username: userData.username,
+            email: userData.email,
+            pfp: userData.pfp,
+            bio: userData.bio,
+            isPrivate: userData.isPrivate,
+            isVerified: userData.isVerified,
+            isAdministrator: userData.isAdministrator,
+            isDeactivated: userData.isDeactivated,
+            isBanned: userData.isBanned,
+            isCurator: userData.isCurator,
+            followers: userData.followers,
+            following: userData.following,
+            likedRecipes: userData.likedRecipes,
+            recipes: userData.recipes,
+            workshops: userData.workshops,
+            comments: userData.comments,
             myFridge: userData.myFridge,
-            createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
-            updatedAt: userData.updatedAt ? new Date(userData.updatedAt) : new Date(),
+            createdAt: userData.createdAt,
+            updatedAt: userData.updatedAt,
+
         };
     } catch (error: unknown) {
-        return error instanceof Error ? new Error(error.message) : new Error("An unknown error occurred");
+        return {
+            id: "",
+            username: "",
+            email: "",
+            pfp: "",
+            bio: "",
+            isPrivate: false,
+            isVerified: false,
+            isAdministrator: false,
+            isDeactivated: false,
+            isBanned: false,
+            isCurator: false,
+            followers: [],
+            following: [],
+            likedRecipes: [],
+            recipes: [],
+            workshops: [],
+            comments: [],
+            myFridge: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }
     }
 }
 
@@ -195,40 +218,27 @@ export async function getUserById(userId: string): Promise<IUser | null> {
 }
 
 // Get user's recipes
-export const getUserRecipes = async (userId: string): Promise<Recipe[]> => {
+export const getUserRecipes = async (
+    recipeRefs: DocumentReference<Recipe>[]
+): Promise<Recipe[]> => {
     try {
-        const userRef = doc(database, "Users", userId);
-        const userSnap = await getDoc(userRef);
-
-        if (!userSnap.exists()) {
-            console.warn(`User with ID ${userId} not found.`);
-            return [];
-        }
-
-        const userData = userSnap.data();
-
-        // Check if recipes is an array of DocumentReferences
-        const recipeRefs = userData.recipes as DocumentReference<Recipe>[];
         if (!Array.isArray(recipeRefs)) {
-            console.warn(`recipes field is not an array for user ${userId}`);
+            console.warn("Expected an array of DocumentReferences.");
             return [];
         }
 
-        // Fetch each recipe document in parallel
         const recipeSnaps = await Promise.all(recipeRefs.map(ref => getDoc(ref)));
 
-        // Extract data from each document snapshot
         const recipes: Recipe[] = recipeSnaps
             .filter(snap => snap.exists())
             .map(snap => ({
                 id: snap.id,
-                ...snap.data(),
-            } as Recipe));
+                ...(snap.data() as Omit<Recipe, "id">),
+            }));
 
         return recipes;
-
     } catch (error) {
-        console.error("Error fetching user recipes:", error);
+        console.error("Error fetching recipes from references:", error);
         return [];
     }
 };
@@ -361,7 +371,7 @@ export async function createRecipe(recipe: INewRecipe) {
         // Save recipe to Firestore
         const newRecipeRef = doc(collection(database, "Recipes"));
         const newRecipe = {
-            author: doc(database, "Users", recipe?.userId),
+            author: doc(database, "Users", recipe?.author),
             description: recipe.description,
             mediaUrl: fileUrl,
             title: recipe.title,
@@ -381,7 +391,7 @@ export async function createRecipe(recipe: INewRecipe) {
         await setDoc(newRecipeRef, newRecipe);
 
         // add new recipe to the user's recipe array
-        const userRef = doc(database, "Users", recipe.userId);
+        const userRef = doc(database, "Users", recipe.author);
         await updateDoc(userRef, {
             recipes: arrayUnion(newRecipeRef),
         });
@@ -395,9 +405,7 @@ export async function createRecipe(recipe: INewRecipe) {
 
         return newRecipeRef.id; // Return the new recipe's ID
     } catch (error) {
-        const { toast } = useToast();
         console.error("Error creating recipe:", error);
-        toast({ title: "Failed to create recipe. Please try again." });
 
 
     }
@@ -431,135 +439,132 @@ export async function getRecipeById(recipeId?: string) {
     }
 }
 
-// Update recipe
-export async function updateRecipe(recipe: IUpdateRecipe) {
-  const hasFileToUpdate = recipe.file.length > 0;
-  try {
-    // Initialize media object with current values
-    let media = {
-      mediaUrl: recipe.mediaUrl,
-    };
-
-    // Update media if a new file is provided
-    if (hasFileToUpdate) {
-      const fileRef = ref(storage, `recipe/${recipe.file[0].name}`);
-      await uploadBytes(fileRef, recipe.file[0]);
-      const fileUrl = await getDownloadURL(fileRef);
-      media = { mediaUrl: fileUrl, mediaId: fileRef.fullPath };
-    }
-
-    // Normalize tags to always be an array
-    const tags: string[] = Array.isArray(recipe.tags)
-      ? recipe.tags
-      : String(recipe.tags)
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean);
-
-    await updateDoc(doc(database, "Recipes", recipe.recipeId), {
-      description: recipe.description,
-      title: recipe.title,
-      instructions: recipe.instructions.split("\n").map((step: string) => step.trim()),
-      cookTime: recipe.cookTime,
-      prepTime: recipe.prepTime,
-      servings: recipe.servings,
-      tags: tags,
-      likes: [],
-      comments: [],
-      updatedAt: new Date(),
-      mediaUrl: media.mediaUrl,
-
-    });
-
-    // Delete the old media file if a new file was uploaded and previous mediaId exists
-    if (hasFileToUpdate && (recipe as IUpdateRecipe & { mediaId?: string }).mediaId) {
-      const oldFileRef = ref(storage, (recipe as IUpdateRecipe & { mediaId?: string }).mediaId!);
-      await deleteObject(oldFileRef);
-    }
-    return { status: "ok" };
-  } catch (error) {
-    console.log(error);
-  }
-}
-
 // Delete recipe
-export const deleteRecipe = async (recipeId?: string, mediaId?: string) => {
-    if (!recipeId) return;
-
+export const deleteRecipe = async (recipeId: any, mediaId: string) => {
     try {
         const recipeRef = doc(database, "Recipes", recipeId);
         const recipeSnap = await getDoc(recipeRef);
-
         if (!recipeSnap.exists()) return;
 
-        // Delete media from storage
+        const data = recipeSnap.data();
+        const authorRef = data.author; // document reference to the author
+
+        // 1) Delete media from Storage
         if (mediaId) {
-            const mediaRef = ref(storage, mediaId);
-            await deleteObject(mediaRef).catch((err) => {
-                console.error("Error deleting media from storage:", err);
-            });
+            try {
+                const mRef = storageRef(storage, mediaId);
+                await deleteObject(mRef);
+            } catch (err) {
+                console.warn("⚠️ could not delete media:", err);
+            }
         }
 
-        // Delete ratings (subcollection)
-        const ratingsSnap = await getDocs(collection(recipeRef, "Ratings"));
-        for (const docSnap of ratingsSnap.docs) {
-            await deleteDoc(docSnap.ref);
+        // 2) Delete all ratings sub-docs
+        try {
+            const ratingsSnap = await getDocs(collection(recipeRef, "Ratings"));
+            await Promise.all(ratingsSnap.docs.map(r => deleteDoc(r.ref)));
+        } catch (err) {
+            console.warn("⚠️ could not delete ratings:", err);
         }
 
-        // Remove recipe reference from users
-        const usersSnap = await getDocs(collection(database, "Users"));
-        for (const userDoc of usersSnap.docs) {
-            await updateDoc(userDoc.ref, {
-                recipes: arrayRemove(recipeRef),
-                comments: arrayRemove(recipeId),
-            });
+        // 3) Remove this recipeRef from the author's recipes array
+        if (authorRef) {
+            try {
+                await updateDoc(authorRef, { recipes: arrayRemove(recipeRef) });
+            } catch (err) {
+                console.warn("⚠️ could not update author.recipes:", err);
+            }
         }
 
-        // Finally, delete the recipe document
+        // 4) Clear the recipe’s own comments array
+        try {
+            await updateDoc(recipeRef, { comments: [] });
+        } catch (err) {
+            console.warn("⚠️ could not clear recipe.comments:", err);
+        }
+
+        // 5) Remove recipeId from every user.comments array
+        try {
+            const usersSnap = await getDocs(collection(database, "Users"));
+            await Promise.all(
+                usersSnap.docs.map(uDoc =>
+                    updateDoc(uDoc.ref, { comments: arrayRemove(recipeId) })
+                        .catch(err => console.warn(`⚠️ user ${uDoc.id} comments:`, err))
+                )
+            );
+        } catch (err) {
+            console.warn("⚠️ could not iterate users for comments:", err);
+        }
+
+        // 6) Finally delete the recipe document itself
         await deleteDoc(recipeRef);
     } catch (error) {
         console.error("Error deleting recipe:", error);
-        throw error; // Optionally rethrow to be handled by the mutation hook
+        throw error;
     }
 };
 
-// Like recipe
-export async function likeRecipe(recipeId: string, userRef: any) {
+/**
+ * Atomically add the current userId to Recipes/{recipeId}.likes
+ * and recipeId to Users/{userId}.likedRecipes.
+ */
+export async function likeRecipe(recipeId: string, userId: string) {
+    const recipeRef = doc(database, "Recipes", recipeId);
+    const userRef   = doc(database, "Users",   userId);
+
     try {
-        const recipeDoc = doc(database, "Recipes", recipeId);
-        const userDoc = userRef; // expected to be a DocumentReference
+        await runTransaction(database, async (tx) => {
+            const [recipeSnap, userSnap] = await Promise.all([
+                tx.get(recipeRef),
+                tx.get(userRef),
+            ]);
 
-        await updateDoc(recipeDoc, {
-            likes: arrayUnion(userDoc),
+            if (!recipeSnap.exists()) {
+                throw new Error(`Recipe ${recipeId} not found`);
+            }
+            if (!userSnap.exists()) {
+                throw new Error(`User ${userId} not found`);
+            }
+
+            tx.update(recipeRef, { likes: arrayUnion(userId) });
+            tx.update(userRef,   { likedRecipes: arrayUnion(recipeId) });
         });
-
-        await updateDoc(userDoc, {
-            likedRecipes: arrayUnion(recipeDoc),
-        });
-
         return { status: "ok" };
-    } catch (error) {
-        console.error("Error liking recipe:", error);
+    } catch (err) {
+        console.error("Error liking recipe:", err);
+        throw err;
     }
 }
 
-// Unlike recipe
-export async function unlikeRecipe(recipeId: string, userRef: any) {
+/**
+ * Atomically remove the current userId from Recipes/{recipeId}.likes
+ * and recipeId from Users/{userId}.likedRecipes.
+ */
+export async function unlikeRecipe(recipeId: string, userId: string) {
+    const recipeRef = doc(database, "Recipes", recipeId);
+    const userRef   = doc(database, "Users",   userId);
+
     try {
-        const recipeDoc = doc(database, "Recipes", recipeId);
-        const userDoc = userRef;
+        await runTransaction(database, async (tx) => {
+            const [recipeSnap, userSnap] = await Promise.all([
+                tx.get(recipeRef),
+                tx.get(userRef),
+            ]);
 
-        await updateDoc(recipeDoc, {
-            likes: arrayRemove(userDoc),
+            if (!recipeSnap.exists()) {
+                throw new Error(`Recipe ${recipeId} not found`);
+            }
+            if (!userSnap.exists()) {
+                throw new Error(`User ${userId} not found`);
+            }
+
+            tx.update(recipeRef, { likes: arrayRemove(userId) });
+            tx.update(userRef,   { likedRecipes: arrayRemove(recipeId) });
         });
-
-        await updateDoc(userDoc, {
-            likedRecipes: arrayRemove(recipeDoc),
-        });
-
         return { status: "ok" };
-    } catch (error) {
-        console.error("Error unliking recipe:", error);
+    } catch (err) {
+        console.error("Error unliking recipe:", err);
+        throw err;
     }
 }
 
