@@ -23,6 +23,8 @@ import { Routes, Route } from 'react-router-dom';
                     import { Toaster } from '@/components/ui/toaster.tsx';
 import RecipeAnalytics from './_root/pages/RecipeAnalytics.tsx';
 import SendMessage from "@/_root/pages/SendMessage.tsx";
+import Challenges from "@/_root/pages/Challenges.tsx";
+import ChallengeDetails from "@/_root/pages/ChallengeDetails.tsx";
 
                     const App = () => {
                         const { user } = useUserContext();
@@ -38,13 +40,14 @@ import SendMessage from "@/_root/pages/SendMessage.tsx";
                                     <Route element={<RootLayout />}>
                                         <Route index element={<Home/>} />
                                         <Route path="/explore" element={<Explore/>} />
-                                        <Route path="/saved" element={<Saved/>} />
+                                        <Route path="/challenges" element={<Challenges/>} />
                                         <Route path="/all-users" element={<AllUsers/>} />
                                         <Route path="/create-recipe" element={<CreateRecipe/>} />
                                         <Route path="/update-recipe/:id/*" element={<EditRecipe/>} />
                                         <Route path="/recipe/:id/*" element={<RecipeDetails/>} />
                                         <Route path="/profile/:id/*" element={<Profile/>} />
                                         <Route path="/recipes/:id/*" element={<RecipeDetails/>} />
+                                        <Route path="/challenge/:id/*" element={<ChallengeDetails/>} />
                                         <Route path="/update-profile/:id/*" element={<UpdateProfile/>} />
                                         <Route path="/liked-recipes/:id/*" element={<LikedRecipes/>} />
                                         <Route path="/admin" element={<Admin/>} />

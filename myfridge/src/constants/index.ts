@@ -17,8 +17,8 @@
                 },
                 {
                     imgURL: "/assets/icons/bookmark.svg",
-                    route: "/saved",
-                    label: "Saved",
+                    route: "/challenges",
+                    label: "Challenges",
                 },
                 {
                     imgURL: "/assets/icons/gallery-add.svg",
@@ -45,8 +45,8 @@
                 },
                 {
                     imgURL: "/assets/icons/bookmark.svg",
-                    route: "/saved",
-                    label: "Saved",
+                    route: "/challenges",
+                    label: "Challenges",
                 },
                 {
                     imgURL: "/assets/icons/gallery-add.svg",

@@ -2,7 +2,26 @@ import {
     createUserWithEmailAndPassword, onAuthStateChanged,
     signInWithEmailAndPassword, User,
 } from "firebase/auth";
-import { addDoc, startAfter, DocumentSnapshot, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, limit, getDocs, runTransaction, arrayUnion, arrayRemove } from "firebase/firestore";
+import {
+    addDoc,
+    startAfter,
+    DocumentSnapshot,
+    collection,
+    doc,
+    getDoc,
+    setDoc,
+    updateDoc,
+    deleteDoc,
+    query,
+    where,
+    orderBy,
+    limit,
+    getDocs,
+    runTransaction,
+    arrayUnion,
+    arrayRemove,
+    serverTimestamp
+} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { auth, database, storage,} from "@/lib/firebase/config.ts";
 import { INewRecipe, IRecipeMetadata, IUpdateRecipe, IUpdateUser, IUser,  INewWorkshop, IUpdateWorkshop, FridgeData, Recipe } from "@/types";
@@ -1065,6 +1084,22 @@ export async function toggleUserBan(userId: string): Promise<void> {
 // Message Functions
 
 // Send a message This function will send a message to the user
+export const sendMessage = async ({ toUserId, fromUserId, subject, text }) => {
+    try {
+        await addDoc(collection(database, 'Messages'), {
+            toUserId,
+            fromUserId,
+            subject,
+            text,
+            sentAt: serverTimestamp(),
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error sending message:', error);
+        return { success: false, error };
+    }
+};
 
 // Create Message Document
 
@@ -1185,8 +1220,30 @@ Return the result as a JSON array where each object has the keys "title", "descr
 
 // Then using a Recipe Card, it will display the generated recipes inside a Carousel Element.
 
+// Challenge Functions
+export async function createChallenge({ title, description, creatorRef }: { title: string, description: string, creatorRef: any }) {
+    try {
+        const newChallenge = {
+            title,
+            description,
+            creator: creatorRef,
+            participants: [],
+            createdAt: serverTimestamp(),
+        };
 
-// Create Curator Review
+        const docRef = await addDoc(collection(database, "Challenges"), newChallenge);
+        return docRef;
+    } catch (error) {
+        console.error("Error creating challenge:", error);
+        throw error;
+    }
+}
 
 
-// Create User Comments
+export async function getAllChallenges() {
+    const querySnapshot = await getDocs(collection(database, "Challenges"));
+    return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+    }));
+}

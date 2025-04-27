@@ -181,7 +181,7 @@
         @apply flex-center gap-3 py-4 w-48 bg-dark-2  transition flex-1 xl:flex-initial;
     }
 
-    /* Saved */
+    /* Challenges */
     .saved-container {
         @apply flex flex-col flex-1 items-center gap-10 overflow-scroll py-10 px-5 md:p-14 custom-scrollbar;
     }

@@ -1,6 +1,6 @@
 export {default as Home} from './Home';
 export {default as Explore} from './Explore';
-export {default as Saved} from './Saved';
+export {default as Challenges} from './Challenges.tsx';
 export {default as CreateRecipe} from './CreateRecipe';
 export {default as Profile} from './Profile';
 export {default as UpdateProfile} from './UpdateProfile';
@@ -11,3 +11,4 @@ export {default as LikedRecipes} from './LikedRecipes';
 export {default as Workshops} from './Workshops';
 export {default as Admin} from './Admin';
 export {default as Inbox} from './Inbox';
+export {default as ChallengeDetails} from './ChallengeDetails';

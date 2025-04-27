@@ -28,7 +28,7 @@ const Inbox = () => {
 
                 await Promise.all(
                     uniqueSenderIds.map(async (senderId) => {
-                        const userDoc = await getDoc(doc(database, "users", senderId));
+                        const userDoc = await getDoc(doc(database, "Users", senderId));
                         senderMap[senderId] = userDoc.exists() ? userDoc.data().username || senderId : senderId;
                     })
                 );
@@ -202,7 +202,3 @@ const Inbox = () => {
 
 export default Inbox;
 */
-
-
-
-
