@@ -165,7 +165,7 @@ import {Badge} from "@/components/ui/badge.tsx"; // Adjust the import path as ne
                                     <CardContent className="flex flex-col items-center justify-between h-full mt-2">
                                         <div className="flex flex-wrap gap-5 justify-center mt-2">
                                             <StatBlock value={user.recipes.length || 0} label="Recipes" />
-                                            <StatBlock value={user.posts.length || 0} label="Posts" />
+                                            <StatBlock value={user.workshops.length || 0} label="Workshops" />
                                             <StatBlock value={isUpdating ? 0 : followersCount} label="Followers" />
                                             <StatBlock value={isUpdating ? 0 : followingCount} label="Following" />
                                         </div>

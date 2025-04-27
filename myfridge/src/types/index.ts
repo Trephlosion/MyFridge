@@ -16,6 +16,7 @@ export type INavLink = {
 
 // User Update Type
 export interface IUser {
+    //workshops: number;
     id: string;
     username: string;
     email: string;
@@ -29,9 +30,9 @@ export interface IUser {
     isCurator: boolean; // New field
     followers: string[];
     following: string[];
-    likedRecipes: string[];
-    recipes: string[];
-    posts: string[];
+    likedRecipes: any[];
+    recipes: any[];
+    posts: any[];
     comments: string[];
     myFridge: any;
     createdAt: Date;
