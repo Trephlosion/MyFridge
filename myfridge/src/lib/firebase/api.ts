@@ -31,6 +31,7 @@ import { ref as storageRef,} from "firebase/storage";
 
 import { getFunctions, httpsCallable } from "firebase/functions";
 
+
 import {useToast} from "@/hooks/use-toast";
 import {useUserContext} from "@/context/AuthContext.tsx";
 import {useNavigate} from "react-router-dom";
@@ -522,6 +523,44 @@ export const deleteRecipe = async (recipeId: any, mediaId: string) => {
         throw error;
     }
 };
+
+
+
+//Dietary Compliance Review
+export const addDietaryComplianceReview = async ({
+                                                     recipeId,
+                                                     curatorId,
+                                                     curatorUsername,
+                                                     reviewText,
+                                                     usageCount,
+                                                 }: {
+    recipeId: string;
+    curatorId: string;
+    curatorUsername: string;
+    reviewText: string;
+    usageCount: number;
+}) => {
+    try {
+        // Reference to the DietaryComplianceReviews collection
+        const docRef = await addDoc(collection(db, 'DietaryComplianceReviews'), {
+            recipeId,
+            curatorId,
+            curatorUsername,
+            reviewText,
+            usageCount,
+            createdAt: serverTimestamp(),
+        });
+
+        console.log('Dietary Compliance Review added with ID:', docRef.id);
+        return { success: true, id: docRef.id };
+    } catch (error) {
+        console.error('Error adding Dietary Compliance Review:', error);
+        return { success: false, error };
+    }
+};
+
+
+
 
 /**
  * Atomically add the current userId to Recipes/{recipeId}.likes

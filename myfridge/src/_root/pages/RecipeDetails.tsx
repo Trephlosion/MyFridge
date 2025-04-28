@@ -1,4 +1,5 @@
 // RecipeDetails.tsx
+
                     import React, {useEffect, useState} from "react";
                     import {doc, getDoc, addDoc, collection, getDocs, query, orderBy, where, serverTimestamp, updateDoc, arrayUnion, DocumentReference} from "firebase/firestore";
                     import {database} from "@/lib/firebase/config";
@@ -52,6 +53,7 @@ import {
 
                     import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar.tsx";
                     import {multiFormatDateString} from "@/lib/utils.ts";
+import {Input} from "postcss";
 
 
                     const RecipeDetails = () => {
@@ -62,6 +64,11 @@ import {
                         const [review, setReview] = useState("");
                         const [rating, setRating] = useState(0);
                         const [submitted, setSubmitted] = useState(false);
+
+
+                        const [usageCount, setUsageCount] = useState<number>(0);
+
+
                         const [reviews, setReviews] = useState<any[]>([]);
                         const [imageUrl, setImageUrl] = useState<string>("");
                         const [userInfo, setUserInfo] = useState<UserInfo>({
@@ -297,6 +304,8 @@ import {
                             };
                             fetchUserInfo();
                         }, [recipe]);
+
+
 
                         if (!recipe)
                             return (
@@ -635,6 +644,86 @@ import {
                                         Back
                                     </Button>
                                 </div>
+
+
+
+
+
+
+
+                                    {/* Dietary Compliance Review Section */}
+                                    <div className="mt-10 w-full">
+                                        <h2 className="text-2xl font-bold mb-4">Dietary Compliance Review</h2>
+
+                                        {recipe?.dietaryComplianceReview || recipe?.usageCount !== undefined ? (
+                                            <div className="bg-gray-800 p-4 rounded-lg space-y-3">
+                                                {recipe.dietaryComplianceReview && (
+                                                    <p className="text-light-3 whitespace-pre-line">
+                                                        {recipe.dietaryComplianceReview}
+                                                    </p>
+                                                )}
+                                                {recipe.usageCount !== undefined && (
+                                                    <p className="text-light-3">
+                                                        Number of Times Used: <strong>{recipe.usageCount}</strong>
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <p className="text-gray-400 italic mb-4">
+                                                No dietary compliance review submitted yet.
+                                            </p>
+                                        )}
+
+                                        {/* Only visible to Recipe Curators */}
+                                        {user.isCurator && (
+                                            <div className="mt-6 space-y-4">
+                                                <Textarea
+                                                    value={reviewText}
+                                                    onChange={(e) => setReviewText(e.target.value)}
+                                                    placeholder="Enter dietary compliance review here..."
+                                                    className="w-full bg-dark-3 text-white h-32"
+                                                />
+                                                <input
+                                                    type="number"
+                                                    value={usageCount}
+                                                    onChange={(e) => setUsageCount(parseInt(e.target.value))}
+                                                    placeholder="Enter number of times used"
+                                                    className="w-full bg-dark-3 text-white h-12 px-4 rounded-md"
+                                                />
+                                                <Button
+                                                    className="shad-button_primary"
+                                                    onClick={async () => {
+                                                        try {
+                                                            const recipeRef = doc(database, "Recipes", recipe.id);
+                                                            await updateDoc(recipeRef, {
+                                                                dietaryComplianceReview: reviewText.trim(),
+                                                                usageCount: usageCount,
+                                                            });
+                                                            setSubmitted(!submitted); // trigger re-fetch
+                                                            alert("Dietary compliance review and usage count submitted!");
+                                                            setReviewText(""); // clear input
+                                                            setUsageCount(0);
+                                                        } catch (error) {
+                                                            console.error("Error submitting dietary compliance review:", error);
+                                                            alert("Failed to submit review.");
+                                                        }
+                                                    }}
+                                                    disabled={!reviewText.trim() && !usageCount}
+                                                >
+                                                    Submit Dietary Review
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
+
+
+
+
+
+
+
+
+
 
 
                                 </div>
