@@ -24,21 +24,22 @@ import {
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { auth, database, storage,} from "@/lib/firebase/config.ts";
-import { INewRecipe, IRecipeMetadata, IUpdateRecipe, IUpdateUser, IUser,  INewWorkshop, IUpdateWorkshop, FridgeData, Recipe } from "@/types";
+import {
+    INewRecipe,
+    IRecipeMetadata,
+    IUpdateUser,
+    IUser,
+    INewWorkshop,
+    IUpdateWorkshop,
+    FridgeData,
+    Recipe,
+    Workshop, Challenge
+} from "@/types";
 import firebase from "firebase/compat/app";
 import DocumentReference = firebase.firestore.DocumentReference;
 import { ref as storageRef,} from "firebase/storage";
 
-import { getFunctions, httpsCallable } from "firebase/functions";
 
-
-import {useToast} from "@/hooks/use-toast";
-import {useUserContext} from "@/context/AuthContext.tsx";
-import {useNavigate} from "react-router-dom";
-
-
-
-const functions = getFunctions();
 // const toggleUserActivation = httpsCallable(functions, 'toggleUserActivation');
 
 
@@ -557,7 +558,7 @@ export const addDietaryComplianceReview = async ({
 }) => {
     try {
         // Reference to the DietaryComplianceReviews collection
-        const docRef = await addDoc(collection(db, 'DietaryComplianceReviews'), {
+        const docRef = await addDoc(collection(database, 'DietaryComplianceReviews'), {
             recipeId,
             curatorId,
             curatorUsername,
@@ -1026,44 +1027,8 @@ export async function getAllIngredients() {
     }
 }
 
-export async function getIngredientByName(ingredient: string) {
-    try {
-        const ingredientsRef = collection(database, "Ingredients");
-        const querySnapshot = await getDocs(ingredientsRef);
-        const ingredients = querySnapshot.docs.map((doc) => doc.data());
-        return ingredients;
-    } catch (error) {
-        console.log(error);
-    }
-}
 
-export async function getIngredientById(ingredientId: string) {
-    try {
-        const ingredientDoc = await getDoc(doc(database, "Ingredients", ingredientId));
-        if (!ingredientDoc.exists()) throw new Error("Ingredient not found");
-        return ingredientDoc.data();
-    } catch (error) {
-        console.log(error);
-    }
-}
 
-export async function createNewIngredient(ingredient: string) {
-    // Check if ingredient already exists
-    const ingredients = await getAllIngredients();
-    const existingIngredient = ingredients.find((item: any) => item.name === ingredient);
-    if (existingIngredient) {
-        throw new Error("Ingredient already exists");
-    } else {
-        try {
-            await addDoc(collection(database, "Ingredients"), {
-                name: ingredient,
-            });
-            return { status: "ok" };
-        } catch (error) {
-            console.log(error);
-        }
-    }
-}
 
 /*toggleUserActivation({ uid: "USER_ID_HERE" })
     .then((result) => {
@@ -1286,3 +1251,73 @@ export async function getAllChallenges() {
         ...doc.data(),
     }));
 }
+
+export const getTopUsers = async (limit: number): Promise<IUser[]> => {
+    const usersRef = collection(database, "Users");
+    const snap = await getDocs(usersRef);
+    const users = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as IUser[];
+    return users
+        .filter(u => !u.isBanned && !u.isDeactivated)
+        .sort((a, b) => b.followers.length - a.followers.length)
+        .slice(0, limit);
+};
+
+export const getTopWorkshops = async (limit: number): Promise<Workshop[]> => {
+    const workshopsRef = collection(database, "Workshops");
+    const snap = await getDocs(workshopsRef);
+    const workshops = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Workshop[];
+    return workshops
+        .filter(w => Array.isArray(w.participants))
+        .sort((a, b) => b.participants.length - a.participants.length)
+        .slice(0, limit);
+};
+
+export const getFollowedUsersRecipes = async (
+    userId: string,
+    page: number
+): Promise<Recipe[]> => {
+    const userRef = doc(database, "Users", userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) return [];
+
+    const following = userSnap.data().following || [];
+    const batchSize = 20;
+    const start = (page - 1) * batchSize;
+
+    const recipes: Recipe[] = [];
+
+    for (let i = start; i < start + batchSize && i < following.length; i++) {
+        const followedUserRef = following[i];
+        if (!followedUserRef) continue;
+        const followedUserSnap = await getDoc(followedUserRef);
+        if (!followedUserSnap.exists()) continue;
+
+        const followedUser: any = followedUserSnap.data();
+        const recipeRefs = followedUser.recipes || [];
+
+        for (const recipeRef of recipeRefs) {
+            const recipeSnap = await getDoc(recipeRef);
+            if (recipeSnap.exists()) {
+                recipes.push({ id: recipeSnap.id, ...recipeSnap.data() } as Recipe);
+            }
+        }
+    }
+
+    return recipes.sort(
+        (a, b) =>
+            new Date(b.createdAt?.toDate?.() || 0).getTime() -
+            new Date(a.createdAt?.toDate?.() || 0).getTime()
+    );
+};
+
+export const getTopChallenges = async (limit: number): Promise<Challenge[]> => {
+    const ref = collection(database, "Challenges");
+    const snap = await getDocs(ref);
+    const challenges = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Challenge[];
+
+    return challenges
+        .filter(c => Array.isArray(c.submissions))
+        .sort((a, b) => b.submissions.length - a.submissions.length)
+        .slice(0, limit);
+};

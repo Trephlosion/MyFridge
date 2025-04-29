@@ -33,7 +33,7 @@ const WorkshopCard = ({ workshop }: WorkshopCardProps) => {
                 const userSnap = await getDoc(workshop.userId);
                 if (userSnap.exists()) {
                     const data = userSnap.data() as { username: string; pfp: string };
-                    setCreator({ username: data.username, pfp: data.pfp || "/assets/icons/profile-placeholder.svg" });
+                    setCreator({ username: data.username, pfp: data.pfp });
                 }
             }
 
