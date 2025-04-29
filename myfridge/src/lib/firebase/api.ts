@@ -348,6 +348,18 @@ export async function followUser(currentUserId: string, profileUserId: string, i
             transaction.update(profileUserRef, {
                 followers: arrayUnion(currentUserId),
             });
+
+            // ✅ Create a "new_follower" notification
+            const currentUserData = currentUserDoc.data();
+            const username = currentUserData?.username || "Someone";
+
+            await addDoc(collection(database, "Notifications"), {
+                user_id: profileUserRef, // recipient of notification
+                type: "new_follower",
+                message: `${username} started following you.`,
+                isRead: false,
+                createdAt: serverTimestamp(),
+            });
         }
     });
 }
@@ -881,6 +893,7 @@ export async function getAllFridgeIngredients(fridgeid: any) {
         }
     } catch (error) {
         console.error("Error fetching fridge:", error);
+        return null;
     }
 
     return []; // always return an array
@@ -1084,22 +1097,6 @@ export async function toggleUserBan(userId: string): Promise<void> {
 // Message Functions
 
 // Send a message This function will send a message to the user
-export const sendMessage = async ({ toUserId, fromUserId, subject, text }) => {
-    try {
-        await addDoc(collection(database, 'Messages'), {
-            toUserId,
-            fromUserId,
-            subject,
-            text,
-            sentAt: serverTimestamp(),
-        });
-
-        return { success: true };
-    } catch (error) {
-        console.error('Error sending message:', error);
-        return { success: false, error };
-    }
-};
 
 // Create Message Document
 

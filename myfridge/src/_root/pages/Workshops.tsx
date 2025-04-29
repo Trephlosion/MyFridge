@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useGetUserWorkshops, useSearchWorkshops } from "@/lib/react-query/queriesAndMutations";
+import { useSearchWorkshops } from "@/lib/react-query/queriesAndMutations";
 import { Input } from "@/components/ui/input";
 import { Workshop } from "@/types";
 import useDebounce from "@/hooks/useDebounce";
-import { GridWorkshopList } from "@/components/shared";
 import { database } from "@/lib/firebase/config";
-import { collection, getDocs, orderBy, limit } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
+import WorkshopCard from "@/components/cards/WorkshopCard";
+import { useUserContext } from "@/context/AuthContext";
 
 const Workshops = () => {
     const [searchValue, setSearchValue] = useState("");
@@ -18,15 +19,14 @@ const Workshops = () => {
     const [isError, setIsError] = useState(false);
 
     const navigate = useNavigate();
+    const { user } = useUserContext();
 
     useEffect(() => {
         const fetchWorkshops = async () => {
             try {
                 const querySnapshot = await getDocs(collection(database, "Workshops"));
-
                 const workshopsList = querySnapshot.docs.map(doc => {
                     const data = doc.data();
-
                     let parsedDate: Date | null = null;
 
                     if (data.date?.seconds) {
@@ -63,7 +63,17 @@ const Workshops = () => {
 
     return (
         <div className="p-5">
-            <h2 className="text-2xl font-bold mb-4 text-center">Explore Workshops</h2>
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-white">Explore Workshops</h2>
+                {user?.isVerified && (
+                    <button
+                        onClick={() => navigate("/create-workshop")}
+                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md"
+                    >
+                        + Create Workshop
+                    </button>
+                )}
+            </div>
 
             <div className="flex justify-center mb-4 gap-4">
                 <Input
@@ -81,30 +91,15 @@ const Workshops = () => {
                 ) : isError ? (
                     <p className="col-span-full text-center text-gray-500">Error loading workshops. Please try again later.</p>
                 ) : shouldShowSearchResults ? (
-                    <GridWorkshopList workshops={searchedWorkshops} />
+                    searchedWorkshops.map(workshop => (
+                        <WorkshopCard key={workshop.id} workshop={workshop} />
+                    ))
                 ) : shouldShowWorkshops ? (
                     <p className="col-span-full text-center text-gray-500">No upcoming workshops</p>
                 ) : (
-                    workshops.map((workshop) => {
-                        const workshopTitle = workshop?.title || "Untitled Workshop";
-                        const { id, title, media_url } = workshop;
-                        return (
-                            <div
-                                key={id}
-                                className="border rounded p-4 shadow-md bg-white cursor-pointer transition-transform transform hover:scale-105"
-                                onClick={() => navigate(`/workshop/${id}`)}
-                            >
-                                <img
-                                    src={media_url || "https://via.placeholder.com/300x200"}
-                                    alt={workshopTitle}
-                                    className="w-full h-40 object-cover rounded"
-                                    onError={(e) => (e.currentTarget.src = "https://via.placeholder.com/300x200")}
-                                />
-                                <h3 className="text-lg font-bold text-black mt-2">{workshopTitle}</h3>
-                                <p className="text-sm text-black italic">Created by: {workshop.author?.username || "Unknown Creator"}</p>
-                            </div>
-                        );
-                    })
+                    workshops.map(workshop => (
+                        <WorkshopCard key={workshop.id} workshop={workshop} />
+                    ))
                 )}
             </div>
         </div>
