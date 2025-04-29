@@ -77,6 +77,8 @@ export type IFileUpload = {
 };
 
 export type Recipe = {
+    usageCount: any;
+    dietaryComplianceReview: any;
     id: string; // Firestore document ID
     title: string; // Recipe title (formerly "dish")
     description?: string;

@@ -196,6 +196,14 @@ import {Badge} from "@/components/ui/badge.tsx"; // Adjust the import path as ne
                                     )}
                                 </DropdownMenuItem>
 
+                                <DropdownMenuItem>
+                                    <Link to={`/send-message/${user.id}`}>
+                                        <Button type="button" size="sm" className="shad-button_primary px-5">
+                                            Message User
+                                        </Button>
+                                    </Link>
+                                </DropdownMenuItem>
+
                                 {currentUser.isAdministrator && (
                                     <>
                                         <DropdownMenuSeparator className={"bg-dark-3"} />
@@ -232,13 +240,6 @@ import {Badge} from "@/components/ui/badge.tsx"; // Adjust the import path as ne
                                             </Button>
                                         </DropdownMenuItem>
 
-                                        <DropdownMenuItem>
-                                            <Link to={`/send-message/${user.id}`}>
-                                                <Button type="button" size="sm" className="shad-button_primary px-5">
-                                                    Message User
-                                                </Button>
-                                            </Link>
-                                        </DropdownMenuItem>
 
                                     </>
                                 )}
