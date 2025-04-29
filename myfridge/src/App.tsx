@@ -8,7 +8,6 @@ import { Routes, Route } from 'react-router-dom';
                     import {
     Home,
     Explore,
-    Saved,
     AllUsers,
     EditRecipe,
     RecipeDetails,
@@ -23,6 +22,7 @@ import { Routes, Route } from 'react-router-dom';
                         Inbox
 } from './_root/pages';
                     import { Toaster } from '@/components/ui/toaster.tsx';
+import {CreateChallenge} from "@/_root/pages";
 
 
                     const App = () => {
@@ -57,6 +57,8 @@ import { Routes, Route } from 'react-router-dom';
                                         <Route path="/notifications" element={<NotificationsPage />} />
                                         <Route path="/create-workshop" element={<CreateWorkshop />} />
                                         <Route path="/workshop/:id" element={<WorkshopDetails />} />
+                                        <Route path="/create-challenge" element={<CreateChallenge />} />
+
 
                                     </Route>
                                 </Routes>

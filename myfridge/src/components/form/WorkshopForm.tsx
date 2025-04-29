@@ -1,3 +1,5 @@
+// Updating WorkshopForm.tsx (normalized, modular, clean)
+
 import { useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -13,14 +15,16 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea.tsx";
-import FileUploader from "@/components/shared/FileUploader.tsx";
+import { Textarea } from "@/components/ui/textarea";
+import FileUploader from "@/components/shared/FileUploader";
 import { WorkshopValidation } from "@/lib/validation";
-import { useCreateWorkshop } from "@/lib/react-query/queriesAndMutations.ts";
-import { useUserContext } from "@/context/AuthContext.tsx";
-import { useToast } from "@/hooks/use-toast.ts";
+import { useCreateWorkshop } from "@/lib/react-query/queriesAndMutations";
+import { useUserContext } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { database } from "@/lib/firebase/config";
+import { doc } from "firebase/firestore";
 
-type WorkshopFormProps = {
+interface WorkshopFormProps {
     workshop?: {
         id?: string;
         title: string;
@@ -28,10 +32,10 @@ type WorkshopFormProps = {
         schedule: string;
         duration: number;
         location: string;
-        imageUrl: string;
+        mediaUrl: string;
         tags: string[];
     };
-};
+}
 
 const WorkshopForm = ({ workshop }: WorkshopFormProps) => {
     const { mutateAsync: createWorkshop, isPending: isLoadingCreate } = useCreateWorkshop();
@@ -42,39 +46,43 @@ const WorkshopForm = ({ workshop }: WorkshopFormProps) => {
     const form = useForm<z.infer<typeof WorkshopValidation>>({
         resolver: zodResolver(WorkshopValidation),
         defaultValues: {
-            title: workshop ? workshop.title : "",
-            description: workshop ? workshop.description : "",
-            schedule: workshop ? workshop.schedule : "",
-            duration: workshop ? workshop.duration.toString() : "0",
-            location: workshop ? workshop.location : "",
+            title: workshop?.title || "",
+            description: workshop?.description || "",
+            schedule: workshop?.schedule || "",
+            duration: workshop?.duration?.toString() || "0",
+            location: workshop?.location || "",
             file: [],
-            tags: workshop ? workshop.tags.join(",") : "",
+            tags: workshop?.tags?.join(",") || "",
         },
     });
 
-    async function onSubmit(values: z.infer<typeof WorkshopValidation>) {
-        const newWorkshop = await createWorkshop({
+    const onSubmit = async (values: z.infer<typeof WorkshopValidation>) => {
+        if (!user) return;
+
+        const preparedWorkshop = {
             ...values,
-            userId: user.id,
-            tags: values.tags.split(",").map(tag => tag.trim()),
-        });
+            tags: values.tags.split(",").map((tag) => tag.trim()),
+            userId: doc(database, "Users", user.id),
+        };
+
+        const newWorkshop = await createWorkshop(preparedWorkshop);
 
         if (!newWorkshop) {
             toast({
                 title: "Workshop Creation Failed",
-                description: "Please try again",
+                description: "Please try again.",
                 duration: 5000,
             });
             return;
         }
 
-        console.log(values);
-        navigate("/");
-    }
+        navigate("/workshops");
+    };
 
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-9 w-full max-w-5xl">
+                {/* Title */}
                 <FormField
                     control={form.control}
                     name="title"
@@ -89,20 +97,22 @@ const WorkshopForm = ({ workshop }: WorkshopFormProps) => {
                     )}
                 />
 
+                {/* Description */}
                 <FormField
                     control={form.control}
                     name="description"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel className="shad-form-label">Workshop Description</FormLabel>
+                            <FormLabel>Workshop Description</FormLabel>
                             <FormControl>
-                                <Textarea placeholder="Provide a brief workshop description" {...field} className="shad-textarea custom-scrollbar" />
+                                <Textarea placeholder="Provide a brief description" className="shad-textarea custom-scrollbar" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
 
+                {/* Schedule */}
                 <FormField
                     control={form.control}
                     name="schedule"
@@ -117,6 +127,7 @@ const WorkshopForm = ({ workshop }: WorkshopFormProps) => {
                     )}
                 />
 
+                {/* Duration */}
                 <FormField
                     control={form.control}
                     name="duration"
@@ -131,6 +142,7 @@ const WorkshopForm = ({ workshop }: WorkshopFormProps) => {
                     )}
                 />
 
+                {/* Location */}
                 <FormField
                     control={form.control}
                     name="location"
@@ -138,25 +150,49 @@ const WorkshopForm = ({ workshop }: WorkshopFormProps) => {
                         <FormItem>
                             <FormLabel>Location</FormLabel>
                             <FormControl>
-                                <Input type="text" placeholder="Enter workshop location" className="shad-input" {...field} />
+                                <Input type="text" placeholder="Enter location (Zoom, Campus, etc.)" className="shad-input" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
 
+                {/* File Upload */}
                 <FormField
                     control={form.control}
                     name="file"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel className="shad-form-label">Upload Workshop Images/Videos</FormLabel>
+                            <FormLabel>Upload Workshop Images/Videos</FormLabel>
                             <FormControl>
-                                <FileUploader fieldChange={field.onChange} mediaUrl={workshop?.imageUrl} />
+                                <FileUploader fieldChange={field.onChange} mediaUrl={workshop?.mediaUrl} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
 
-                <Fo
+                {/* Tags */}
+                <FormField
+                    control={form.control}
+                    name="tags"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Tags (comma separated)</FormLabel>
+                            <FormControl>
+                                <Input type="text" placeholder="Nutrition, Wellness, Fitness" className="shad-input" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <Button type="submit" className="shad-button_primary w-full" disabled={isLoadingCreate}>
+                    {isLoadingCreate ? "Creating..." : "Create Workshop"}
+                </Button>
+            </form>
+        </Form>
+    );
+};
+
+export default WorkshopForm;

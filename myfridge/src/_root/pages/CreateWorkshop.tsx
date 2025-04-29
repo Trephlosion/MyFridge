@@ -1,11 +1,8 @@
+// Now fixing CreateWorkshop.tsx (normalized)
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-    collection,
-    addDoc,
-    serverTimestamp,
-    doc,
-} from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useUserContext } from "@/context/AuthContext";
 import { database, storage } from "@/lib/firebase/config";
@@ -26,9 +23,7 @@ const CreateWorkshop = () => {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
 
-    const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-    ) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
             ...prev,
@@ -57,20 +52,20 @@ const CreateWorkshop = () => {
             }
 
             const newWorkshop = {
-                ...formData,
+                title: formData.title,
+                description: formData.description,
                 date: new Date(formData.date),
+                location: formData.location,
                 maxParticipants: parseInt(formData.maxParticipants),
                 createdAt: serverTimestamp(),
                 media_url: imageUrl,
-                creatorUsername: user.username,
-                creatorPfp: user.pfp || "/assets/icons/profile-placeholder.svg",
                 userId: doc(database, "Users", user.id),
             };
 
             await addDoc(collection(database, "Workshops"), newWorkshop);
             navigate("/workshops");
-        } catch (err) {
-            console.error("Failed to create workshop:", err);
+        } catch (error) {
+            console.error("Failed to create workshop:", error);
         } finally {
             setUploading(false);
         }
@@ -79,10 +74,7 @@ const CreateWorkshop = () => {
     return (
         <div className="max-w-3xl mx-auto p-6 text-white">
             <h1 className="text-3xl font-bold mb-6 text-center text-yellow-400">Create a New Workshop</h1>
-            <form
-                onSubmit={handleSubmit}
-                className="bg-gray-800 p-6 rounded-lg shadow-lg space-y-6"
-            >
+            <form onSubmit={handleSubmit} className="bg-gray-800 p-6 rounded-lg shadow-lg space-y-6">
                 <Input
                     name="title"
                     placeholder="Workshop Title"
@@ -110,7 +102,7 @@ const CreateWorkshop = () => {
 
                 <Input
                     name="location"
-                    placeholder="Location (e.g., Zoom, Campus)"
+                    placeholder="Location (Zoom, Campus, etc.)"
                     onChange={handleChange}
                     required
                     className="bg-gray-700 text-white border border-gray-600"
@@ -127,17 +119,13 @@ const CreateWorkshop = () => {
                 />
 
                 <label className="block text-sm font-semibold text-gray-300">
-                    Choose an image for your workshop:
+                    Upload an Image:
                 </label>
                 <input
                     type="file"
                     accept="image/*"
                     onChange={handleFileChange}
-                    className="block w-full file:mr-4 file:py-2 file:px-4
-                     file:rounded-full file:border-0
-                     file:text-sm file:font-semibold
-                     file:bg-yellow-500 file:text-white
-                     hover:file:bg-yellow-600"
+                    className="block w-full file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-500 file:text-white hover:file:bg-yellow-600"
                 />
 
                 <Button

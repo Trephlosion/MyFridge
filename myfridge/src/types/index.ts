@@ -33,6 +33,7 @@ export interface IUser {
     recipes: any[];
     workshops: any[];
     comments: any[];
+    challenges: any[];
     myFridge: any;
     createdAt: Date;
     updatedAt: Date;
@@ -56,6 +57,7 @@ export interface IUpdateUser {
     likedRecipes: any[];
     recipes: any[];
     workshops: any[];
+    challenges: any[];
     comments: any[];
     myFridge: any;
     file?: File[];

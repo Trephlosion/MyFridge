@@ -1,50 +1,46 @@
+// Modularly fixing Workshops.tsx (normalized for DocumentReferences)
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSearchWorkshops } from "@/lib/react-query/queriesAndMutations";
+import { collection, getDocs, getDoc } from "firebase/firestore";
+import { database } from "@/lib/firebase/config";
+import { useUserContext } from "@/context/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Workshop } from "@/types";
-import useDebounce from "@/hooks/useDebounce";
-import { database } from "@/lib/firebase/config";
-import { collection, getDocs } from "firebase/firestore";
 import WorkshopCard from "@/components/cards/WorkshopCard";
-import { useUserContext } from "@/context/AuthContext";
+import useDebounce from "@/hooks/useDebounce";
+import { useSearchWorkshops } from "@/lib/react-query/queriesAndMutations";
 
 const Workshops = () => {
-    const [searchValue, setSearchValue] = useState("");
-    const debouncedSearch = useDebounce(searchValue, 500);
-    const { data: searchedWorkshops = [], isLoading: isSearching } = useSearchWorkshops(debouncedSearch);
+    const { user } = useUserContext();
+    const navigate = useNavigate();
 
     const [workshops, setWorkshops] = useState<Workshop[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isError, setIsError] = useState(false);
+    const [searchValue, setSearchValue] = useState("");
+    const debouncedSearch = useDebounce(searchValue, 500);
 
-    const navigate = useNavigate();
-    const { user } = useUserContext();
+    const { data: searchedWorkshops = [], isLoading: isSearching } = useSearchWorkshops(debouncedSearch);
 
     useEffect(() => {
         const fetchWorkshops = async () => {
             try {
                 const querySnapshot = await getDocs(collection(database, "Workshops"));
-                const workshopsList = querySnapshot.docs.map(doc => {
-                    const data = doc.data();
-                    let parsedDate: Date | null = null;
+                const workshopsList: Workshop[] = [];
 
-                    if (data.date?.seconds) {
-                        parsedDate = new Date(data.date.seconds * 1000);
-                    } else if (typeof data.date === "string") {
-                        parsedDate = new Date(data.date);
-                    }
+                for (const docSnap of querySnapshot.docs) {
+                    const data = docSnap.data();
 
-                    return {
-                        id: doc.id,
+                    workshopsList.push({
+                        id: docSnap.id,
                         ...data,
-                        date: parsedDate || new Date(),
-                    } as Workshop;
-                });
+                    } as Workshop);
+                }
 
                 const upcomingWorkshops = workshopsList
-                    .filter(workshop => workshop.date && workshop.date > new Date())
-                    .sort((a, b) => a.date.getTime() - b.date.getTime());
+                    .filter(w => w.date?.seconds && new Date(w.date.seconds * 1000) > new Date())
+                    .sort((a, b) => (a.date.seconds - b.date.seconds));
 
                 setWorkshops(upcomingWorkshops);
                 setIsLoading(false);
@@ -59,7 +55,7 @@ const Workshops = () => {
     }, []);
 
     const shouldShowSearchResults = searchValue !== "";
-    const shouldShowWorkshops = !shouldShowSearchResults && workshops.length === 0;
+    const shouldShowNoWorkshops = !shouldShowSearchResults && workshops.length === 0;
 
     return (
         <div className="p-5">
@@ -91,13 +87,13 @@ const Workshops = () => {
                 ) : isError ? (
                     <p className="col-span-full text-center text-gray-500">Error loading workshops. Please try again later.</p>
                 ) : shouldShowSearchResults ? (
-                    searchedWorkshops.map(workshop => (
+                    searchedWorkshops.map((workshop) => (
                         <WorkshopCard key={workshop.id} workshop={workshop} />
                     ))
-                ) : shouldShowWorkshops ? (
+                ) : shouldShowNoWorkshops ? (
                     <p className="col-span-full text-center text-gray-500">No upcoming workshops</p>
                 ) : (
-                    workshops.map(workshop => (
+                    workshops.map((workshop) => (
                         <WorkshopCard key={workshop.id} workshop={workshop} />
                     ))
                 )}

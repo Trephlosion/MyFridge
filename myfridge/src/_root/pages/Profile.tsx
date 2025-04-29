@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link, Outlet, useLocation, Routes, Route } from
 import { Button } from "@/components/ui/button";
 import {Inbox, LikedRecipes} from "@/_root/pages";
 import { useUserContext } from "@/context/AuthContext";
-import { GridRecipeList, Loader } from "@/components/shared";
+import {GridRecipeList, Loader, MyChallengesTab} from "@/components/shared";
 import { DataTable, FridgeColumns } from "@/components/DataTables";
 import {
     useGetUserById,
@@ -159,6 +159,7 @@ const Profile = () => {
                             <StatBlock value={currentUser.workshops.length || 0} label={"Workshops"} />
                             <StatBlock value={isUpdating ? 0 : followersCount} label="Followers" />
                             <StatBlock value={isUpdating ? 0 : followingCount} label="Following" />
+                            <StatBlock value={currentUser.challenges.length} label={"Challenges"} />
                         </div>
                         <p className="small-medium md:base-medium text-center xl:text-left mt-7 max-w-screen-sm">
                             {currentUser.bio}
@@ -200,6 +201,7 @@ const Profile = () => {
                 <TabsList className="flex max-w-5xl w-full justify-center mb-4">
                     <TabsTrigger value="recipes" className={`profile-tab rounded-l-lg !bg-dark-3 h3-bold md:h2-bold text-center`}>MyRecipes</TabsTrigger>
                     <TabsTrigger value="liked-recipes" className={`profile-tab !bg-dark-3 h3-bold md:h2-bold text-center`}>Liked Recipes</TabsTrigger>
+                    <TabsTrigger value={"challenges"} className={`profile-tab !bg-dark-3 h3-bold md:h2-bold text-center`}>My Challenges</TabsTrigger>
                     {user.id === currentUser.id && (
                         <>
                             <TabsTrigger value={"inbox"} className={`profile-tab !bg-dark-3 h3-bold md:h2-bold text-center`}>My Inbox</TabsTrigger>
@@ -232,6 +234,13 @@ const Profile = () => {
                         <GridRecipeList recipes={currentUser.likedRecipes} />
                     </>
                 </TabsContent>
+
+                <TabsContent value={"challenges"} className="w-full max-w-5xl">
+                    <>
+                                <MyChallengesTab/>
+                    </>
+                </TabsContent>
+
 
                 {user.id === currentUser.id && (
                     <>

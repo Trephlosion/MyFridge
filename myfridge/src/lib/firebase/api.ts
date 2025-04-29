@@ -98,7 +98,7 @@ export const createUserAccount = async (userData: any) => {
       followers: [],
       following: [],
       recipes: [],
-      posts: [],
+      workshops: [], challenges: [],
       comments: [],
       myFridge: doc(database, "Fridges", myFridgeId),
       createdAt: new Date(),
@@ -140,6 +140,7 @@ export async function getCurrentUser(): Promise<IUser> {
             likedRecipes: userData.likedRecipes,
             recipes: userData.recipes,
             workshops: userData.workshops,
+            challenges: userData.challenges,
             comments: userData.comments,
             myFridge: userData.myFridge,
             createdAt: userData.createdAt,
@@ -163,6 +164,7 @@ export async function getCurrentUser(): Promise<IUser> {
             following: [],
             likedRecipes: [],
             recipes: [],
+            challenges: [],
             workshops: [],
             comments: [],
             myFridge: null,
@@ -296,7 +298,8 @@ export async function updateUser(user: IUpdateUser) {
             isBanned: user.isBanned, // New field
             isCurator: user.isCurator, // New field
             recipes: user.recipes.map(recipeId => doc(database, "Recipes", recipeId)), // Ensure these are references
-            posts: user.posts.map(postId => doc(database, "Posts", postId)), // Ensure these are references
+            workshops: user.workshops.map(workshopId => doc(database, "Workshops", workshopId)), // Ensure these are references
+            challenges: user.challenges.map(challengeId => doc(database, "Challenges", challengeId)), // Ensure these are references
             comments: user.comments.map(commentId => doc(database, "Comments", commentId)), // Ensure these are references
             myFridge: doc(database, "Fridges", user.myFridge), // Ensure this is a reference
             updatedAt: new Date(),

@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useUserContext } from "@/context/AuthContext";
 import { database } from "@/lib/firebase/config";
-import {collection, addDoc, getDocs, doc, getDoc, serverTimestamp, updateDoc} from "firebase/firestore";
+import {collection, addDoc, getDocs, doc, getDoc, serverTimestamp, updateDoc, arrayUnion} from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {Card, CardContent, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
 import { Loader } from "@/components/shared";
-import { useNavigate } from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar.tsx";
 
 const Challenges = () => {
     const { user } = useUserContext();
@@ -42,7 +43,7 @@ const Challenges = () => {
             const newChallenge = {
                 title,
                 description,
-                creator: doc(database, "Users", user.id), // DocumentReference
+                creator: doc(database, "Users", user.id),
                 participants: [],
                 createdAt: serverTimestamp(),
             };
@@ -53,10 +54,8 @@ const Challenges = () => {
             const userSnap = await getDoc(userRef);
 
             if (userSnap.exists()) {
-                const userData = userSnap.data();
-                const updatedChallenges = userData.challenges ? [...userData.challenges, challengeRef] : [challengeRef];
                 await updateDoc(userRef, {
-                    challenges: updatedChallenges,
+                    challenges: arrayUnion(challengeRef), // automatically prevents duplicates
                 });
             }
 
@@ -77,20 +76,10 @@ const Challenges = () => {
             <h1 className="h2-bold text-center mb-8">Recipe Challenges</h1>
 
             {user.isVerified && (
-                <div className="flex flex-col gap-4 mb-10">
-                    <Input
-                        type="text"
-                        placeholder="Challenge Title"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                    />
-                    <Input
-                        type="text"
-                        placeholder="Challenge Description"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                    />
-                    <Button onClick={handleCreateChallenge}>Create Challenge</Button>
+                <div className="flex justify-end mb-6">
+                    <Button className={"bg-primary-500 hover:bg-primary-600 rounded-2xl"}  onClick={() => navigate("/create-challenge")}>
+                        + Create Challenge
+                    </Button>
                 </div>
             )}
 
@@ -99,20 +88,27 @@ const Challenges = () => {
                     <p className="text-center text-light-4">No challenges found.</p>
                 ) : (
                     challenges.map((challenge) => (
-                        <Card key={challenge.id} className="bg-dark-4 p-4 rounded-b-full shadow-md hover:scale-105 transition">
+                        <Card key={challenge.id} className="bg-dark-4 p-4 rounded-2xl shadow-md hover:scale-105 transition">
                             <CardHeader>
                                 <CardTitle className="text-lg font-bold">{challenge.title}</CardTitle>
+                                <p className="text-sm text-light-3">{new Date(challenge.createdAt?.seconds * 1000).toLocaleDateString()}</p>
+
+
                             </CardHeader>
                             <CardContent>
                                 <p className="text-light-3 mb-3">{challenge.description}</p>
+                                <p className="text-sm text-light-3">Participants: {challenge.participants.length}</p>
+                            </CardContent>
+                            <CardFooter>
                                 <Button
                                     size="sm"
-                                    className="w-full"
+                                    className="w-full hover:bg-primary-600
+                                     bg-primary-500 rounded-1md"
                                     onClick={() => navigate(`/challenge/${challenge.id}`)}
                                 >
                                     View Challenge
                                 </Button>
-                            </CardContent>
+                            </CardFooter>
                         </Card>
                     ))
                 )}
