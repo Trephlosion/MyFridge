@@ -24,5 +24,5 @@ export { default as MyChallengesTab } from "./MyChallengesTab.tsx"
 export { default as ChallengeDeadlineInfo } from "./ChallengeDeadlineInfo.tsx"
 export { default as ChallengeSubmissionsPanel } from "./ChallengeSubmissionsPanel.tsx"
 export { default as SelectWinnerButton } from "./SelectWinnerButton.tsx"
-
+export { default as UserAvatarRow } from "./UserAvatarRow.tsx"
 export { default as ChallengeCard } from "../cards/ChallengeCard.tsx"

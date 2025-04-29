@@ -286,19 +286,6 @@ export const useSearchWorkshops = (searchTerm: string) => {
     });
 };
 
-// Mutation for updating a workshop
-export const useUpdateWorkshop = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (workshop: IUpdateWorkshop) => updateWorkshop(workshop),
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_WORKSHOP_BY_ID, variables.workshopId],
-            });
-        },
-    });
-};
-
 // Mutation for deleting a workshop
 export const useDeleteWorkshop = () => {
     const queryClient = useQueryClient();

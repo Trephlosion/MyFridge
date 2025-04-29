@@ -126,21 +126,33 @@ const Home = () => {
 
                 <Separator />
 
-                <div>
+                <div className="w-full">
                     <h2 className="h3-bold md:h2-bold text-left w-full">My Feed</h2>
-                    <ul className="flex flex-col flex-1 gap-9 w-full">
-                        {feedRecipes.map(recipe => (
-                            <RecipeCard key={recipe.id} recipe={recipe} />
-                        ))}
-                    </ul>
-                    <div ref={observerRef} className="flex justify-center py-8">
-                        {loadingMore && (
-                            <div className="flex flex-col items-center gap-2">
-                                <LoadingRecipe /> {/* optional: your animated skeleton */}
-                                <p className="text-light-4 text-sm">Loading more recipes...</p>
-                            </div>
-                        )}
-                    </div>
+
+                    {feedRecipes.length === 0 && !loadingMore ? (
+                        <div className="flex flex-col items-center justify-center py-12 gap-4">
+                            <p className="text-light-4 text-sm">No recipes found. Follow users to see their posts!</p>
+                        </div>
+                    ) : (
+                        <>
+                            <ul className="flex flex-col flex-1 gap-9 w-full">
+                                {feedRecipes.map(recipe => (
+                                    <RecipeCard key={recipe.id} recipe={recipe} />
+                                ))}
+                            </ul>
+
+                            {feedRecipes.length > 0 && (
+                                <div ref={observerRef} className="flex justify-center py-8">
+                                    {loadingMore && (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <LoadingRecipe />
+                                            <p className="text-light-4 text-sm">Loading more recipes...</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
 
             </div>

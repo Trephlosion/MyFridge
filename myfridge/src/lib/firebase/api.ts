@@ -562,7 +562,7 @@ export async function updateUser(user: IUpdateUser) {
             challenges: user.challenges.map(challengeId => doc(database, "Challenges", challengeId)), // Ensure these are references
             comments: user.comments.map(commentId => doc(database, "Comments", commentId)), // Ensure these are references
             myFridge: doc(database, "Fridges", user.myFridge), // Ensure this is a reference
-            updatedAt: new Date(),
+            updatedAt: serverTimestamp(),
         });
 
         // Update followers and following using followUser function
@@ -784,25 +784,39 @@ export const getTopWorkshops = async (limit: number): Promise<Workshop[]> => {
         .slice(0, limit);
 };
 
-export const getFollowedUsersRecipes = async (userId: string, page: number): Promise<Recipe[]> => {
+export const getFollowedUsersRecipes = async (
+    userId: string,
+    page: number
+): Promise<Recipe[]> => {
     const userRef = doc(database, "Users", userId);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) return [];
 
     const following = userSnap.data().following || [];
-    const batchSize = 20;
+    console.log("Following array:", following);
+
+    const batchSize = 6;
+
     const start = (page - 1) * batchSize;
 
     const recipes: Recipe[] = [];
 
-    for (let i = start; i < start + batchSize && i < following.length; i++) {
+    // Iterate over ALL followed users (we load all at once for simplicity)
+    for (let i = 0; i < following.length; i++) {
         const followedUserRef = following[i];
         if (!followedUserRef) continue;
-        const followedUserSnap = await getDoc(followedUserRef);
+
+        const followedUserId =
+            typeof followedUserRef === "string"
+                ? followedUserRef
+                : followedUserRef.id;
+
+        const followedUserDoc = doc(database, "Users", followedUserId);
+        const followedUserSnap = await getDoc(followedUserDoc);
         if (!followedUserSnap.exists()) continue;
 
-        const followedUser: any = followedUserSnap.data();
+        const followedUser = followedUserSnap.data();
         const recipeRefs = followedUser.recipes || [];
 
         for (const recipeRef of recipeRefs) {
@@ -813,11 +827,14 @@ export const getFollowedUsersRecipes = async (userId: string, page: number): Pro
         }
     }
 
-    return recipes.sort(
-        (a, b) =>
-            new Date(b.createdAt?.toDate?.() || 0).getTime() -
-            new Date(a.createdAt?.toDate?.() || 0).getTime()
-    );
+    // Sort by date DESC and paginate after collecting
+    recipes.sort((a, b) => {
+        const aDate = a.createdAt?.toDate?.();
+        const bDate = b.createdAt?.toDate?.();
+        return bDate.getTime() - aDate.getTime();
+    });
+
+    return recipes.slice(start, start + batchSize); // ✅ paginate here
 };
 
 export const getTopChallenges = async (limit: number): Promise<Challenge[]> => {

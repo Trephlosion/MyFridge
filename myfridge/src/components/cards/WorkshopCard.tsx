@@ -13,6 +13,7 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { multiFormatDateString } from "@/lib/utils";
 import { database, storage } from "@/lib/firebase/config";
 import { useUserContext } from "@/context/AuthContext";
+import {UserAvatarRow} from "@/components/shared";
 
 interface WorkshopCardProps {
     workshop: Workshop;
@@ -99,16 +100,11 @@ const WorkshopCard = ({ workshop }: WorkshopCardProps) => {
             </CardTitle>
 
             <CardHeader className="flex items-center justify-between px-3">
-                <div className="flex items-center gap-3">
-                    <Avatar className="w-12 h-12">
-                        <AvatarImage src={creator?.pfp} />
-                        <AvatarFallback className="bg-white text-black">
-                            {(creator?.username || "U" ).charAt(0)}
-                        </AvatarFallback>
-                    </Avatar>
-                    <p className="text-light-3 text-sm font-semibold">@{creator?.username || "Unknown"}</p>
+                <UserAvatarRow user={workshop.userId} />
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+
+                    <p>{participantsCount} participants</p>
                 </div>
-                <p className="text-xs text-gray-500">{multiFormatDateString(workshop.date?.toString() || "")}</p>
             </CardHeader>
 
             <CardContent className="p-2">
