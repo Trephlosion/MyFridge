@@ -15,28 +15,23 @@ import {
     signOutAccount,
     getRecipeById,
     getCurrentUser,
-    searchRecipes,
     deleteRecipe,
     likeRecipe,
     unlikeRecipe,
-
     getUsers,
     getUserById,
     updateUser,
     getUserRecipes,
-     // Updated function for infinite scroll
     createFridge,
     followUser,
     getAllFridgeIngredients,
     addIngredientToFridge,
     getAllIngredients,
-
     removeIngredientFromFridge,
     addIngredientToShoppingList,
     likeWorkshop,
     saveWorkshop,
     createWorkshop,
-
     updateWorkshop,
     deleteWorkshop,
 
@@ -47,11 +42,11 @@ import {
     IUpdateUser,
     INewWorkshop,
     IUpdateWorkshop,
-
+    Workshop,
     Recipe
 } from "@/types";
 import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
-import { Workshop } from "@/types";
+
 // Mutation for creating a new user
 export const useCreateUserAccount = () => {
     return useMutation({
