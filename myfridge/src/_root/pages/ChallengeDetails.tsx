@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import {Link, useParams} from "react-router-dom";
 import { doc, getDoc, updateDoc, arrayUnion, getDocs } from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
 import { Loader } from "@/components/shared";
@@ -85,22 +85,52 @@ const ChallengeDetails = () => {
 
     return (
         <div className="p-6 max-w-4xl mx-auto">
-            <Card className="bg-dark-4 p-4 shadow-md">
+            <Card className="bg-dark-4 p-4 shadow-md rounded-2xl ">
                 <CardHeader>
                     <CardTitle className="text-2xl">{challenge.title}</CardTitle>
                     {creatorInfo && (
                         <div className="flex items-center gap-3 mt-2">
-                            <Avatar className="w-10 h-10">
-                                <AvatarImage src={creatorInfo.pfp} alt={creatorInfo.username} />
-                                <AvatarFallback>{creatorInfo.username?.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <p className="text-light-3">@{creatorInfo.username}</p>
+                            <Link to={`/profile/${creatorInfo.id}`}>
+                                <Avatar className="w-16 h-16">
+                                    <AvatarImage src={creatorInfo.pfp} alt={creatorInfo.username} />
+                                    <AvatarFallback className={"bg-white text-black"}>{creatorInfo.username.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                            </Link>
+
+                            <div className="flex items-center justify-center gap-1">
+                                <p className="text-light-3 text-center font-semibold truncate max-w-[180px]">
+                                    @{creatorInfo.username}
+                                </p>
+
+                                {/* Status Icons */}
+                                {creatorInfo.isVerified && (
+                                    <img
+                                        src="/assets/icons/verified.svg"
+                                        alt="verified"
+                                        className="w-5 h-5"
+                                    />
+                                )}
+                                {creatorInfo.isCurator && (
+                                    <img
+                                        src="/assets/icons/curator-icon.svg"
+                                        alt="curator"
+                                        className="w-5 h-5"
+                                    />
+                                )}
+                                {creatorInfo.isAdministrator && (
+                                    <img
+                                        src="/assets/icons/admin-icon.svg"
+                                        alt="admin"
+                                        className="w-5 h-5"
+                                    />
+                                )}
+                            </div>
                         </div>
                     )}
                 </CardHeader>
-                <CardContent>
+                <CardContent className={"bg-card"}>
                     <p className="text-light-3 mb-6">{challenge.description}</p>
-                    <Button size="sm" className="w-full mb-8" onClick={handleJoinChallenge}>
+                    <Button size="sm" className="w-full mb-8 bg-dark-2 hover:bg-dark-3 rounded-xl" onClick={handleJoinChallenge}>
                         Join Challenge
                     </Button>
 
@@ -111,11 +141,42 @@ const ChallengeDetails = () => {
                         <div className="flex flex-wrap gap-3">
                             {participantsInfo.map((participant) => (
                                 <div key={participant.id} className="flex items-center gap-2">
-                                    <Avatar className="w-8 h-8">
-                                        <AvatarImage src={participant.pfp} alt={participant.username} />
-                                        <AvatarFallback>{participant.username?.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <p className="text-light-3 text-sm">@{participant.username}</p>
+                                    <Link to={`/profile/${participant.id}`}>
+                                        <Avatar className="w-16 h-16">
+                                            <AvatarImage src={participant.pfp} alt={participant.username} />
+                                            <AvatarFallback className={"bg-white text-black"}>{creatorInfo.username.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                    </Link>
+
+                                    <div className="flex items-center justify-center gap-1">
+                                        <p className="text-light-3 text-center font-semibold truncate max-w-[180px]">
+                                            @{participant.username}
+                                        </p>
+
+                                        {/* Status Icons */}
+                                        {participant.isVerified && (
+                                            <img
+                                                src="/assets/icons/verified.svg"
+                                                alt="verified"
+                                                className="w-5 h-5"
+                                            />
+                                        )}
+                                        {participant.isCurator && (
+                                            <img
+                                                src="/assets/icons/curator-icon.svg"
+                                                alt="curator"
+                                                className="w-5 h-5"
+                                            />
+                                        )}
+                                        {participant.isAdministrator && (
+                                            <img
+                                                src="/assets/icons/admin-icon.svg"
+                                                alt="admin"
+                                                className="w-5 h-5"
+                                            />
+                                        )}
+                                    </div>
+
                                 </div>
                             ))}
                         </div>

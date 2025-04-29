@@ -34,6 +34,11 @@
                     imgURL: "/assets/icons/workshop.svg",
                     route: "/workshops",
                     label: "Workshops",
+                },
+                {
+                    imgURL: "/assets/icons/chat.svg",
+                    route: "/notifications",
+                    label: "Notifications",
                 }
             ];
 
@@ -67,5 +72,10 @@
                     imgURL: "/assets/icons/workshop.svg",
                     route: "/workshops",
                     label: "Workshops",
-                }
+                },
+                {
+                    imgURL: "/assets/icons/chat.svg",
+                    route: "/notifications",
+                    label: "Notifications",
+                },
             ];

@@ -99,7 +99,7 @@ const Challenges = () => {
                     <p className="text-center text-light-4">No challenges found.</p>
                 ) : (
                     challenges.map((challenge) => (
-                        <Card key={challenge.id} className="bg-dark-4 p-4 shadow-md hover:scale-105 transition">
+                        <Card key={challenge.id} className="bg-dark-4 p-4 rounded-b-full shadow-md hover:scale-105 transition">
                             <CardHeader>
                                 <CardTitle className="text-lg font-bold">{challenge.title}</CardTitle>
                             </CardHeader>

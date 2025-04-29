@@ -77,6 +77,8 @@ export type IFileUpload = {
 };
 
 export type Recipe = {
+    usageCount: any;
+    dietaryComplianceReview: any;
     id: string; // Firestore document ID
     title: string; // Recipe title (formerly "dish")
     description?: string;
@@ -127,14 +129,16 @@ export interface IRecipeMetadata {
 // types/workshop.ts
 export type Workshop = {
     id: string;
-    date: Date;
-    pfpId: string;
-    userId: any;
     title: string;
-    maxParticipants: number;
     description: string;
-    likes: string[];  // Example field
-    // Add other fields for the workshop here
+    date: Date;
+    location: string;
+    maxParticipants: number;
+    media_url?: string;
+    likes?: string[];
+    userId: any;
+    creatorUsername: string; // ✅ Added for display optimization
+    creatorPfp: string;      // ✅ Added for display optimization
 };
 
 export interface INewWorkshop {
@@ -193,6 +197,16 @@ export type IUpdateRecipe = {
     file?: File[]; // Array of uploaded files
     avgRating?: number;
 };
+// Notifications
+export interface INotification {
+    id: string;
+    userId: string;
+    message: string;
+    recipeId?: string;
+    type: "new_comment" | "new_recipe";
+    isRead: boolean;
+    createdAt: any; // Can use Firebase Timestamp or Date
+}
 
 export type FridgeData = {
     ingredients: string[];

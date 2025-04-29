@@ -31,6 +31,7 @@ import { ref as storageRef,} from "firebase/storage";
 
 import { getFunctions, httpsCallable } from "firebase/functions";
 
+
 import {useToast} from "@/hooks/use-toast";
 import {useUserContext} from "@/context/AuthContext.tsx";
 import {useNavigate} from "react-router-dom";
@@ -348,6 +349,18 @@ export async function followUser(currentUserId: string, profileUserId: string, i
             transaction.update(profileUserRef, {
                 followers: arrayUnion(currentUserId),
             });
+
+            // ✅ Create a "new_follower" notification
+            const currentUserData = currentUserDoc.data();
+            const username = currentUserData?.username || "Someone";
+
+            await addDoc(collection(database, "Notifications"), {
+                user_id: profileUserRef, // recipient of notification
+                type: "new_follower",
+                message: `${username} started following you.`,
+                isRead: false,
+                createdAt: serverTimestamp(),
+            });
         }
     });
 }
@@ -522,6 +535,44 @@ export const deleteRecipe = async (recipeId: any, mediaId: string) => {
         throw error;
     }
 };
+
+
+
+//Dietary Compliance Review
+export const addDietaryComplianceReview = async ({
+                                                     recipeId,
+                                                     curatorId,
+                                                     curatorUsername,
+                                                     reviewText,
+                                                     usageCount,
+                                                 }: {
+    recipeId: string;
+    curatorId: string;
+    curatorUsername: string;
+    reviewText: string;
+    usageCount: number;
+}) => {
+    try {
+        // Reference to the DietaryComplianceReviews collection
+        const docRef = await addDoc(collection(db, 'DietaryComplianceReviews'), {
+            recipeId,
+            curatorId,
+            curatorUsername,
+            reviewText,
+            usageCount,
+            createdAt: serverTimestamp(),
+        });
+
+        console.log('Dietary Compliance Review added with ID:', docRef.id);
+        return { success: true, id: docRef.id };
+    } catch (error) {
+        console.error('Error adding Dietary Compliance Review:', error);
+        return { success: false, error };
+    }
+};
+
+
+
 
 /**
  * Atomically add the current userId to Recipes/{recipeId}.likes
@@ -881,6 +932,7 @@ export async function getAllFridgeIngredients(fridgeid: any) {
         }
     } catch (error) {
         console.error("Error fetching fridge:", error);
+        return null;
     }
 
     return []; // always return an array
@@ -1084,22 +1136,6 @@ export async function toggleUserBan(userId: string): Promise<void> {
 // Message Functions
 
 // Send a message This function will send a message to the user
-export const sendMessage = async ({ toUserId, fromUserId, subject, text }) => {
-    try {
-        await addDoc(collection(database, 'Messages'), {
-            toUserId,
-            fromUserId,
-            subject,
-            text,
-            sentAt: serverTimestamp(),
-        });
-
-        return { success: true };
-    } catch (error) {
-        console.error('Error sending message:', error);
-        return { success: false, error };
-    }
-};
 
 // Create Message Document
 

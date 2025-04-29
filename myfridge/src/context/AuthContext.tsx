@@ -1,10 +1,10 @@
 import {createContext, useContext, useEffect, useState} from "react";
-import {AuthContextType, IUser} from "@/types";
+import {AuthContextType, IUser, INotification} from "@/types";
 import {useNavigate} from "react-router-dom";
-import {auth} from "@/lib/firebase/config";
+import {auth, database} from "@/lib/firebase/config";
 import {onAuthStateChanged, signOut, User,} from "firebase/auth";
 import {checkAuthUser as fetchAuthUser} from "@/lib/firebase/api";
-
+import { collection, onSnapshot, query, where, orderBy } from "firebase/firestore";
 
 // Initial user state
 export const INITIAL_USER: IUser = {
@@ -38,9 +38,11 @@ const INITIAL_STATE = {
     user: INITIAL_USER,
     isLoading: false,
     isAuthenticated: false,
+    notifications: [],
     setUser: () => {},
     setIsAuthenticated: () => {},
-    checkAuthUser: async () => false as boolean,
+    checkAuthUser: async () => false,
+    setNotifications: () => {},
 };
 
 export const AuthContext = createContext<AuthContextType>(INITIAL_STATE);
@@ -49,7 +51,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<IUser>(INITIAL_USER);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const navigate = useNavigate();
-
+    const [notifications, setNotifications] = useState<INotification[]>([]);
+    // Function to check and update the authentication state
     const checkAuthUser = async (): Promise<boolean> => {
         setIsLoading(true);
         try {
@@ -84,11 +87,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
         });
 
-        return () => unsubscribe();
+        return () => unsubscribe(); // Clean up listener
     }, []);
 
+    // 👇 Listen for notifications in Firestore
+    useEffect(() => {
+        if (!user?.id) return;
+
+        const q = query(
+            collection(database, "Notifications"),
+            where("userId", "==", user.id),
+            orderBy("createdAt", "desc")
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedNotifications = snapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as INotification[];
+
+            setNotifications(fetchedNotifications);
+        });
+
+        return () => unsubscribe();
+    }, [user?.id]);
+
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, checkAuthUser }}>
+        <AuthContext.Provider
+            value={{
+                user,
+                isAuthenticated: !!user?.id,
+                isLoading,
+                checkAuthUser,
+                notifications,
+                setUser,
+                setIsAuthenticated: () => {},
+                setNotifications,
+            }}
+        >
             {children}
         </AuthContext.Provider>
     );

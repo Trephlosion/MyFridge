@@ -307,9 +307,17 @@ export const useCreateWorkshop = () => {
 export const useGetWorkshops = () => {
     return useQuery({
         queryKey: [QUERY_KEYS.GET_WORKSHOPS],
-        queryFn: async () => {
+        queryFn: async (): Promise<Workshop[]> => {
             const snapshot = await getDocs(collection(database, "Workshops"));
-            return snapshot.docs.map(doc => doc.data() as Workshop);  // Ensure data is properly mapped to Workshop type
+            return snapshot.docs.map(doc => {
+                const data = doc.data();
+
+                return {
+                    id: doc.id,
+                    ...data,
+                    userId: data.userId as DocumentReference, // ensure it's a reference
+                } as Workshop;
+            });
         },
     });
 };
