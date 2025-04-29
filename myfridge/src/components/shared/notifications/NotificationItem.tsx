@@ -6,12 +6,12 @@ import { updateDoc, doc, getDoc } from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
 
 type NotificationItemProps = {
-    id: string;
+    id: any;
     type: "new_recipe" | "new_comment" | "new_workshop" | "new_follower";
     message?: string;
-    recipeId?: string;
-    workshopId?: string;
-    followerId?: string;
+    recipeId?: any;
+    workshopId?: any;
+    followerId?: any;
     isRead: boolean;
 };
 

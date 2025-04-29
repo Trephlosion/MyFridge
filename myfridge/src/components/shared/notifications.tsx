@@ -1,7 +1,7 @@
 // src/components/shared/Notifications.tsx
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotifications } from "@/hooks/useNotifications.ts";
 import NotificationItem from "@/components/shared/NotificationItem";
-import { Loader } from "@/components/shared";
+import { Loader } from "@/components/shared/index.ts";
 import { useEffect } from "react";
 
 const Notifications = () => {
