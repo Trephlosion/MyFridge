@@ -27,6 +27,7 @@ const WorkshopDetails = () => {
     const [questions, setQuestions] = useState<any[]>([]);
     const [enrolled, setEnrolled] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [answerInputs, setAnswerInputs] = useState<{ [key: string]: string }>({});
 
     const fetchUsername = async (userId: string) => {
         try {
@@ -115,9 +116,26 @@ const WorkshopDetails = () => {
         fetchQuestions();
     };
 
+    const handleSubmitAnswer = async (questionId: string) => {
+        const answer = answerInputs[questionId];
+        if (!answer || !user || !id) return;
+
+        const questionRef = doc(database, 'workshopQuestions', questionId);
+        await updateDoc(questionRef, {
+            answer,
+            answeredAt: new Date(),
+        });
+
+        setAnswerInputs((prev) => ({ ...prev, [questionId]: '' }));
+        fetchQuestions();
+    };
+
     if (isLoading || !workshop) {
         return <div className="text-white text-center mt-10">Loading workshop...</div>;
     }
+
+    const isCreator = user?.id === workshop.userId?.id;
+    const isVerifiedCreator = isCreator && user?.isVerified;
 
     return (
         <div className="p-6 max-w-4xl mx-auto text-white">
@@ -137,12 +155,11 @@ const WorkshopDetails = () => {
             <h1 className="text-4xl font-bold text-center mt-6">{workshop.title}</h1>
 
             <div className="flex justify-around text-lg my-4">
-                <p><span
-                    className="font-semibold">Date:</span> {workshop.date?.toDate?.().toLocaleDateString() || 'N/A'}</p>
+                <p><span className="font-semibold">Date:</span> {workshop.date?.toDate?.().toLocaleDateString() || 'N/A'}</p>
                 <p><span className="font-semibold">Location:</span> {workshop.location}</p>
             </div>
 
-            {/* Enroll/Unenroll Section */}
+            {/* Enroll/Unenroll */}
             <div className="text-center my-4">
                 {user && !user.isVerified && (
                     enrolled ? (
@@ -152,7 +169,6 @@ const WorkshopDetails = () => {
                         >
                             Unenroll
                         </button>
-
                     ) : (
                         <Button
                             onClick={handleEnroll}
@@ -192,22 +208,44 @@ const WorkshopDetails = () => {
                 </button>
             </div>
 
-            {/* Display Questions */}
+            {/* Q&A Display */}
             <div className="bg-gray-800 p-6 rounded-xl">
                 <h2 className="text-2xl font-semibold mb-4">Questions & Answers</h2>
                 {questions.length === 0 ? (
                     <p className="italic text-gray-300">No questions yet. Ask the first one!</p>
                 ) : (
-                    <ul className="space-y-4">
+                    <ul className="space-y-6">
                         {questions.map((q) => (
-                            <li key={q.id} className="bg-gray-700 p-4 rounded-lg shadow-md">
-                                <div className="flex justify-between items-center mb-2">
-                                    <h3 className="font-semibold text-lg">@{q.username}</h3>
-                                </div>
-                                <p className="text-gray-200 italic">"{q.question}"</p>
-                                <p className="text-xs text-gray-400 mt-2">
-                                    {new Date(q.createdAt?.toDate?.() || q.createdAt).toLocaleString()}
-                                </p>
+                            <li key={q.id} className="bg-gray-700 p-4 rounded-lg">
+                                <p className="text-white font-semibold">@{q.username}</p>
+                                <p className="italic text-gray-200 mt-2">"{q.question}"</p>
+                                {q.answer && (
+                                    <p className="mt-4 text-green-300">
+                                        <span className="font-semibold">Answer:</span> {q.answer}
+                                    </p>
+                                )}
+
+                                {isVerifiedCreator && !q.answer && (
+                                    <div className="mt-4">
+                                        <textarea
+                                            className="w-full p-2 rounded-md text-black mb-2"
+                                            placeholder="Type your reply here..."
+                                            value={answerInputs[q.id] || ''}
+                                            onChange={(e) =>
+                                                setAnswerInputs((prev) => ({
+                                                    ...prev,
+                                                    [q.id]: e.target.value,
+                                                }))
+                                            }
+                                        />
+                                        <Button
+                                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                                            onClick={() => handleSubmitAnswer(q.id)}
+                                        >
+                                            Reply
+                                        </Button>
+                                    </div>
+                                )}
                             </li>
                         ))}
                     </ul>
