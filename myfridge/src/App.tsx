@@ -5,7 +5,7 @@ import { Routes, Route } from 'react-router-dom';
                     import RootLayout from './_root/RootLayout';
                     import SignupForm from './_auth/forms/SignupForm.tsx';
                     import SigninForm from './_auth/forms/SigninForm.tsx';
-                    import {
+import {
     Home,
     Explore,
     Saved,
@@ -20,7 +20,8 @@ import { Routes, Route } from 'react-router-dom';
     Workshops,
                         Inbox
 } from './_root/pages';
-                    import { Toaster } from '@/components/ui/toaster.tsx';
+import Trending from "@/_root/pages/Trending";
+import { Toaster } from '@/components/ui/toaster.tsx';
 import RecipeAnalytics from './_root/pages/RecipeAnalytics.tsx';
 import SendMessage from "@/_root/pages/SendMessage.tsx";
 import Challenges from "@/_root/pages/Challenges.tsx";
@@ -40,6 +41,7 @@ import ChallengeDetails from "@/_root/pages/ChallengeDetails.tsx";
                                     <Route element={<RootLayout />}>
                                         <Route index element={<Home/>} />
                                         <Route path="/explore" element={<Explore/>} />
+                                        <Route path="/trending" element={<Trending />} />
                                         <Route path="/challenges" element={<Challenges/>} />
                                         <Route path="/all-users" element={<AllUsers/>} />
                                         <Route path="/create-recipe" element={<CreateRecipe/>} />

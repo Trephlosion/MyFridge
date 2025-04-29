@@ -105,18 +105,18 @@ const GridRecipeList = ({ recipes }: GridRecipeListProps) => {
   return (
 
 <>
-      <div className="flex justify-center mb-4 gap-4">
-        <Input
-            type="text"
-            placeholder="Search recipes..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setShowMyRecipes(false); // reset to explore when searching
-            }}
-            className="w-full sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3 p-2 border border-gray-300 rounded"
-        />
-      </div>
+      {/*<div className="flex justify-center mb-4 gap-4">*/}
+      {/*  <Input*/}
+      {/*      type="text"*/}
+      {/*      placeholder="Search recipes..."*/}
+      {/*      value={searchTerm}*/}
+      {/*      onChange={(e) => {*/}
+      {/*        setSearchTerm(e.target.value);*/}
+      {/*        setShowMyRecipes(false); // reset to explore when searching*/}
+      {/*      }}*/}
+      {/*      className="w-full sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3 p-2 border border-gray-300 rounded"*/}
+      {/*  />*/}
+      {/*</div>*/}
 
   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
     {isProfilePage ? (

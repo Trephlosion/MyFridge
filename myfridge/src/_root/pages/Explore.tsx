@@ -1,150 +1,126 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-    useGetUserRecipes,
-    useSearchRecipes,
-} from "@/lib/react-query/queriesAndMutations";
+import { useEffect, useState } from "react";
+import { useUserContext } from "@/context/AuthContext";
 import { Input } from "@/components/ui/input";
-import {
-    doc,
-    getDoc,
-    collection,
-    getDocs,
-    orderBy,
-    limit,
-    query,
-} from "firebase/firestore";
-import { database } from "@/lib/firebase/config";
-import { useUserContext } from "@/context/AuthContext.tsx";
-import RecipeCard from "@/components/cards/RecipeCard.tsx";
-import LoadingRecipe from "@/components/shared/LoadingRecipe.tsx";
+import { GridRecipeList } from "@/components/shared";
 import { Button } from "@/components/ui/button";
-import {GridRecipeList} from "@/components/shared";
+import { database } from "@/lib/firebase/config";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 
 const Explore = () => {
-    const [searchTerm, setSearchTerm] = useState("");
-    const [creators, setCreators] = useState<{ [key: string]: string }>({});
-    const [suggestedRecipes, setSuggestedRecipes] = useState<any[]>([]);
-    const [showMyRecipes, setShowMyRecipes] = useState(false);
-    const [ratingsMap, setRatingsMap] = useState<{ [key: string]: any[] }>({});
     const navigate = useNavigate();
     const { user } = useUserContext();
-    const [highlightedRecipes, setHighlightedRecipes] = useState<string[]>([]);
 
-    const { data: userRecipes, isLoading: isLoadingUserRecipes } = useGetUserRecipes(user.id);
-    const { data: searchResults, isLoading: isSearching } = useSearchRecipes(searchTerm.toLowerCase());
+    const [searchTerm, setSearchTerm] = useState("");
+    const [allRecipes, setAllRecipes] = useState<any[]>([]);
+    const [approvedRecipes, setApprovedRecipes] = useState<any[]>([]);
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [showMyRecipes, setShowMyRecipes] = useState(false);
+    const [userRecipes, setUserRecipes] = useState<any[]>([]);
 
-
-
+    // Fetch Recipes
     useEffect(() => {
-        const fetchSuggestedRecipes = async () => {
+        const fetchRecipes = async () => {
             const recipesRef = collection(database, "Recipes");
-            const suggestedQuery = query(recipesRef, orderBy("createdAt", "desc"), limit(6));
-            const querySnapshot = await getDocs(suggestedQuery);
-            const suggested = querySnapshot.docs.map((doc) => ({
+            const snapshot = await getDocs(query(recipesRef, orderBy("createdAt", "desc")));
+            const fetchedRecipes = snapshot.docs.map((doc) => ({
                 id: doc.id,
                 ...doc.data(),
             }));
-            setSuggestedRecipes(suggested);
+            setAllRecipes(fetchedRecipes);
+            setApprovedRecipes(fetchedRecipes.filter((r) => r.isApproved === true));
         };
 
-        fetchSuggestedRecipes();
-    }, []);
+        const fetchUserRecipes = async () => {
+            if (!user?.id) return;
+            const recipesRef = collection(database, "Recipes");
+            const snapshot = await getDocs(query(recipesRef));
+            const fetched = snapshot.docs
+                .map((doc) => ({ id: doc.id, ...doc.data() }))
+                .filter((r) => r.authorId === user.id);
+            setUserRecipes(fetched);
+        };
 
+        fetchRecipes();
+        fetchUserRecipes();
+    }, [user?.id]);
 
+    // Search across Approved + All Recipes
+    useEffect(() => {
+        if (!searchTerm.trim()) {
+            setSearchResults([]);
+            return;
+        }
 
-    const recipes = showMyRecipes
+        const combinedRecipes = [ ...allRecipes];
+
+        const filtered = combinedRecipes.filter((recipe) => {
+            const titleMatch = recipe.title?.toLowerCase().includes(searchTerm.toLowerCase());
+            const tagsMatch = recipe.tags?.some((tag: string) =>
+                tag.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            return titleMatch || tagsMatch;
+        });
+
+        setSearchResults(filtered);
+    }, [searchTerm, approvedRecipes, allRecipes]);
+
+    const recipesToShow = showMyRecipes
         ? userRecipes ?? []
         : searchTerm
-            ? (searchResults ?? []).filter((recipe) =>
-                recipe.id?.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-            : suggestedRecipes;
-
-    const noResults = searchTerm && recipes.length === 0;
-
-    useEffect(() => {
-        const fetchCreators = async () => {
-            const newCreators: { [key: string]: string } = {};
-            for (const recipe of recipes) {
-                if (recipe.author?.id && !creators[recipe.author.id]) {
-                    const userDoc = await getDoc(doc(database, "Users", recipe.author.id));
-                    if (userDoc.exists()) {
-                        newCreators[recipe.author.id] = userDoc.data().username || "Unknown Creator";
-                    }
-                }
-            }
-            setCreators((prev) => ({ ...prev, ...newCreators }));
-        };
-
-        if (recipes.length > 0) {
-            fetchCreators();
-        }
-    }, [recipes]);
-
-    useEffect(() => {
-        const fetchRatingsForUserRecipes = async () => {
-            const newRatingsMap: { [key: string]: any[] } = {};
-            for (const recipe of recipes) {
-                if (recipe.author?.id === user.id) {
-                    const ratingsRef = collection(database, "Recipes", recipe.id, "Ratings");
-                    const snapshot = await getDocs(ratingsRef);
-                    newRatingsMap[recipe.id] = snapshot.docs.map(doc => doc.data());
-                }
-            }
-            setRatingsMap(newRatingsMap);
-        };
-
-        if (recipes.length > 0) {
-            fetchRatingsForUserRecipes();
-        }
-    }, [recipes]);
-
-    console.log("Recipes:", recipes);
+            ? searchResults
+            : allRecipes;
 
     return (
-        <div className="p-5">
-            <h2 className="text-2xl font-bold mb-4 text-center">Explore Recipes</h2>
-            <GridRecipeList recipes={recipes} />
+        <div className="px-6 py-10">
+            <h2 className="text-2xl font-bold mb-4">Explore Recipes</h2>
 
-            {/*<div className="flex justify-center mb-4 gap-4">
+            {/* Search Bar and Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <Input
-                    type="text"
                     placeholder="Search recipes..."
                     value={searchTerm}
-                    onChange={(e) => {
-                        setSearchTerm(e.target.value);
-                        setShowMyRecipes(false); // reset to explore when searching
-                    }}
-                    className="w-full sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3 p-2 border border-gray-300 rounded"
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full sm:w-96"
                 />
-                <Button
-                    onClick={() => setShowMyRecipes(!showMyRecipes)}
-                    className="bg-purple-600 text-white px-4 py-2 rounded"
-                >
-                    {showMyRecipes ? "Back to Explore" : "My Recipes"}
-                </Button>
+
+                {user && (
+                    <Button
+                        variant={showMyRecipes ? "default" : "secondary"}
+                        onClick={() => setShowMyRecipes(!showMyRecipes)}
+                    >
+                        {showMyRecipes ? "Show Explore" : "Show My Recipes"}
+                    </Button>
+                )}
+                {user && (
+                    <Button onClick={() => navigate("/create-recipe")}>
+                        ➕ Create Recipe
+                    </Button>
+                )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {isLoadingUserRecipes || isSearching ? (
-                    <LoadingRecipe/>
-                ) : noResults ? (
-                    <p className="col-span-full text-center text-gray-500">
-                        No recipes found. Try another search term.
+            {/* Approved Recipes Section */}
+            {approvedRecipes.length > 0 && !searchTerm && (
+                <div className="my-8">
+                    <h3 className="text-xl font-semibold mb-4">✅ Approved Recipes</h3>
+                    <GridRecipeList recipes={approvedRecipes} />
+                </div>
+            )}
 
-
-                    </p>
-                ) : (
-
-                    recipes.map((recipe) => (
-                        <RecipeCard key={recipe.id} recipe={recipe}  />
-                    ))
-
-                )}
-            </div>*/}
+            {/* All Recipes Section */}
+            {recipesToShow.length > 0 ? (
+                <div className="my-8">
+                    <h3 className="text-xl font-semibold mb-4">📖 All Recipes</h3>
+                    <GridRecipeList recipes={recipesToShow} />
+                </div>
+            ) : (
+                <p className="text-gray-400 text-center mt-10">
+                    No recipes found.
+                </p>
+            )}
         </div>
     );
 };
 
 export default Explore;
+

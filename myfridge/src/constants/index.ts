@@ -11,6 +11,11 @@
                     label: "Explore",
                 },
                 {
+                    imgURL: "/assets/icons/trend.svg",
+                    route: "/trending",
+                    label: "Trending",
+                },
+                {
                     imgURL: "/assets/icons/people.svg",
                     route: "/all-users",
                     label: "People",
@@ -42,6 +47,11 @@
                     imgURL: "/assets/icons/wallpaper.svg",
                     route: "/explore",
                     label: "Explore",
+                },
+                {
+                    imgURL: "/assets/icons/trend.svg",
+                    route: "/trending",
+                    label: "Trending",
                 },
                 {
                     imgURL: "/assets/icons/bookmark.svg",
