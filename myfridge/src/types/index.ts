@@ -76,6 +76,8 @@ export type Recipe = {
     createdAt: Timestamp;
     updatedAt?: Timestamp;
     isRecommended: boolean;
+    isApproved: boolean;
+    isSeasonal: boolean;
 
     mediaUrl: string;
     author: DocumentReference<IUser>;

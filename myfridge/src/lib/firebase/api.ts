@@ -222,6 +222,8 @@ export async function createRecipe(recipe: INewRecipe) {
         prepTime: recipe.prepTime,
         servings: recipe.servings,
         isRecommended: false,
+        isApproved: false,
+        isSeasonal: false,
         tags,
         likes: [],
         comments: [],
