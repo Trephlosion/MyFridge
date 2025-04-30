@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
+import {UserAvatarRow} from "@/components/shared";
 
 const ChallengeCard = ({ challenge }: { challenge: any }) => {
     const deadlineDate = challenge.deadline?.toDate?.();
@@ -11,17 +12,13 @@ const ChallengeCard = ({ challenge }: { challenge: any }) => {
         : "No Deadline";
 
     return (
-        <Card className="flex flex-col justify-between bg-dark-4 hover:scale-[1.02] transition">
+        <Card className="rounded-2xl flex flex-col justify-between bg-dark-4 hover:scale-[1.02] transition">
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-lg truncate">{challenge.title}</CardTitle>
                 </div>
                 <div className="flex items-center gap-2 mt-3">
-                    <Avatar className="w-10 h-10">
-                        <AvatarImage src={challenge.creatorData?.pfp || "/assets/icons/profile-placeholder.svg"} />
-                        <AvatarFallback>{challenge.creatorData?.username?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <p className="text-light-3">@{challenge.creatorData?.username}</p>
+                    <UserAvatarRow user={challenge.creator}/>
                 </div>
             </CardHeader>
 

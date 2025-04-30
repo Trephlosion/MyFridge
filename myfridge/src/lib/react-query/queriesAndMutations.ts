@@ -2,7 +2,7 @@ import {
     useQuery,
     useMutation,
     useQueryClient,
-    useInfiniteQuery,
+
 } from "@tanstack/react-query";
 import {collection, DocumentReference, getDocs, query, where} from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
@@ -15,46 +15,38 @@ import {
     signOutAccount,
     getRecipeById,
     getCurrentUser,
-    searchRecipes,
     deleteRecipe,
     likeRecipe,
     unlikeRecipe,
-    saveRecipe,
-    deleteSavedRecipe,
     getUsers,
     getUserById,
     updateUser,
     getUserRecipes,
-    getInfiniteRecipes, // Updated function for infinite scroll
     createFridge,
     followUser,
     getAllFridgeIngredients,
     addIngredientToFridge,
     getAllIngredients,
-    getIngredientByName,
-    getIngredientById,
     removeIngredientFromFridge,
     addIngredientToShoppingList,
     likeWorkshop,
     saveWorkshop,
     createWorkshop,
-    getWorkshops,
     updateWorkshop,
     deleteWorkshop,
-    searchWorkshops,
+
 } from "@/lib/firebase/api";
 import {
     INewRecipe,
     INewUser,
-    IUpdateRecipe,
     IUpdateUser,
     INewWorkshop,
     IUpdateWorkshop,
-    RemoveIngredientParams,
+    Workshop,
     Recipe
 } from "@/types";
 import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
-import { Workshop } from "@/types";
+
 // Mutation for creating a new user
 export const useCreateUserAccount = () => {
     return useMutation({
@@ -116,14 +108,7 @@ export const useGetRecentRecipes = () => {
     });
 };
 
-// Query for fetching recipes for infinite scrolling
-export const useGetRecipes = () => {
-    return useInfiniteQuery({
-        queryKey: [QUERY_KEYS.GET_INFINITE_RECIPES],
-        queryFn: ({ pageParam }) => getInfiniteRecipes({ pageParam }),
-        getNextPageParam: (lastPage: { recipes: any[]; lastDoc: any }) => lastPage.lastDoc,
-    });
-};
+
 
 // Query for searching recipes
 export const useSearchRecipes = (searchTerm: string) => {
@@ -222,32 +207,7 @@ export const useUnlikeRecipe = () => {
     });
 };
 
-// Mutation for saving a recipe
-export const useSaveRecipe = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: ({ userId, recipeId }: { userId: string; recipeId: string }) =>
-            saveRecipe(userId, recipeId),
-        onSuccess: () => {
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_CURRENT_USER],
-            });
-        },
-    });
-};
 
-// Mutation for deleting a saved recipe
-export const useDeleteSavedRecipe = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (savedRecordId: string) => deleteSavedRecipe(savedRecordId),
-        onSuccess: () => {
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_CURRENT_USER],
-            });
-        },
-    });
-};
 
 // ============================================================
 // USER QUERIES
@@ -303,46 +263,9 @@ export const useCreateWorkshop = () => {
     });
 };
 
-// Query for fetching workshops
-export const useGetWorkshops = () => {
-    return useQuery({
-        queryKey: [QUERY_KEYS.GET_WORKSHOPS],
-        queryFn: async (): Promise<Workshop[]> => {
-            const snapshot = await getDocs(collection(database, "Workshops"));
-            return snapshot.docs.map(doc => {
-                const data = doc.data();
 
-                return {
-                    id: doc.id,
-                    ...data,
-                    userId: data.userId as DocumentReference, // ensure it's a reference
-                } as Workshop;
-            });
-        },
-    });
-};
 
-// Query for fetching workshops for infinite scrolling
-export const useGetInfiniteWorkshops = () => {
-    return useInfiniteQuery({
-        queryKey: [QUERY_KEYS.GET_INFINITE_WORKSHOPS],
-        queryFn: async ({ pageParam = 0 }) => {
-            const pageSize = 10; // Example page size
-            const snapshot = await getDocs(
-                collection(database, "Workshops")
-                    .orderBy("createdAt") // Ensure proper ordering
-                    .startAfter(pageParam)
-                    .limit(pageSize)
-            );
-            const workshops = snapshot.docs.map(doc => doc.data() as Workshop);
-            const nextPage = snapshot.docs.length < pageSize ? null : snapshot.docs[snapshot.docs.length - 1].id;
-            return { workshops, nextPage };  // Return workshops and next page identifier
-        },
-        getNextPageParam: (lastPage: any) => {
-            return lastPage.nextPage || null;  // Return next page or null if no more pages
-        },
-    });
-};
+
 
 // Query for searching workshops
 export const useSearchWorkshops = (searchTerm: string) => {
@@ -360,19 +283,6 @@ export const useSearchWorkshops = (searchTerm: string) => {
                 );
         },
         enabled: !!searchTerm, // Prevents query from running when searchTerm is empty
-    });
-};
-
-// Mutation for updating a workshop
-export const useUpdateWorkshop = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (workshop: IUpdateWorkshop) => updateWorkshop(workshop),
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_WORKSHOP_BY_ID, variables.workshopId],
-            });
-        },
     });
 };
 
@@ -469,23 +379,6 @@ export const useGetAllIngredients = () => {
     });
 };
 
-// Query for getting ingredient by name
-export const useGetIngredientByName = (ingredient: string) => {
-    return useQuery({
-        queryKey: [QUERY_KEYS.GET_INGREDIENT_BY_NAME, ingredient],
-        queryFn: () => getIngredientByName(ingredient),
-        enabled: !!ingredient,
-    });
-};
-
-// Query for getting ingredient by ID
-export const useGetIngredientById = (ingredientId: string) => {
-    return useQuery({
-        queryKey: [QUERY_KEYS.GET_INGREDIENT_BY_ID, ingredientId],
-        queryFn: () => getIngredientById(ingredientId),
-        enabled: !!ingredientId,
-    });
-};
 
 
 

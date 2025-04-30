@@ -54,6 +54,7 @@ import {
                     import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar.tsx";
                     import {multiFormatDateString} from "@/lib/utils.ts";
 import {Input} from "postcss";
+import {UserAvatarRow} from "@/components/shared";
 
 
                     const RecipeDetails = () => {
@@ -324,53 +325,24 @@ import {Input} from "postcss";
                                 />
 
                                 <h1 className="text-4xl font-bold text-center mt-6">{recipe.title}</h1>
+
                                 <div className="flex items-center justify-center gap-4 my-4">
                                     <div className="flex items-center gap-2">
-                                        <Link to={`/profile/${userInfo.id}`} className="flex items-center gap-3">
-                                            <Avatar className="w-16 h-16">
-                                                <AvatarImage src={userInfo.pfp} alt={userInfo.username} />
-                                                <AvatarFallback className="bg-white text-black">
-                                                    {userInfo.username?.charAt(0) ?? ""}
-                                                </AvatarFallback>
-                                            </Avatar>
-
-                                            <div className="flex items-center justify-center gap-1">
-                                                <p className="text-light-3 text-center font-semibold truncate max-w-[180px]">
-                                                    @{userInfo.username}
-                                                </p>
-
-                                                {/* Status Icons */}
-                                                {userInfo.isVerified && (
-                                                    <img
-                                                        src="/assets/icons/verified.svg"
-                                                        alt="verified"
-                                                        className="w-5 h-5"
-                                                    />
-                                                )}
-                                                {userInfo.isCurator && (
-                                                    <img
-                                                        src="/assets/icons/curator-icon.svg"
-                                                        alt="curator"
-                                                        className="w-5 h-5"
-                                                    />
-                                                )}
-                                                {userInfo.isAdministrator && (
-                                                    <img
-                                                        src="/assets/icons/admin-icon.svg"
-                                                        alt="admin"
-                                                        className="w-5 h-5"
-                                                    />
-                                                )}
-                                            </div>
-                                        </Link>
+                                        <UserAvatarRow user={recipe.author} />
                                         <div className="flex items-center gap-1 text-xs text-gray-500">
-                                            <p>{multiFormatDateString(recipe.createdAt?.toString() || "")}</p>
+                                            <p>
+                                                {recipe.createdAt ? multiFormatDateString(recipe.createdAt) : "Unknown Date"}
+                                            </p>
+
+                                            {recipe.updatedAt && recipe.createdAt !== recipe.updatedAt && (
+                                                <p>Updated{" "}{multiFormatDateString(recipe.updatedAt)}                                                </p>
+                                            )}
+
                                             <p>{recipe.likes?.length || 0} likes</p>
                                         </div>
-
                                     </div>
-
                                 </div>
+
                                 <>
                                     {reviews.length > 0 && (() => {
                                         const totalStars = reviews.reduce((sum, review) => sum + review.stars, 0);
