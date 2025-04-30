@@ -1,8 +1,13 @@
-// Now fixing CreateWorkshop.tsx (normalized)
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, addDoc, serverTimestamp, doc } from "firebase/firestore";
+import {
+    collection,
+    addDoc,
+    serverTimestamp,
+    doc,
+    getDoc,
+    updateDoc
+} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useUserContext } from "@/context/AuthContext";
 import { database, storage } from "@/lib/firebase/config";
@@ -23,7 +28,9 @@ const CreateWorkshop = () => {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
             ...prev,
@@ -46,12 +53,16 @@ const CreateWorkshop = () => {
             let imageUrl = "";
 
             if (imageFile) {
-                const imageRef = ref(storage, `workshops/${Date.now()}_${imageFile.name}`);
+                const imageRef = ref(
+                    storage,
+                    `workshops/${Date.now()}_${imageFile.name}`
+                );
                 await uploadBytes(imageRef, imageFile);
                 imageUrl = await getDownloadURL(imageRef);
             }
 
-            const newWorkshop = {
+            // Create the workshop
+            const newWorkshopRef = await addDoc(collection(database, "Workshops"), {
                 title: formData.title,
                 description: formData.description,
                 date: new Date(formData.date),
@@ -60,12 +71,34 @@ const CreateWorkshop = () => {
                 createdAt: serverTimestamp(),
                 media_url: imageUrl,
                 userId: doc(database, "Users", user.id),
-            };
+                creatorUsername: user.username,
+                creatorPfp: user.pfp || "",
+                participants: [],
+            });
 
-            await addDoc(collection(database, "Workshops"), newWorkshop);
+            // Send notifications to followers
+            const userDoc = await getDoc(doc(database, "Users", user.id));
+            const followers: string[] = userDoc.data()?.followers || [];
+
+            const notificationsRef = collection(database, "Notifications");
+            const notificationPromises = followers.map((followerId) => {
+                return addDoc(notificationsRef, {
+                    user_id: doc(database, "Users", followerId),
+                    type: "new_workshop",
+                    message: `${user.username} created a new workshop: ${formData.title}`,
+                    media_url: imageUrl,
+                    workshopId: newWorkshopRef.id,
+                    isRead: false,
+                    createdAt: serverTimestamp(),
+                });
+            });
+
+            await Promise.all(notificationPromises);
+
             navigate("/workshops");
         } catch (error) {
             console.error("Failed to create workshop:", error);
+            alert("Failed to create workshop. See console for details");
         } finally {
             setUploading(false);
         }
@@ -73,8 +106,13 @@ const CreateWorkshop = () => {
 
     return (
         <div className="max-w-3xl mx-auto p-6 text-white">
-            <h1 className="text-3xl font-bold mb-6 text-center text-yellow-400">Create a New Workshop</h1>
-            <form onSubmit={handleSubmit} className="bg-gray-800 p-6 rounded-lg shadow-lg space-y-6">
+            <h1 className="text-3xl font-bold mb-6 text-center text-yellow-400">
+                Create a New Workshop
+            </h1>
+            <form
+                onSubmit={handleSubmit}
+                className="bg-gray-800 p-6 rounded-lg shadow-lg space-y-6"
+            >
                 <Input
                     name="title"
                     placeholder="Workshop Title"
