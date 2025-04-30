@@ -6,9 +6,12 @@ import {
     serverTimestamp,
     doc,
     getDoc,
-    updateDoc
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+    ref,
+    uploadBytes,
+    getDownloadURL
+} from "firebase/storage";
 import { useUserContext } from "@/context/AuthContext";
 import { database, storage } from "@/lib/firebase/config";
 import { Input } from "@/components/ui/input";
@@ -25,6 +28,7 @@ const CreateWorkshop = () => {
         location: "",
         maxParticipants: "",
     });
+
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
 
@@ -53,16 +57,19 @@ const CreateWorkshop = () => {
             let imageUrl = "";
 
             if (imageFile) {
-                const imageRef = ref(
-                    storage,
-                    `workshops/${Date.now()}_${imageFile.name}`
-                );
+                const imageRef = ref(storage, `workshops/${Date.now()}_${imageFile.name}`);
                 await uploadBytes(imageRef, imageFile);
                 imageUrl = await getDownloadURL(imageRef);
             }
 
-            // Create the workshop
-            const newWorkshopRef = await addDoc(collection(database, "Workshops"), {
+            // Reference to the creator's user document
+            const userRef = doc(database, "Users", user.id);
+            const userSnap = await getDoc(userRef);
+            const creatorData = userSnap.data();
+
+            if (!creatorData) throw new Error("Creator data not found.");
+
+            const newWorkshop = {
                 title: formData.title,
                 description: formData.description,
                 date: new Date(formData.date),
@@ -70,35 +77,35 @@ const CreateWorkshop = () => {
                 maxParticipants: parseInt(formData.maxParticipants),
                 createdAt: serverTimestamp(),
                 media_url: imageUrl,
-                userId: doc(database, "Users", user.id),
-                creatorUsername: user.username,
-                creatorPfp: user.pfp || "",
-                participants: [],
-            });
+                userId: userRef,
+            };
 
-            // Send notifications to followers
-            const userDoc = await getDoc(doc(database, "Users", user.id));
-            const followers: string[] = userDoc.data()?.followers || [];
+            const workshopDoc = await addDoc(collection(database, "Workshops"), newWorkshop);
 
-            const notificationsRef = collection(database, "Notifications");
-            const notificationPromises = followers.map((followerId) => {
-                return addDoc(notificationsRef, {
-                    user_id: doc(database, "Users", followerId),
-                    type: "new_workshop",
-                    message: `${user.username} created a new workshop: ${formData.title}`,
-                    media_url: imageUrl,
-                    workshopId: newWorkshopRef.id,
-                    isRead: false,
-                    createdAt: serverTimestamp(),
-                });
-            });
+            // Notify followers
+            if (creatorData.followers && Array.isArray(creatorData.followers)) {
+                const notificationsRef = collection(database, "Notifications");
 
-            await Promise.all(notificationPromises);
+                await Promise.all(
+                    creatorData.followers.map(async (followerId: string) => {
+                        await addDoc(notificationsRef, {
+                            user_id: userRef, // The creator
+                            followerId: followerId, // The recipient
+                            type: "new_workshop",
+                            message: `@${creatorData.username} created a new workshop`,
+                            workshopId: workshopDoc.id,
+                            media_url: imageUrl,
+                            isRead: false,
+                            createdAt: new Date(),
+                        });
+                    })
+                );
+            }
 
             navigate("/workshops");
         } catch (error) {
             console.error("Failed to create workshop:", error);
-            alert("Failed to create workshop. See console for details");
+            alert("Failed to create workshop. See console for details.");
         } finally {
             setUploading(false);
         }
