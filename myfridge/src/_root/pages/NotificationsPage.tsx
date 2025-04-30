@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import {
     collection,
-    getDocs,
-    doc,
     getDoc,
+    getDocs,
     orderBy,
     query,
+    where,
     Timestamp,
+    updateDoc,
+    doc,
 } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { useUserContext } from "@/context/AuthContext";
@@ -21,6 +23,7 @@ interface Notification {
     isRead: boolean;
     createdAt: Timestamp;
     user_id: any; // Firestore reference
+    receiverId: string;
     workshopId?: string;
     recipeId?: string;
 }
@@ -36,53 +39,75 @@ const NotificationsPage = () => {
     const [notifications, setNotifications] = useState<
         (Notification & { senderData?: UserData })[]
     >([]);
+    const [unreadCount, setUnreadCount] = useState(0); // Track unread notifications
 
     useEffect(() => {
         if (!user) return;
 
         const fetchNotifications = async () => {
             const notificationsRef = collection(database, "Notifications");
-            const q = query(notificationsRef, orderBy("createdAt", "desc"));
+            // Only fetch notifications where receiverId is the logged-in user's ID
+            const q = query(
+                notificationsRef,
+                where("receiverId", "==", user.id), // Only get notifications for the logged-in user
+                orderBy("createdAt", "desc")
+            );
             const querySnapshot = await getDocs(q);
 
             const notifs: (Notification & { senderData?: UserData })[] = [];
+            let unreadCount = 0; // Count unread notifications
 
             for (const docSnap of querySnapshot.docs) {
                 const notif = docSnap.data() as Notification;
 
-                if (notif.followerId === user.id || notif.user_id?.id === user.id) {
-                    let senderData: UserData | undefined = undefined;
+                let senderData: UserData | undefined = undefined;
 
-                    if (notif.user_id) {
-                        const senderSnap = await getDoc(notif.user_id);
-                        if (senderSnap.exists()) {
-                            const data = senderSnap.data();
-                            senderData = {
-                                username: data.username,
-                                pfp: data.pfp || "",
-                            };
-                        }
+                // Fetch sender data if it exists
+                if (notif.user_id) {
+                    const senderSnap = await getDoc(notif.user_id);
+                    if (senderSnap.exists()) {
+                        const data = senderSnap.data();
+                        senderData = {
+                            username: data.username,
+                            pfp: data.pfp || "",
+                        };
                     }
-
-                    notifs.push({
-                        ...notif,
-                        id: docSnap.id,
-                        senderData,
-                    });
                 }
+
+                // Increment unreadCount if the notification is unread
+                if (!notif.isRead) {
+                    unreadCount++;
+                }
+
+                notifs.push({
+                    ...notif,
+                    id: docSnap.id,
+                    senderData,
+                });
             }
 
             setNotifications(notifs);
+            setUnreadCount(unreadCount); // Update unread count
         };
 
         fetchNotifications();
     }, [user]);
 
-    const handleNotificationClick = (notif: Notification) => {
-        if (notif.workshopId) {
+    const handleNotificationClick = async (notif: Notification) => {
+        if (notif.type === "new_follower") {
+            const senderId = notif.user_id.id;
+            navigate(`/profile/${senderId}`); // Navigate to the sender's profile
+        } else if (notif.workshopId) {
             navigate(`/workshops/${notif.workshopId}`);
         } else if (notif.recipeId) {
             navigate(`/recipes/${notif.recipeId}`);
+        }
+
+        // Mark the notification as read
+        if (!notif.isRead) {
+            const notifRef = doc(database, "Notifications", notif.id);
+            await updateDoc(notifRef, { isRead: true });
+            setUnreadCount((prevCount) => prevCount - 1); // Decrement unread count
         }
     };
 
