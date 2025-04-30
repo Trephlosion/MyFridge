@@ -228,12 +228,19 @@ const RecipeForm = ({ recipe }: RecipeFormProps  ) => {
                         <FormItem>
                             <FormLabel>Cook Time in minutes</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder="Enter the cook time in minutes" className="shad-input" {...field} />
+                                <Input
+                                    type="number"
+                                    placeholder="Enter the cook time in minutes"
+                                    className="shad-input"
+                                    value={field.value}
+                                    onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
+
                 <FormField
                     control={form.control}
                     name="prepTime"
@@ -241,25 +248,39 @@ const RecipeForm = ({ recipe }: RecipeFormProps  ) => {
                         <FormItem>
                             <FormLabel>Prep Time in minutes</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder="Enter the prep time in minutes" className="shad-input" {...field} />
+                                <Input
+                                    type="number"
+                                    placeholder="Enter the prep time in minutes"
+                                    className="shad-input"
+                                    value={field.value}
+                                    onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
+
                 <FormField
                     control={form.control}
                     name="servings"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Serving Size – serves _ people</FormLabel>
+                            <FormLabel>Serving Size</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder="Enter the average serving size" className="shad-input" {...field} />
+                                <Input
+                                    type="number"
+                                    placeholder="Enter the average Serving size"
+                                    className="shad-input"
+                                    value={field.value}
+                                    onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
+
                 <FormField
                     control={form.control}
                     name="file"
