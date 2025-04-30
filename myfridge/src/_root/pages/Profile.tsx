@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link, Outlet, useLocation, Routes, Route } from
 import { Button } from "@/components/ui/button";
 import {Inbox, LikedRecipes} from "@/_root/pages";
 import { useUserContext } from "@/context/AuthContext";
-import { GridRecipeList, Loader } from "@/components/shared";
+import {GridRecipeList, Loader, MyChallengesTab} from "@/components/shared";
 import { DataTable, FridgeColumns } from "@/components/DataTables";
 import {
     useGetUserById,
@@ -19,6 +19,7 @@ import { useGetUserRecipes } from "@/lib/react-query/queriesAndMutations";
 import LoadingRecipe from "@/components/shared/LoadingRecipe.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import RecipeCard from "../../components/cards/RecipeCard.tsx";
+import GridChallengeList from "@/components/shared/GridChallengeList.tsx";
 
 
 
@@ -157,6 +158,7 @@ const Profile = () => {
                         <div className="flex gap-8 mt-10 items-center justify-center xl:justify-start flex-wrap z-20">
                             <StatBlock value={currentUser.recipes.length || 0} label="Recipes" />
                             <StatBlock value={currentUser.workshops.length || 0} label={"Workshops"} />
+                            <StatBlock value={currentUser.challenges.length} label={"Challenges"} />
                             <StatBlock value={isUpdating ? 0 : followersCount} label="Followers" />
                             <StatBlock value={isUpdating ? 0 : followingCount} label="Following" />
                         </div>
@@ -200,6 +202,7 @@ const Profile = () => {
                 <TabsList className="flex max-w-5xl w-full justify-center mb-4">
                     <TabsTrigger value="recipes" className={`profile-tab rounded-l-lg !bg-dark-3 h3-bold md:h2-bold text-center`}>MyRecipes</TabsTrigger>
                     <TabsTrigger value="liked-recipes" className={`profile-tab !bg-dark-3 h3-bold md:h2-bold text-center`}>Liked Recipes</TabsTrigger>
+                    <TabsTrigger value={"challenges"} className={`profile-tab !bg-dark-3 h3-bold md:h2-bold text-center`}>My Challenges</TabsTrigger>
                     {user.id === currentUser.id && (
                         <>
                             <TabsTrigger value={"inbox"} className={`profile-tab !bg-dark-3 h3-bold md:h2-bold text-center`}>My Inbox</TabsTrigger>
@@ -232,6 +235,13 @@ const Profile = () => {
                         <GridRecipeList recipes={currentUser.likedRecipes} />
                     </>
                 </TabsContent>
+
+                <TabsContent value={"challenges"} className="w-full max-w-5xl">
+                    <>
+                                <GridChallengeList challenges={currentUser.challenges}/>
+                    </>
+                </TabsContent>
+
 
                 {user.id === currentUser.id && (
                     <>

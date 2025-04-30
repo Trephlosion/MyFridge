@@ -1,5 +1,7 @@
 
 // Define the types for the context
+import {DocumentReference, Timestamp} from "firebase/firestore";
+
 export interface AuthContextType {
     user: IUser;
     isAuthenticated: boolean;
@@ -15,51 +17,38 @@ export type INavLink = {
 };
 
 // User Update Type
+// Normalized User
 export interface IUser {
     id: string;
     username: string;
     email: string;
     pfp: string;
     bio: string;
+
     isPrivate: boolean;
     isVerified: boolean;
     isAdministrator: boolean;
-    isDeactivated: boolean; // New field
-    isBanned: boolean; // New field
-    isCurator: boolean; // New field
-    followers: any[];
-    following: any[];
-    likedRecipes: any[];
-    recipes: any[];
-    workshops: any[];
-    comments: any[];
-    myFridge: any;
-    createdAt: Date;
-    updatedAt: Date;
+    isDeactivated: boolean;
+    isBanned: boolean;
+    isCurator: boolean;
 
+    followers: DocumentReference<IUser>[];     // User refs
+    following: DocumentReference<IUser>[];
+    likedRecipes: DocumentReference<Recipe>[]; // Recipe refs
+    recipes: DocumentReference<Recipe>[];      // Recipe refs
+    workshops: DocumentReference<Workshop>[];  // Workshop refs
+    comments: DocumentReference<any>[];        // Comment refs
+    challenges: DocumentReference<any>[];      // Challenge refs
+    myFridge: DocumentReference<any> | null;   // Fridge ref
+
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
 }
 
-export interface IUpdateUser {
-    id: string;
-    username: string;
-    email: string;
-    pfp: string;
-    bio: string;
-    isPrivate: boolean;
-    isVerified: boolean;
-    isAdministrator: boolean;
-    isDeactivated: boolean; // New field
-    isBanned: boolean; // New field
-    isCurator: boolean; // New field
-    followers: any[];
-    following: any[];
-    likedRecipes: any[];
-    recipes: any[];
-    workshops: any[];
-    comments: any[];
-    myFridge: any;
+export interface IUpdateUser extends Omit<IUser, "createdAt" | "updatedAt"> {
     file?: File[];
 }
+
 // New User Interface
 export interface INewUser {
     email: string; // Required email address
@@ -77,68 +66,57 @@ export type IFileUpload = {
 };
 
 export type Recipe = {
-    usageCount: any;
-    dietaryComplianceReview: any;
-    id: string; // Firestore document ID
-    title: string; // Recipe title (formerly "dish")
+    id: string;
+    title: string;
     description?: string;
     cookTime?: number;
     prepTime?: number;
     servings?: number;
-    createdAt: Date;
-    updatedAt?: Date;
+
+    createdAt: Timestamp;
+    updatedAt?: Timestamp;
     isRecommended: boolean;
-    mediaUrl: string; // Image URL (formerly "pfp")
-    author: any;
-    userId?: any;
+
+    mediaUrl: string;
+    author: DocumentReference<IUser>;
+    userId?: DocumentReference<IUser>;
+
     username?: string;
     pfp?: string;
+
     tags: string[];
-    instructions: string[]; // Array of instruction steps
-    ingredients: string[]; // Array of ingredients
-    likes: any[]; // Array of user IDs who liked the recipe
-    comments: any[]; // Array of comment IDs
-    file?: File[]; // Array of uploaded files
+    instructions: string[];
+    ingredients: string[];
+
+    likes: DocumentReference<IUser>[];
+    comments: DocumentReference<any>[];
+
+    file?: File[];
     avgRating?: number;
 
+    usageCount?: number;
+    dietaryComplianceReview?: any;
 };
 
-export interface IRecipeMetadata {
-    id: string; // Firestore document ID
-    title: string; // Recipe title (formerly "dish")
-    description?: string;
-    cookTime?: number;
-    prepTime?: number;
-    servings?: number;
-    createdAt: Date;
-    updatedAt?: Date;
-    isRecommended: boolean;
-    mediaUrl: string; // Image URL (formerly "pfp")
-    author: any;
-    userId?: any;
-    username?: string;
-    pfp?: string;
-    tags: string[];
-    instructions: string[]; // Array of instruction steps
-    ingredients: string[]; // Array of ingredients
-    likes: any[]; // Array of user IDs who liked the recipe
-    comments: any[]; // Array of comment IDs
-    file?: File[]; // Array of uploaded files
-    avgRating?: number;
-}
+export interface IRecipeMetadata extends Recipe {}
+
 // types/workshop.ts
 export type Workshop = {
     id: string;
     title: string;
     description: string;
-    date: Date;
+    date: Timestamp;
     location: string;
     maxParticipants: number;
+
     media_url?: string;
     likes?: string[];
-    userId: any;
-    creatorUsername: string; // ✅ Added for display optimization
-    creatorPfp: string;      // ✅ Added for display optimization
+    participants: DocumentReference<IUser>[];
+
+    userId: DocumentReference<IUser>;
+
+    creatorUsername: string;
+    creatorPfp: string;
 };
 
 export interface INewWorkshop {
@@ -174,30 +152,6 @@ export type INewRecipe = {
     updatedAt: Date;
 };
 
-// Update Recipe Type
-export type IUpdateRecipe = {
-    id?: string; // Firestore document ID
-    title: string; // Recipe title (formerly "dish")
-    description?: string;
-    cookTime?: number;
-    prepTime?: number;
-    servings?: number;
-    createdAt?: Date;
-    updatedAt: Date;
-    isRecommended?: boolean;
-    mediaUrl?: string; // Image URL (formerly "pfp")
-    author?: any;
-    username?: string;
-    pfp?: string;
-    tags?: string[];
-    instructions?: string[]; // Array of instruction steps
-    ingredients?: string[]; // Array of ingredients
-    likes?: any[]; // Array of user IDs who liked the recipe
-    comments?: any[]; // Array of comment IDs
-    file?: File[]; // Array of uploaded files
-    avgRating?: number;
-};
-// Notifications
 export interface INotification {
     id: string;
     userId: string;
@@ -205,29 +159,28 @@ export interface INotification {
     recipeId?: string;
     type: "new_comment" | "new_recipe";
     isRead: boolean;
-    createdAt: any; // Can use Firebase Timestamp or Date
+    createdAt: Timestamp;
 }
 
 export type FridgeData = {
     ingredients: string[];
     shoppingList: string[];
-    updatedAt: any;
-    userid: any;
+    updatedAt: Timestamp;
+    userid: DocumentReference<IUser>;
 };
 
 export type RemoveIngredientParams = {
-    fridgeId: any;
+    fridgeId: DocumentReference<any>;
     ingredientName: string;
 };
 
-
 export type IRate = {
-    recipeId: any,
-    userId: any,
-    comment: string,
-    stars: any,
-    createdAt: Date,
-}
+    recipeId: DocumentReference<Recipe>;
+    userId: DocumentReference<IUser>;
+    comment: string;
+    stars: number;
+    createdAt: Timestamp;
+};
 
 export type RecipeCardProps = {
     recipe: Recipe;
@@ -240,4 +193,22 @@ export type UserInfo = {
     isCurator?: boolean;
     isAdministrator?: boolean;
     id?: string;
+};
+
+export type Challenge = {
+    id: string;
+    title: string;
+    description: string;
+    createdAt: Timestamp;
+    updatedAt?: Timestamp;
+
+    deadline: Timestamp;
+    creatorId: DocumentReference<any>; // ref to Users collection
+    creatorData?: {
+        username: string;
+        pfp: string;
+    };
+
+    submissions: DocumentReference<Recipe>[]; // references to Recipes
+    winners: DocumentReference<Recipe>[];     // optional winner recipes
 };

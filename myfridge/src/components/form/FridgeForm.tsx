@@ -16,7 +16,7 @@ import {
     SheetTrigger,
 } from "@/components/ui/sheet";
 import { useLocation, useNavigate } from "react-router-dom";
-import { addNewIngredient, createNewIngredient, } from "@/lib/firebase/api";
+import { addNewIngredient, } from "@/lib/firebase/api";
 import {onSnapshot} from "firebase/firestore";
 
 const FridgeForm = () => {

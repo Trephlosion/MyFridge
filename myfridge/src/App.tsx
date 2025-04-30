@@ -5,7 +5,7 @@ import { Routes, Route } from 'react-router-dom';
                     import RootLayout from './_root/RootLayout';
                     import SignupForm from './_auth/forms/SignupForm.tsx';
                     import SigninForm from './_auth/forms/SigninForm.tsx';
-import {
+                    import {
     Home,
     Explore,
     Saved,
@@ -18,14 +18,12 @@ import {
     LikedRecipes,
     Admin,
     Workshops,
+                        Challenges, ChallengeDetails, RecipeAnalytics, WorkshopDetails, NotificationsPage,
+                        CreateWorkshop, SendMessage,
                         Inbox
 } from './_root/pages';
-import Trending from "@/_root/pages/Trending";
-import { Toaster } from '@/components/ui/toaster.tsx';
-import RecipeAnalytics from './_root/pages/RecipeAnalytics.tsx';
-import SendMessage from "@/_root/pages/SendMessage.tsx";
-import Challenges from "@/_root/pages/Challenges.tsx";
-import ChallengeDetails from "@/_root/pages/ChallengeDetails.tsx";
+                    import { Toaster } from '@/components/ui/toaster.tsx';
+
 
                     const App = () => {
                         const { user } = useUserContext();
@@ -41,7 +39,6 @@ import ChallengeDetails from "@/_root/pages/ChallengeDetails.tsx";
                                     <Route element={<RootLayout />}>
                                         <Route index element={<Home/>} />
                                         <Route path="/explore" element={<Explore/>} />
-                                        <Route path="/trending" element={<Trending />} />
                                         <Route path="/challenges" element={<Challenges/>} />
                                         <Route path="/all-users" element={<AllUsers/>} />
                                         <Route path="/create-recipe" element={<CreateRecipe/>} />
@@ -49,14 +46,17 @@ import ChallengeDetails from "@/_root/pages/ChallengeDetails.tsx";
                                         <Route path="/recipe/:id/*" element={<RecipeDetails/>} />
                                         <Route path="/profile/:id/*" element={<Profile/>} />
                                         <Route path="/recipes/:id/*" element={<RecipeDetails/>} />
-                                        <Route path="/challenge/:id/*" element={<ChallengeDetails/>} />
                                         <Route path="/update-profile/:id/*" element={<UpdateProfile/>} />
                                         <Route path="/liked-recipes/:id/*" element={<LikedRecipes/>} />
+                                        <Route path="/challenge/:id/*" element={<ChallengeDetails/>} />
                                         <Route path="/admin" element={<Admin/>} />
                                         <Route path="/workshops/*" element={<Workshops/>} />
                                         <Route path={"/inbox"} element={<Inbox/>}/>
                                         <Route path="/recipe-analytics" element={<RecipeAnalytics/>} />
                                         <Route path={"/send-message/:userId"} element={<SendMessage/>}/>
+                                        <Route path="/notifications" element={<NotificationsPage />} />
+                                        <Route path="/create-workshop" element={<CreateWorkshop />} />
+                                        <Route path="/workshop/:id" element={<WorkshopDetails />} />
 
                                     </Route>
                                 </Routes>

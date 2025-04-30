@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Button } from "@/components/ui/button";
 import { RecipeCardProps, UserInfo } from "@/types";
+import {UserAvatarRow} from "@/components/shared";
 
 
 const RecipeCard = ({ recipe }: RecipeCardProps) => {
@@ -113,43 +114,12 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
 
             <CardHeader className="flex justify-between px-3">
                 <div className="flex flex-col items-start gap-3">
-                    <Link to={`/profile/${userInfo.id}`} className="flex items-center gap-3">
-                        <Avatar className="w-16 h-16">
-                            <AvatarImage src={userInfo.pfp} alt={userInfo.username} />
-                            <AvatarFallback className={"bg-white text-black"}>{userInfo.username.charAt(0)}</AvatarFallback>
-                        </Avatar>
-
-                        <div className="flex items-center justify-center gap-1">
-                            <p className="text-light-3 text-center font-semibold truncate max-w-[180px]">
-                                @{userInfo.username}
-                            </p>
-
-                            {/* Status Icons */}
-                            {userInfo.isVerified && (
-                                <img
-                                    src="/assets/icons/verified.svg"
-                                    alt="verified"
-                                    className="w-5 h-5"
-                                />
-                            )}
-                            {userInfo.isCurator && (
-                                <img
-                                    src="/assets/icons/curator-icon.svg"
-                                    alt="curator"
-                                    className="w-5 h-5"
-                                />
-                            )}
-                            {userInfo.isAdministrator && (
-                                <img
-                                    src="/assets/icons/admin-icon.svg"
-                                    alt="admin"
-                                    className="w-5 h-5"
-                                />
-                            )}
-                        </div>
-                    </Link>
+                    <UserAvatarRow user={recipe.author} />
                     <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <p>{multiFormatDateString(recipe.createdAt.toString() || "")}</p>
+                        <p>{recipe.createdAt ? (multiFormatDateString(recipe.createdAt)) : "Unknown Date"}</p>
+                        {recipe.updatedAt && recipe.createdAt !== recipe.updatedAt && (
+                            <p>Updated {multiFormatDateString(recipe.updatedAt)}</p>
+                        )}
                         <p>{recipe.likes.length} likes</p>
                     </div>
 
@@ -188,32 +158,7 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                     ))}
                 </ul>
 
-                {user?.isAdministrator && (
-                    <div className="flex flex-col gap-2 mt-3">
-                        <button
-                            onClick={() => navigate(`/recipe-analytics?recipeId=${recipe.id}`)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 px-3 rounded"
-                        >
-                            Get Analytics
-                        </button>
-                        <button
-                            onClick={async (e) => {
-                                e.stopPropagation();
-                                const recipeRef = doc(database, "Recipes", recipe.id);
-                                const updatedHighlight = !recipe.isRecommended;
 
-                                await updateDoc(recipeRef, {
-                                    isRecommended: updatedHighlight,
-                                });
-
-                                window.location.reload(); // refresh to show updated state
-                            }}
-                            className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-3 rounded"
-                        >
-                            {recipe.isRecommended ? "Unhighlight" : "Highlight as Seasonal"}
-                        </button>
-                    </div>
-                )}
 
             </CardFooter>
         </Card>

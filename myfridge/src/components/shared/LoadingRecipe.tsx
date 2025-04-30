@@ -4,7 +4,7 @@ import RecipeSkeleton from "../cards/RecipeSkeleton.tsx"
 const LoadingRecipe = () => {
     return (
         <div >
-            <h2 className={"flex-col flex text-center"}>
+            <h2 className={"grid-cols-3 flex text-center"}>
                 Loading recipes...
             </h2>
 

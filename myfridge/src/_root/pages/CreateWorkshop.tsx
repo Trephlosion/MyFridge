@@ -5,8 +5,13 @@ import {
     addDoc,
     serverTimestamp,
     doc,
+    getDoc,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+    ref,
+    uploadBytes,
+    getDownloadURL
+} from "firebase/storage";
 import { useUserContext } from "@/context/AuthContext";
 import { database, storage } from "@/lib/firebase/config";
 import { Input } from "@/components/ui/input";
@@ -23,6 +28,7 @@ const CreateWorkshop = () => {
         location: "",
         maxParticipants: "",
     });
+
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
 
@@ -56,21 +62,50 @@ const CreateWorkshop = () => {
                 imageUrl = await getDownloadURL(imageRef);
             }
 
+            // Reference to the creator's user document
+            const userRef = doc(database, "Users", user.id);
+            const userSnap = await getDoc(userRef);
+            const creatorData = userSnap.data();
+
+            if (!creatorData) throw new Error("Creator data not found.");
+
             const newWorkshop = {
-                ...formData,
+                title: formData.title,
+                description: formData.description,
                 date: new Date(formData.date),
+                location: formData.location,
                 maxParticipants: parseInt(formData.maxParticipants),
                 createdAt: serverTimestamp(),
                 media_url: imageUrl,
-                creatorUsername: user.username,
-                creatorPfp: user.pfp || "/assets/icons/profile-placeholder.svg",
-                userId: doc(database, "Users", user.id),
+                userId: userRef,
             };
 
-            await addDoc(collection(database, "Workshops"), newWorkshop);
+            const workshopDoc = await addDoc(collection(database, "Workshops"), newWorkshop);
+
+            // Notify followers
+            if (creatorData.followers && Array.isArray(creatorData.followers)) {
+                const notificationsRef = collection(database, "Notifications");
+
+                await Promise.all(
+                    creatorData.followers.map(async (followerId: string) => {
+                        await addDoc(notificationsRef, {
+                            user_id: userRef, // The creator
+                            followerId: followerId, // The recipient
+                            type: "new_workshop",
+                            message: `@${creatorData.username} created a new workshop`,
+                            workshopId: workshopDoc.id,
+                            media_url: imageUrl,
+                            isRead: false,
+                            createdAt: new Date(),
+                        });
+                    })
+                );
+            }
+
             navigate("/workshops");
-        } catch (err) {
-            console.error("Failed to create workshop:", err);
+        } catch (error) {
+            console.error("Failed to create workshop:", error);
+            alert("Failed to create workshop. See console for details.");
         } finally {
             setUploading(false);
         }
@@ -78,7 +113,9 @@ const CreateWorkshop = () => {
 
     return (
         <div className="max-w-3xl mx-auto p-6 text-white">
-            <h1 className="text-3xl font-bold mb-6 text-center text-yellow-400">Create a New Workshop</h1>
+            <h1 className="text-3xl font-bold mb-6 text-center text-yellow-400">
+                Create a New Workshop
+            </h1>
             <form
                 onSubmit={handleSubmit}
                 className="bg-gray-800 p-6 rounded-lg shadow-lg space-y-6"
@@ -110,7 +147,7 @@ const CreateWorkshop = () => {
 
                 <Input
                     name="location"
-                    placeholder="Location (e.g., Zoom, Campus)"
+                    placeholder="Location (Zoom, Campus, etc.)"
                     onChange={handleChange}
                     required
                     className="bg-gray-700 text-white border border-gray-600"
@@ -127,17 +164,13 @@ const CreateWorkshop = () => {
                 />
 
                 <label className="block text-sm font-semibold text-gray-300">
-                    Choose an image for your workshop:
+                    Upload an Image:
                 </label>
                 <input
                     type="file"
                     accept="image/*"
                     onChange={handleFileChange}
-                    className="block w-full file:mr-4 file:py-2 file:px-4
-                     file:rounded-full file:border-0
-                     file:text-sm file:font-semibold
-                     file:bg-yellow-500 file:text-white
-                     hover:file:bg-yellow-600"
+                    className="block w-full file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-500 file:text-white hover:file:bg-yellow-600"
                 />
 
                 <Button

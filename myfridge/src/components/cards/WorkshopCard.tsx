@@ -1,53 +1,52 @@
+// Continuing modular fixes. Now WorkshopCard.tsx.
+// Normalized to handle DocumentReferences properly for userId, participants, and media_url.
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getDownloadURL, ref } from "firebase/storage";
-import {
-    doc,
-    updateDoc,
-    getDoc,
-    arrayUnion,
-    arrayRemove,
-} from "firebase/firestore";
+import { getDownloadURL, ref as storageRef } from "firebase/storage";
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { Workshop } from "@/types";
-import {
-    Card,
-    CardContent,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { multiFormatDateString } from "@/lib/utils";
 import { database, storage } from "@/lib/firebase/config";
 import { useUserContext } from "@/context/AuthContext";
+import {UserAvatarRow} from "@/components/shared";
 
-type Props = {
+interface WorkshopCardProps {
     workshop: Workshop;
-};
+}
 
-const WorkshopCard = ({ workshop }: Props) => {
+const WorkshopCard = ({ workshop }: WorkshopCardProps) => {
     const navigate = useNavigate();
     const { user } = useUserContext();
-    const [imageUrl, setImageUrl] = useState<string>("");
+
+    const [creator, setCreator] = useState<{ username: string; pfp: string } | null>(null);
+    const [imageUrl, setImageUrl] = useState<string>("/assets/icons/recipe-placeholder.svg");
     const [enrolled, setEnrolled] = useState(false);
-    const [participantsCount, setParticipantsCount] = useState<number>(workshop.participants?.length || 0);
+    const [participantsCount, setParticipantsCount] = useState(0);
 
     useEffect(() => {
-        const fetchImage = async () => {
+        const fetchCreatorAndImage = async () => {
+            if (workshop.userId) {
+                const userSnap = await getDoc(workshop.userId);
+                if (userSnap.exists()) {
+                    const data = userSnap.data() as { username: string; pfp: string };
+                    setCreator({ username: data.username, pfp: data.pfp });
+                }
+            }
+
             if (workshop.media_url?.startsWith("http")) {
                 setImageUrl(workshop.media_url);
             } else if (workshop.media_url) {
                 try {
-                    const url = await getDownloadURL(ref(storage, workshop.media_url));
+                    const url = await getDownloadURL(storageRef(storage, workshop.media_url));
                     setImageUrl(url);
-                } catch (error) {
+                } catch {
                     setImageUrl("/assets/icons/recipe-placeholder.svg");
                 }
-            } else {
-                setImageUrl("/assets/icons/recipe-placeholder.svg");
             }
         };
 
@@ -56,15 +55,15 @@ const WorkshopCard = ({ workshop }: Props) => {
             const workshopRef = doc(database, "Workshops", workshop.id);
             const snap = await getDoc(workshopRef);
             const data = snap.data();
-            if (data?.participants?.includes(user.id)) {
+            if (data?.participants?.some((ref: any) => ref.id === user.id)) {
                 setEnrolled(true);
             }
             setParticipantsCount(data?.participants?.length || 0);
         };
 
-        fetchImage();
+        fetchCreatorAndImage();
         checkEnrollment();
-    }, [workshop.media_url, user, workshop.id]);
+    }, [workshop.id, workshop.media_url, workshop.userId, user]);
 
     const handleEnroll = async () => {
         if (!user || !workshop.id) return;
@@ -75,7 +74,7 @@ const WorkshopCard = ({ workshop }: Props) => {
 
         const refDoc = doc(database, "Workshops", workshop.id);
         await updateDoc(refDoc, {
-            participants: arrayUnion(user.id),
+            participants: arrayUnion(doc(database, "Users", user.id)),
         });
 
         setEnrolled(true);
@@ -87,7 +86,7 @@ const WorkshopCard = ({ workshop }: Props) => {
 
         const refDoc = doc(database, "Workshops", workshop.id);
         await updateDoc(refDoc, {
-            participants: arrayRemove(user.id),
+            participants: arrayRemove(doc(database, "Users", user.id)),
         });
 
         setEnrolled(false);
@@ -101,27 +100,15 @@ const WorkshopCard = ({ workshop }: Props) => {
             </CardTitle>
 
             <CardHeader className="flex items-center justify-between px-3">
-                <div className="flex items-center gap-3">
-                    <Avatar className="w-12 h-12">
-                        <AvatarImage src={workshop.creatorPfp || "/assets/icons/profile-placeholder.svg"} />
-                        <AvatarFallback className="bg-white text-black">
-                            {(workshop.creatorUsername || "U").charAt(0)}
-                        </AvatarFallback>
-                    </Avatar>
-                    <p className="text-light-3 text-sm font-semibold">
-                        @{workshop.creatorUsername || "Unknown"}
-                    </p>
+                <UserAvatarRow user={workshop.userId} />
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+
+                    <p>{participantsCount} participants</p>
                 </div>
-                <p className="text-xs text-gray-500">
-                    {multiFormatDateString(workshop.date?.toString() || "")}
-                </p>
             </CardHeader>
 
             <CardContent className="p-2">
-                <div
-                    onClick={() => navigate(`/workshop/${workshop.id}`)}
-                    className="cursor-pointer"
-                >
+                <div onClick={() => navigate(`/workshop/${workshop.id}`)} className="cursor-pointer">
                     <AspectRatio ratio={16 / 9} className="w-full rounded overflow-hidden">
                         <img
                             src={imageUrl}
