@@ -158,32 +158,7 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                     ))}
                 </ul>
 
-                {user?.isAdministrator && (
-                    <div className="flex flex-col gap-2 mt-3">
-                        <Button
-                            onClick={() => navigate(`/recipe-analytics?recipeId=${recipe.id}`)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 px-3 rounded"
-                        >
-                            Get Analytics
-                        </Button>
-                        <Button
-                            onClick={async (e) => {
-                                e.stopPropagation();
-                                const recipeRef = doc(database, "Recipes", recipe.id);
-                                const updatedHighlight = !recipe.isRecommended;
 
-                                await updateDoc(recipeRef, {
-                                    isRecommended: updatedHighlight,
-                                });
-
-                                window.location.reload(); // refresh to show updated state
-                            }}
-                            className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-3 rounded"
-                        >
-                            {recipe.isRecommended ? "Unhighlight" : "Highlight as Seasonal"}
-                        </Button>
-                    </div>
-                )}
 
             </CardFooter>
         </Card>

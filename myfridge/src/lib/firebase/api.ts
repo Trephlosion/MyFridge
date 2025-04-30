@@ -788,53 +788,64 @@ export const getFollowedUsersRecipes = async (
     userId: string,
     page: number
 ): Promise<Recipe[]> => {
-    const userRef = doc(database, "Users", userId);
-    const userSnap = await getDoc(userRef);
-
+    const userSnap = await getDoc(doc(database, "Users", userId));
     if (!userSnap.exists()) return [];
 
-    const following = userSnap.data().following || [];
-    console.log("Following array:", following);
+    const following: DocumentReference[] = userSnap.data().following.map((id: string) =>
+        typeof id === "string" ? doc(database, "Users", id) : id
+    );
 
-    const batchSize = 6;
-
+    const batchSize = 20;
     const start = (page - 1) * batchSize;
 
-    const recipes: Recipe[] = [];
+    console.log("Following list:", following);
 
-    // Iterate over ALL followed users (we load all at once for simplicity)
-    for (let i = 0; i < following.length; i++) {
-        const followedUserRef = following[i];
-        if (!followedUserRef) continue;
 
-        const followedUserId =
-            typeof followedUserRef === "string"
-                ? followedUserRef
-                : followedUserRef.id;
-
-        const followedUserDoc = doc(database, "Users", followedUserId);
-        const followedUserSnap = await getDoc(followedUserDoc);
-        if (!followedUserSnap.exists()) continue;
-
-        const followedUser = followedUserSnap.data();
-        const recipeRefs = followedUser.recipes || [];
-
-        for (const recipeRef of recipeRefs) {
-            const recipeSnap = await getDoc(recipeRef);
-            if (recipeSnap.exists()) {
-                recipes.push({ id: recipeSnap.id, ...recipeSnap.data() } as Recipe);
+    // Load all followed users in parallel
+    const followedUserSnaps = await Promise.all(
+        following.map(async (ref) => {
+            try {
+                const snap = await getDoc(ref);
+                return snap.exists() ? snap : null;
+            } catch {
+                return null;
             }
-        }
-    }
+        })
+    );
 
-    // Sort by date DESC and paginate after collecting
-    recipes.sort((a, b) => {
-        const aDate = a.createdAt?.toDate?.();
-        const bDate = b.createdAt?.toDate?.();
-        return bDate.getTime() - aDate.getTime();
-    });
+    // Gather all recipe refs from those users
+    const allRecipeRefs: DocumentReference[] = followedUserSnaps
+        .filter(Boolean)
+        .flatMap((snap) => (snap!.data().recipes || []) as DocumentReference[]);
 
-    return recipes.slice(start, start + batchSize); // ✅ paginate here
+    // Load all recipe docs in parallel
+    const recipeSnaps = await Promise.all(
+        allRecipeRefs.map(async (ref) => {
+            try {
+                const snap = await getDoc(ref);
+                return snap.exists() ? snap : null;
+            } catch {
+                return null;
+            }
+        })
+    );
+
+    const allRecipes: Recipe[] = recipeSnaps
+        .filter(Boolean)
+        .map((snap) => ({ id: snap!.id, ...snap!.data() } as Recipe));
+
+    // Sort all recipes by newest
+    const sorted = allRecipes.sort(
+        (a, b) =>
+            new Date(b.createdAt?.toDate?.() || 0).getTime() -
+            new Date(a.createdAt?.toDate?.() || 0).getTime()
+    );
+
+    console.log("Fetched followed users' recipe count:", allRecipes.length);
+    console.log("Sample recipe titles:", allRecipes.map(r => r.title));
+
+    // Return the paginated slice
+    return sorted.slice(start, start + batchSize);
 };
 
 export const getTopChallenges = async (limit: number): Promise<Challenge[]> => {
@@ -847,3 +858,28 @@ export const getTopChallenges = async (limit: number): Promise<Challenge[]> => {
         .sort((a, b) => b.submissions.length - a.submissions.length)
         .slice(0, limit);
 };
+
+export function ensureUserRef(input: any): DocumentReference {
+    if (typeof input === "object" && input.id && input.firestore) {
+        // Looks like a fake ref from serialization
+        return doc(database, "Users", input.id);
+    }
+
+    if (typeof input === "string") {
+        return doc(database, "Users", input);
+    }
+
+    return input as DocumentReference;
+}
+
+export function resolveUserRef(input: any): DocumentReference {
+    if (typeof input === "string") {
+        return doc(database, "Users", input);
+    }
+
+    if (typeof input === "object" && "id" in input && typeof input.id === "string") {
+        return doc(database, "Users", input.id); // reconstruct ref from id
+    }
+
+    return input as DocumentReference;
+}

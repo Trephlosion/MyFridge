@@ -19,6 +19,7 @@ import { useGetUserRecipes } from "@/lib/react-query/queriesAndMutations";
 import LoadingRecipe from "@/components/shared/LoadingRecipe.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import RecipeCard from "../../components/cards/RecipeCard.tsx";
+import GridChallengeList from "@/components/shared/GridChallengeList.tsx";
 
 
 
@@ -157,9 +158,9 @@ const Profile = () => {
                         <div className="flex gap-8 mt-10 items-center justify-center xl:justify-start flex-wrap z-20">
                             <StatBlock value={currentUser.recipes.length || 0} label="Recipes" />
                             <StatBlock value={currentUser.workshops.length || 0} label={"Workshops"} />
+                            <StatBlock value={currentUser.challenges.length} label={"Challenges"} />
                             <StatBlock value={isUpdating ? 0 : followersCount} label="Followers" />
                             <StatBlock value={isUpdating ? 0 : followingCount} label="Following" />
-                            <StatBlock value={currentUser.challenges.length} label={"Challenges"} />
                         </div>
                         <p className="small-medium md:base-medium text-center xl:text-left mt-7 max-w-screen-sm">
                             {currentUser.bio}
@@ -237,7 +238,7 @@ const Profile = () => {
 
                 <TabsContent value={"challenges"} className="w-full max-w-5xl">
                     <>
-                                <MyChallengesTab/>
+                                <GridChallengeList challenges={currentUser.challenges}/>
                     </>
                 </TabsContent>
 

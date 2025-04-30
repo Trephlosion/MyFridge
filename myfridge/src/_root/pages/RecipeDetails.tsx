@@ -240,47 +240,47 @@ import {UserAvatarRow} from "@/components/shared";
                         }, [id, submitted]);
 
 
-                        const handleGetUserInfo = async (
-                            authorId: any | DocumentReference | { id: string }
-                        ): Promise<UserInfo> => {
+                        const handleGetUserInfo = async (authorId: any): Promise<UserInfo> => {
                             try {
+
+                                console.log("Fetching user info for authorId:", authorId);
                                 let userRef: DocumentReference;
 
                                 if (typeof authorId === "string") {
-                                    // you passed in the UID
                                     userRef = doc(database, "Users", authorId);
                                 } else if (
                                     typeof authorId === "object" &&
                                     "id" in authorId &&
                                     typeof authorId.id === "string"
                                 ) {
-                                    // JSON-stringified object form
                                     userRef = doc(database, "Users", authorId.id);
                                 } else {
-                                    // already a true DocumentReference
                                     userRef = authorId as DocumentReference;
                                 }
 
                                 const userSnap = await getDoc(userRef);
                                 if (userSnap.exists()) {
-                                    const data: any = userSnap.data();
+                                    const data = userSnap.data();
                                     return {
-                                        pfp:              data.pfp,
-                                        username:         data.username  || "Unknown",
-                                        isVerified:       data.isVerified  || false,
-                                        isCurator:        data.isCurator   || false,
-                                        isAdministrator:  data.isAdministrator || false,
-                                        id:               userSnap.id,
+                                        id: userSnap.id,
+                                        pfp: data.pfp,
+                                        username: data.username,
+                                        isVerified: data.isVerified,
+                                        isCurator: data.isCurator,
+                                        isAdministrator: data.isAdministrator,
                                     };
                                 }
-                            } catch (error) {
-                                console.error("Error fetching user info:", error);
+                            } catch (err) {
+                                console.error("Error fetching user info:", err);
                             }
 
-                            // fallback
                             return {
-                                pfp:      "/assets/icons/profile-placeholder.svg",
+                                pfp: null,
                                 username: "Unknown",
+                                id: "",
+                                isVerified: false,
+                                isCurator: false,
+                                isAdministrator: false,
                             };
                         };
 
@@ -327,16 +327,10 @@ import {UserAvatarRow} from "@/components/shared";
                                 <h1 className="text-4xl font-bold text-center mt-6">{recipe.title}</h1>
 
                                 <div className="flex items-center justify-center gap-4 my-4">
-                                    <div className="flex items-center gap-2">
-                                        <UserAvatarRow user={recipe.author} />
-                                        <div className="flex items-center gap-1 text-xs text-gray-500">
-                                            <p>
-                                                {recipe.createdAt ? multiFormatDateString(recipe.createdAt) : "Unknown Date"}
-                                            </p>
+                                    <div className="flex flex-col md:flex-row md:items-center gap-4">
 
-                                            {recipe.updatedAt && recipe.createdAt !== recipe.updatedAt && (
-                                                <p>Updated{" "}{multiFormatDateString(recipe.updatedAt)}                                                </p>
-                                            )}
+
+                                        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
 
                                             <p>{recipe.likes?.length || 0} likes</p>
                                         </div>
@@ -416,6 +410,33 @@ import {UserAvatarRow} from "@/components/shared";
                                         {user.isCurator || user.isAdministrator && (
 
                                             <>
+
+                                                {user?.isAdministrator && (
+                                                    <div className="flex flex-col gap-2 mt-3">
+                                                        <Button
+                                                            onClick={() => navigate(`/recipe-analytics?recipeId=${recipe.id}`)}
+                                                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 px-3 rounded"
+                                                        >
+                                                            Get Analytics
+                                                        </Button>
+                                                        <Button
+                                                            onClick={async (e) => {
+                                                                e.stopPropagation();
+                                                                const recipeRef = doc(database, "Recipes", recipe.id);
+                                                                const updatedHighlight = !recipe.isRecommended;
+
+                                                                await updateDoc(recipeRef, {
+                                                                    isRecommended: updatedHighlight,
+                                                                });
+
+                                                                window.location.reload(); // refresh to show updated state
+                                                            }}
+                                                            className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-3 rounded"
+                                                        >
+                                                            {recipe.isRecommended ? "Unhighlight" : "Highlight as Seasonal"}
+                                                        </Button>
+                                                    </div>
+                                                )}
 
 
 

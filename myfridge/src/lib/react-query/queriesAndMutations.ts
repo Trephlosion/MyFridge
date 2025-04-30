@@ -1,7 +1,7 @@
 import {
     useQuery,
     useMutation,
-    useQueryClient,
+    useQueryClient, useInfiniteQuery,
 
 } from "@tanstack/react-query";
 import {collection, DocumentReference, getDocs, query, where} from "firebase/firestore";
@@ -33,7 +33,7 @@ import {
     saveWorkshop,
     createWorkshop,
     updateWorkshop,
-    deleteWorkshop,
+    deleteWorkshop, getFollowedUsersRecipes,
 
 } from "@/lib/firebase/api";
 import {
@@ -407,4 +407,14 @@ export const useAddIngredientToShoppingList = () => {
 export const useGenerateAiRecipes = () =>
     useMutation<Recipe[], Error, string[], unknown>({
         mutationFn: generateAiRecipes,
+    });
+
+
+export const useGetInfiniteFeed = (userId: string) =>
+    useInfiniteQuery({
+        queryKey: ["infiniteFeed", userId],
+        queryFn: async ({ pageParam = 1 }) =>
+            await getFollowedUsersRecipes(userId, pageParam),
+        getNextPageParam: (lastPage, allPages) =>
+            lastPage.length < 20 ? undefined : allPages.length + 1,
     });

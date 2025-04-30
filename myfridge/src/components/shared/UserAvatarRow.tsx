@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { multiFormatDateString } from "@/lib/utils";
 import { IUser } from "@/types";
 import { database } from "@/lib/firebase/config";
+import {ensureUserRef, resolveUserRef} from "@/lib/firebase/api"
 
 interface UserAvatarRowProps {
     user: IUser | DocumentReference;
@@ -16,26 +17,16 @@ const UserAvatarRow = ({ user, dateString }: UserAvatarRowProps) => {
 
     useEffect(() => {
         const fetchUserInfo = async () => {
-            if (!user) return;
-
-            let userRef: DocumentReference;
-
-            if (typeof (user as any).id === "string" && (user as any).username) {
-                // It's already an IUser object
-                setUserInfo(user as IUser);
-                return;
-            } else if (typeof user === "object" && "id" in user) {
-                // It's a {id: "..." } object
-                userRef = doc(database, "Users", (user as any).id);
-            } else {
-                // It is an actual DocumentReference
-                userRef = user as DocumentReference;
-            }
-
             try {
-                const userSnap = await getDoc(userRef);
-                if (userSnap.exists()) {
-                    setUserInfo({ id: userSnap.id, ...(userSnap.data() as IUser) });
+                if (user && typeof user === "object" && "username" in user) {
+                    setUserInfo(user as IUser);
+                    return;
+                }
+
+                const userRef = resolveUserRef(user);
+                const snap = await getDoc(userRef);
+                if (snap.exists()) {
+                    setUserInfo({ id: snap.id, ...(snap.data() as IUser) });
                 }
             } catch (error) {
                 console.error("Error fetching user data:", error);

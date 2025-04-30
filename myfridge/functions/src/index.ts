@@ -1,50 +1,85 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+import * as functions from "firebase-functions";
+import * as admin from "firebase-admin";
+import cors from "cors";
+import { OpenAI } from "openai";
 
-
-
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
-
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
-
-// functions/src/index.ts
-import * as functions from 'firebase-functions';
-import * as admin from 'firebase-admin';
-import * as cors from 'cors';
-
+const Busboy = require("busboy");
 admin.initializeApp();
 
-// Allow all origins (or restrict to your domain if needed)
-const corsHandler = cors({ origin: true });
-
-export const toggleUserActivation = functions.https.onRequest((req, res) => {
-    corsHandler(req, res, async () => {
-        // Optionally, restrict methods (e.g., allow only POST)
-        if (req.method !== 'POST') {
-            res.status(405).send('Method Not Allowed');
-            return;
-        }
-
-        const { uid } = req.body;
-        try {
-            const userRecord = await admin.auth().getUser(uid);
-            const currentDisabled = userRecord.disabled;
-            const newDisabled = !currentDisabled;
-            await admin.auth().updateUser(uid, { disabled: newDisabled });
-            res.status(200).json({ disabled: newDisabled });
-        } catch (error) {
-            console.error("Error toggling user activation:", error);
-            res.status(500).send("Internal Server Error");
-        }
-    });
+const openai = new OpenAI({
+    apiKey: functions.config().openai.key,
 });
+
+const corsHandler = cors({ origin: "http://localhost:5173" });
+
+export const generateRecipeFromImage = functions
+    .runWith({ memory: "1GB", timeoutSeconds: 60 })
+    .https.onRequest((req, res) => {
+        return corsHandler(req, res, async () => {
+            if (req.method !== "POST") {
+                res.set("Access-Control-Allow-Origin", "http://localhost:5173");
+                return res.status(405).send("Method Not Allowed");
+            }
+
+            try {
+                const buffer = await new Promise<Buffer>((resolve, reject) => {
+                    const busboy = new Busboy({ headers: req.headers });
+                    const fileBuffer: Buffer[] = [];
+
+                    busboy.on("file", (_fieldname: string, file: any) => {
+                        file.on("data", (data: Buffer) => fileBuffer.push(data));
+                    });
+
+                    busboy.on("finish", () => resolve(Buffer.concat(fileBuffer)));
+                    busboy.on("error", reject);
+
+                    req.pipe(busboy);
+                });
+
+                const base64Image = buffer.toString("base64");
+
+                const visionPrompt = [
+                    {
+                        type: "text",
+                        text: "Describe this image and generate a recipe with title, description, ingredients, and instructions.",
+                    },
+                    {
+                        type: "image_url",
+                        image_url: {
+                            url: `data:image/jpeg;base64,${base64Image}`,
+                        },
+                    },
+                ] as any;
+
+                const response = await openai.chat.completions.create({
+                    model: "gpt-4-vision-preview",
+                    messages: [{ role: "user", content: visionPrompt }],
+                    max_tokens: 1000,
+                });
+
+                const raw = response.choices?.[0]?.message?.content || "";
+                const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
+
+                const title = lines.find((l) => l.toLowerCase().startsWith("title:"))?.replace(/^title:\s*/i, "") || "AI Recipe";
+                const description = lines.find((l) => l.toLowerCase().startsWith("description:"))?.replace(/^description:\s*/i, "") || "Generated from image";
+                const ingredients = lines.filter((l) => l.startsWith("-"));
+                const instructions = lines.filter((l) => /^\d+\./.test(l));
+
+                const recipe = {
+                    title,
+                    description,
+                    ingredients,
+                    instructions,
+                    tags: ["AI", "ImageBased"],
+                    createdAt: new Date().toISOString(),
+                };
+
+                res.set("Access-Control-Allow-Origin", "http://localhost:5173");
+                return res.status(200).json({ recipe });
+            } catch (error) {
+                console.error("Error:", error);
+                res.set("Access-Control-Allow-Origin", "http://localhost:5173");
+                return res.status(500).json({ error: "Internal server error" });
+            }
+        });
+    });
