@@ -1,4 +1,3 @@
-// AiRecipeCarousel.tsx
 import React, { useState, useEffect } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { useUserContext } from "@/context/AuthContext";
@@ -12,14 +11,11 @@ import {
 import RecipeCard from "@/components/cards/RecipeCard";
 import { database } from "@/lib/firebase/config";
 import { Recipe } from "@/types";
-import {RecipeSkeleton} from "@/components/cards";
+import { RecipeSkeleton } from "@/components/cards";
 import { useGenerateAiRecipes } from "@/lib/react-query/queriesAndMutations";
+import { Button } from "@/components/ui/button";
 
-
-
-
-
-const AiRecipeCarousel = () => {
+const AiRecipeCarousel: React.FC = () => {
     const { user } = useUserContext();
     const [aiRecipes, setAiRecipes] = useState<Recipe[]>([]);
     const [loading, setLoading] = useState(false);
@@ -27,6 +23,17 @@ const AiRecipeCarousel = () => {
     const [ingredients, setIngredients] = useState<string[]>([]);
     const generateAiRecipesMutation = useGenerateAiRecipes();
 
+    const generateRecipes = async (ing: string[]) => {
+        setLoading(true);
+        try {
+            const generated = await generateAiRecipesMutation.mutateAsync(ing);
+            setAiRecipes(generated);
+        } catch (error) {
+            console.error("Error generating AI recipes:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         let unsubscribe = () => {};
@@ -36,7 +43,7 @@ const AiRecipeCarousel = () => {
                     ? doc(database, "Fridges", user.myFridge)
                     : user.myFridge;
 
-            unsubscribe = onSnapshot(fridgeRef, async (docSnap) => {
+            unsubscribe = onSnapshot(fridgeRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     const fridgeIngredients: string[] = data.ingredients || [];
@@ -46,66 +53,67 @@ const AiRecipeCarousel = () => {
                         setAiRecipes([]);
                     } else {
                         setHasIngredients(true);
-                        setLoading(true);
-                        try {
-                            const generated = await generateAiRecipesMutation.mutateAsync(fridgeIngredients);
-                            setAiRecipes(generated);
-                        } catch (error) {
-                            console.error("Error generating AI recipes:", error);
-                        } finally {
-                            setLoading(false);
-                        }
+                        generateRecipes(fridgeIngredients);
                     }
                 } else {
                     setHasIngredients(false);
-                    setIngredients([]);
                 }
             });
         } else {
             setHasIngredients(false);
         }
-        return () => {
-            unsubscribe();
-        };
+        return () => unsubscribe();
     }, [user.myFridge]);
 
     if (!hasIngredients) {
-        return <p>Please add ingredients to your fridge first.</p>;
+        return <p className="text-center mt-4">Please add ingredients to your fridge first.</p>;
     }
 
-    if (loading) {
-        return (
-
-            <>
-                <p>Generating AI recipes...</p>
-                <Carousel opts={{ align: "start" }} className="w-full max-w-sm">
-                    <CarouselContent>
-                        <CarouselItem className="w-full">
-                            <RecipeSkeleton/>
-                        </CarouselItem>
+    return (
+        <div className="w-full mx-auto">
+            {loading ? (
+                <>
+                    <p className="text-center mb-4">Generating AI recipes...</p>
+                    <Carousel opts={{ align: "start" }} className="w-full">
+                        <CarouselContent className="grid grid-cols-3 gap-4">
+                            <CarouselItem className="w-full">
+                                <RecipeSkeleton />
+                            </CarouselItem>
+                            <CarouselItem className="w-full">
+                                <RecipeSkeleton />
+                            </CarouselItem>
+                            <CarouselItem className="w-full">
+                                <RecipeSkeleton />
+                            </CarouselItem>
+                        </CarouselContent>
+                        <CarouselPrevious />
+                        <CarouselNext />
+                    </Carousel>
+                </>
+            ) : (
+                <Carousel opts={{ align: "start" }} className="w-full">
+                    <CarouselContent className="grid grid-cols-3 gap-4">
+                        {aiRecipes.map((recipe) => (
+                            <CarouselItem key={recipe.id} className="w-full p-1">
+                                <RecipeCard recipe={recipe} />
+                            </CarouselItem>
+                        ))}
                     </CarouselContent>
                     <CarouselPrevious />
                     <CarouselNext />
                 </Carousel>
+            )}
 
-            </>
-        );
-    }
-
-    return (
-        <Carousel opts={{ align: "start" }} className="w-full max-w-sm">
-            <CarouselContent>
-                {aiRecipes.map((recipe) => (
-                    <CarouselItem key={recipe.id} className="w-full h-fit">
-                        <div className="p-1">
-                            <RecipeCard recipe={recipe} />
-                        </div>
-                    </CarouselItem>
-                ))}
-            </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
-        </Carousel>
+            <div className="flex justify-center mt-4">
+                <Button
+                    onClick={() => generateRecipes(ingredients)}
+                    disabled={loading || ingredients.length === 0}
+                    className={"bg-primary-500 hover:bg-primary-600 text-white"}
+                >
+                    Generate New Recipes
+                </Button>
+            </div>
+        </div>
     );
 };
 

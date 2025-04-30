@@ -479,7 +479,7 @@ export const generateAiRecipes = async (ingredients: string[]): Promise<Recipe[]
 
     if (!apiKey) throw new Error("Missing OpenAI API Key");
 
-    const prompt = `You are an innovative chef. Generate 3-4 unique recipes using only the following ingredients: ${ingredients.join(",")}\nReturn JSON array with title, description, ingredients, cookTime, prepTime, servings, instructions.`;
+    const prompt = `You are an innovative chef. Generate 5-6 unique recipes using only the following ingredients: ${ingredients.join(",")}\nReturn JSON array with title, description, ingredients, cookTime, prepTime, servings, instructions.`;
 
     const payload = {
         model: "gpt-3.5-turbo",
@@ -515,11 +515,138 @@ export const generateAiRecipes = async (ingredients: string[]): Promise<Recipe[]
                 cookTime: item.cookTime,
                 servings: item.servings,
                 mediaUrl: img,
-                createdAt: new Date(),
-                likes: [],
+                isRecommended: false,
+                isApproved: false,
+                isSeasonal: false,
+                createdAt: serverTimestamp(),
                 username: "AI Chef",
                 pfp: "/assets/icons/ai-bot-icon.svg",
                 tags: ["AI", "Auto-generated"],
+            };
+        })
+    );
+
+    return recipes;
+};
+
+
+/**
+ * Generate 4–5 recipes from a user-uploaded image.
+ * Uses GPT-4o to “see” the image (encoded as data URL).
+ */
+export const generateAiRecipesFromImage = async (files: File[]): Promise<Recipe[]> => {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    if (!apiKey) throw new Error("Missing OpenAI API Key");
+    if (!files || files.length === 0) throw new Error("No image file provided");
+
+    // helper: file → data URL
+    const toDataURL = (file: File) =>
+        new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => reject(new Error("Failed to read file"));
+            reader.readAsDataURL(file);
+        });
+    const dataUrl = await toDataURL(files[0]);
+
+    const systemPrompt = { role: "system", content: "You are a helpful chef." };
+    const userPrompt = {
+        role: "user",
+        content: `You are an innovative chef. Here is an image: ${dataUrl}
+Generate 4–5 unique recipes based on the ingredients you see or the vibe/feeling of the image.
+Return a JSON array of objects with these keys:
+- title (string)
+- description (string)
+- ingredients (string[])
+- prepTime (number of minutes)
+- cookTime (number of minutes)
+- servings (number)
+- instructions (string[])
+
+Only return raw JSON.`,
+    };
+
+    const payload = {
+        model: "gpt-4o",
+        messages: [systemPrompt, userPrompt],
+        temperature: 0.7,
+        max_tokens: 800,
+    };
+
+    // retry logic
+    const maxRetries = 3;
+    let response: Response | null = null;
+    let json: any = null;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        // on rate limit, back off
+        if (response.status === 429) {
+            const retryAfter = response.headers.get("Retry-After");
+            const delayMs = retryAfter
+                ? parseInt(retryAfter, 10) * 1000
+                : Math.pow(2, attempt) * 1000;
+            console.warn(`OpenAI 429 → retrying in ${delayMs}ms (attempt ${attempt + 1})`);
+            await new Promise((res) => setTimeout(res, delayMs));
+            continue;
+        }
+
+        // any other HTTP error
+        if (!response.ok) {
+            const txt = await response.text().catch(() => "");
+            throw new Error(`OpenAI error ${response.status}: ${txt}`);
+        }
+
+        // success
+        json = await response.json();
+        break;
+    }
+
+    if (!json) {
+        throw new Error("Failed to get a valid response from OpenAI after retries");
+    }
+
+    // guard missing choices
+    const content = json.choices?.[0]?.message?.content;
+    if (!content) {
+        console.error("OpenAI raw response:", json);
+        throw new Error("OpenAI did not return any content in choices[0]");
+    }
+
+    // strip markdown fences, parse JSON
+    const cleaned = content.trim().replace(/^```json/, "").replace(/```$/, "");
+    let parsed: any[];
+    try {
+        parsed = JSON.parse(cleaned);
+    } catch (e) {
+        console.error("Failed to JSON.parse OpenAI output:", cleaned);
+        throw new Error("Invalid JSON from OpenAI");
+    }
+
+    // enrich with images
+    const recipes: Recipe[] = await Promise.all(
+        parsed.map(async (item, idx) => {
+            const img = await getTopImageForRecipe(item.title);
+            return {
+                id: `ai-img-${Date.now()}-${idx}`,
+                title: item.title,
+                description: item.description,
+                ingredients: item.ingredients,
+                prepTime: item.prepTime,
+                cookTime: item.cookTime,
+                servings: item.servings,
+                instructions: item.instructions,
+                mediaUrl: img,
+                username: "AI Chef",
+                pfp: "/assets/icons/ai-bot-icon.svg",
+                tags: ["AI", "Image-Based"],
             };
         })
     );

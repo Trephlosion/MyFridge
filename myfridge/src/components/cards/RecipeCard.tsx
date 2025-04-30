@@ -114,13 +114,13 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
 
             <CardHeader className="flex justify-between px-3">
                 <div className="flex flex-col items-start gap-3">
-                    <UserAvatarRow user={recipe.author} />
+                    {recipe.author && <UserAvatarRow user={recipe.author} />}
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                         <p>{recipe.createdAt ? (multiFormatDateString(recipe.createdAt)) : "Unknown Date"}</p>
                         {recipe.updatedAt && recipe.createdAt !== recipe.updatedAt && (
                             <p>Updated {multiFormatDateString(recipe.updatedAt)}</p>
                         )}
-                        <p>{recipe.likes.length} likes</p>
+                        {recipe.likes && <p>{recipe.likes.length} likes</p>}
                     </div>
 
                     {user.username === userInfo.username ? (

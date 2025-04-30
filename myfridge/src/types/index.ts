@@ -73,14 +73,14 @@ export type Recipe = {
     prepTime?: number;
     servings?: number;
 
-    createdAt: Timestamp;
+    createdAt?: Timestamp;
     updatedAt?: Timestamp;
-    isRecommended: boolean;
-    isApproved: boolean;
-    isSeasonal: boolean;
+    isRecommended?: boolean;
+    isApproved?: boolean;
+    isSeasonal?: boolean;
 
     mediaUrl: string;
-    author: DocumentReference<IUser>;
+    author?: DocumentReference<IUser>;
     userId?: DocumentReference<IUser>;
 
     username?: string;
@@ -90,8 +90,8 @@ export type Recipe = {
     instructions: string[];
     ingredients: string[];
 
-    likes: DocumentReference<IUser>[];
-    comments: DocumentReference<any>[];
+    likes?: DocumentReference<IUser>[];
+    comments?: DocumentReference<any>[];
 
     file?: File[];
     avgRating?: number;

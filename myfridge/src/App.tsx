@@ -23,6 +23,7 @@ import { Routes, Route } from 'react-router-dom';
 } from './_root/pages';
                     import { Toaster } from '@/components/ui/toaster.tsx';
 import {CreateChallenge} from "@/_root/pages";
+import AIFeatures from "@/_root/pages/AIFeatures.tsx";
 
 
                     const App = () => {
@@ -58,6 +59,7 @@ import {CreateChallenge} from "@/_root/pages";
                                         <Route path="/create-workshop" element={<CreateWorkshop />} />
                                         <Route path="/workshop/:id" element={<WorkshopDetails />} />
                                         <Route path="/create-challenge" element={<CreateChallenge />} />
+                                        <Route path="/ai-features" element={<AIFeatures />} />
 
 
                                     </Route>

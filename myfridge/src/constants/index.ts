@@ -34,7 +34,8 @@
                     imgURL: "/assets/icons/chat.svg",
                     route: "/notifications",
                     label: "Notifications",
-                }
+                },
+                { label: "AI Features", route: "/ai-features", imgURL: "/assets/icons/ai-bot-icon.svg" },
             ];
 
             export const bottombarLinks = [
@@ -68,4 +69,5 @@
                     route: "/notifications",
                     label: "Notifications",
                 },
+                { label: "AI Features", route: "/ai-features", imgURL: "/assets/icons/ai-bot-icon.svg" },
             ];

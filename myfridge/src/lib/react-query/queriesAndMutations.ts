@@ -1,7 +1,7 @@
 import {
     useQuery,
     useMutation,
-    useQueryClient, useInfiniteQuery,
+    useQueryClient, useInfiniteQuery, UseMutationResult,
 
 } from "@tanstack/react-query";
 import {collection, DocumentReference, getDocs, query, where} from "firebase/firestore";
@@ -33,7 +33,7 @@ import {
     saveWorkshop,
     createWorkshop,
     updateWorkshop,
-    deleteWorkshop, getFollowedUsersRecipes,
+    deleteWorkshop, getFollowedUsersRecipes, generateAiRecipesFromImage,
 
 } from "@/lib/firebase/api";
 import {
@@ -409,6 +409,12 @@ export const useGenerateAiRecipes = () =>
         mutationFn: generateAiRecipes,
     });
 
+/** Hook to generate recipes from uploaded image */
+export const useGenerateImageAiRecipes = ():
+    UseMutationResult<Recipe[], Error, File[]> =>
+    useMutation<Recipe[], Error, File[]>({
+        mutationFn: (files) => generateAiRecipesFromImage(files),
+    });
 
 export const useGetInfiniteFeed = (userId: string) =>
     useInfiniteQuery({

@@ -83,7 +83,7 @@ const ChallengeSubmissionForm = ({
                             <div
                                 key={recipe.id}
                                 onClick={() => !isSubmitted && setSelectedRecipeId(recipe.id)}
-                                className={`relative cursor-pointer rounded-xl border-2 transition-all duration-200 ${
+                                className={`relative cursor-pointer rounded-xl border-2 transition-all duration-200 flex ${
                                     isSubmitted
                                         ? "border-gray-500 opacity-60 pointer-events-none"
                                         : isSelected
