@@ -1,32 +1,37 @@
-import { Routes, Route } from 'react-router-dom';
-                    import { useUserContext } from '@/context/AuthContext';
-                    import './globals.css';
-                    import AuthLayout from './_auth/AuthLayout';
-                    import RootLayout from './_root/RootLayout';
-                    import SignupForm from './_auth/forms/SignupForm.tsx';
-                    import SigninForm from './_auth/forms/SigninForm.tsx';
-                    import {
-    Home,
-    Explore,
-    Saved,
+import {Route, Routes} from 'react-router-dom';
+import {useUserContext} from '@/context/AuthContext';
+import './globals.css';
+import AuthLayout from './_auth/AuthLayout';
+import RootLayout from './_root/RootLayout';
+import SignupForm from './_auth/forms/SignupForm.tsx';
+import SigninForm from './_auth/forms/SigninForm.tsx';
+import {
+    AIFeatures,
     AllUsers,
-    EditRecipe,
-    RecipeDetails,
+    ChallengeDetails,
+    Challenges,
+    CreateChallenge,
     CreateRecipe,
-    Profile,
-    UpdateProfile,
+    CreateWorkshop,
+    EditRecipe,
+    Explore,
+    Home,
+    Inbox,
     LikedRecipes,
+    NotificationsPage,
+    Profile,
+    RecipeAnalytics,
+    RecipeDetails,
+    SendMessage,
+    UpdateProfile,
+    WorkshopDetails,
     Workshops,
-                        Admin,
-                        Challenges, ChallengeDetails, RecipeAnalytics, WorkshopDetails, NotificationsPage,
-                        CreateWorkshop, SendMessage,
-                        Inbox
 } from './_root/pages';
-                    import { Toaster } from '@/components/ui/toaster.tsx';
-                    import Trending from "@/_root/pages/Trending";
+import {Toaster} from '@/components/ui/toaster.tsx';
+import Trending from "@/_root/pages/Trending";
 
 
-                    const App = () => {
+const App = () => {
                         const { user } = useUserContext();
                         return (
                             <main className="flex h-screen">
@@ -51,14 +56,15 @@ import { Routes, Route } from 'react-router-dom';
                                         <Route path="/update-profile/:id/*" element={<UpdateProfile/>} />
                                         <Route path="/liked-recipes/:id/*" element={<LikedRecipes/>} />
                                         <Route path="/challenge/:id/*" element={<ChallengeDetails/>} />
-                                        <Route path="/admin" element={<Admin/>} />
                                         <Route path="/workshops/*" element={<Workshops/>} />
-                                        <Route path={"/inbox"} element={<Inbox/>}/>
+                                        <Route path="/inbox" element={<Inbox/>}/>
                                         <Route path="/recipe-analytics" element={<RecipeAnalytics/>} />
-                                        <Route path={"/send-message/:userId"} element={<SendMessage/>}/>
+                                        <Route path="/send-message/:userId" element={<SendMessage/>}/>
                                         <Route path="/notifications" element={<NotificationsPage />} />
                                         <Route path="/create-workshop" element={<CreateWorkshop />} />
                                         <Route path="/workshop/:id" element={<WorkshopDetails />} />
+                                        <Route path="/create-challenge" element={<CreateChallenge/>}/>
+                                        <Route path="/ai-features" element={<AIFeatures/>}/>
 
                                     </Route>
                                 </Routes>
