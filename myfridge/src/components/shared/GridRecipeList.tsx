@@ -47,7 +47,7 @@ const GridRecipeList = ({ recipes }: GridRecipeListProps) => {
   useEffect(() => {
     const fetchSuggestedRecipes = async () => {
       const recipesRef = collection(database, "Recipes");
-      const suggestedQuery = query(recipesRef, orderBy("createdAt", "desc"), limit(6));
+      const suggestedQuery = query(recipesRef, orderBy("createdAt", "desc"), limit(20));
       const querySnapshot = await getDocs(suggestedQuery);
       const suggested = querySnapshot.docs.map((doc) => ({
         id: doc.id,

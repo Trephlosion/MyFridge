@@ -1,6 +1,6 @@
 // src/_root/pages/ChallengeDetails.tsx
-import React, { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams} from 'react-router-dom';
 import {
     doc,
     getDoc,
@@ -10,7 +10,7 @@ import {
 } from 'firebase/firestore';
 import { database } from '@/lib/firebase/config';
 import { useUserContext } from '@/context/AuthContext';
-import Loader from '@/components/shared/Loader';
+import { Loader, ChallengeDeadlineInfo, ChallengeSubmissionsPanel } from '@/components/shared';
 import {
     Card,
     CardHeader,
@@ -32,24 +32,28 @@ import {
     AlertDialogCancel,
     AlertDialogAction,
 } from '@/components/ui/alert-dialog';
-import ChallengeDeadlineInfo from '@/components/shared/ChallengeDeadlineInfo';
 import ChallengeSubmissionForm from '@/components/form/ChallengeSubmissionForm';
-import ChallengeSubmissionsPanel from '@/components/shared/ChallengeSubmissionsPanel';
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbSeparator
+} from "@/components/ui/breadcrumb.tsx";
 
 const ChallengeDetails = () => {
     const { id } = useParams<{ id: string }>();
     const { user } = useUserContext();
-
     const [challenge, setChallenge] = useState<any>(null);
     const [creatorInfo, setCreatorInfo] = useState<any>(null);
     const [participantsInfo, setParticipantsInfo] = useState<any[]>([]);
     const [winnerRecipe, setWinnerRecipe] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-
     const isCreator = challenge?.creator?.id === user.id;
     const isParticipant = participantsInfo.some((p) => p.id === user.id);
     const expired = challenge?.deadline?.toDate?.().getTime() < Date.now();
     const currentWinnerId = challenge?.winner?.id;
+    const navigate = useNavigate();
 
     // 1️⃣ Load challenge, creator, participants, and winner
     useEffect(() => {
@@ -145,7 +149,7 @@ const ChallengeDetails = () => {
             ...c,
             participants: updatedParticipants,
             submissions: (c.submissions || []).filter(
-                (r: any) => !toRemove.some((t) => t.id === r.id)
+                (r: any) => !toRemove.some((t: any) => t.id === r.id)
             ),
         }));
     };
@@ -163,12 +167,46 @@ const ChallengeDetails = () => {
         }
     };
 
-    if (loading) return <Loader />;
-    if (!challenge)
-        return <p className="text-center text-light-4 mt-10">Challenge not found.</p>;
+    if (loading) return (<>
+            <p className="text-center text-light-4 mt-10">Loading Challenges...</p>
+            <div className="flex justify-center items-center h-screen">
+                <Loader />
+            </div>
+        </>);
+
+    if (!challenge) return (<>
+            <p className="text-center text-light-4 mt-10">Challenge not found.</p>
+                <Button
+                    onClick={() => navigate("/challenges")}
+                    className="mb-4 text-sm text-yellow-400 hover:text-yellow-300 transition"
+                >
+                    ← Back to Challenges
+                </Button>
+            </>);
 
     return (
         <div className="p-6 max-w-4xl mx-auto space-y-6">
+            {/* ─── Breadcrumb ───────────────────────── */}
+            <Breadcrumb>
+                <BreadcrumbList>
+                    <BreadcrumbItem>
+                        <BreadcrumbLink asChild>
+                            <Link className={"hover:text-accentColor"} to="/">Home</Link>
+                        </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                        <BreadcrumbLink asChild>
+                            <Link className={"hover:text-accentColor"} to="/challenges">Challenges</Link>
+                        </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                        <BreadcrumbLink>{challenge?.title}</BreadcrumbLink>
+                    </BreadcrumbItem>
+                </BreadcrumbList>
+            </Breadcrumb>
+
             {/* ✨ Info Card */}
             <Card className="bg-dark-4 shadow-lg rounded-2xl">
                 <CardHeader>
@@ -254,10 +292,6 @@ const ChallengeDetails = () => {
                             </AlertDialog>
                         )}
                     </div>
-
-                    <Button variant="outline" onClick={() => window.history.back()}>
-                        Go Back
-                    </Button>
                 </CardFooter>
             </Card>
 

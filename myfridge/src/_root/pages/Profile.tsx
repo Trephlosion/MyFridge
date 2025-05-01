@@ -1,27 +1,26 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams, Link, Outlet, useLocation, Routes, Route } from "react-router-dom";
+import {useParams, Link, Outlet, useNavigate} from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import {Inbox, LikedRecipes} from "@/_root/pages";
+import { Inbox } from "@/_root/pages";
 import { useUserContext } from "@/context/AuthContext";
-import {GridRecipeList, Loader, MyChallengesTab} from "@/components/shared";
+import { GridRecipeList, Loader, LoadingRecipe, GridChallengeList } from "@/components/shared";
 import { DataTable, FridgeColumns } from "@/components/DataTables";
 import {
     useGetUserById,
     useFollowUser,
     useGetAllFridgeIngredients
 } from "@/lib/react-query/queriesAndMutations";
-import { IUser } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import FridgeForm from "@/components/form/FridgeForm";
 import { onSnapshot } from "firebase/firestore";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar.tsx";
 import { useGetUserRecipes } from "@/lib/react-query/queriesAndMutations";
-import LoadingRecipe from "@/components/shared/LoadingRecipe.tsx";
-import {Input} from "@/components/ui/input.tsx";
-import RecipeCard from "../../components/cards/RecipeCard.tsx";
-import GridChallengeList from "@/components/shared/GridChallengeList.tsx";
-
-
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbSeparator
+} from "@/components/ui/breadcrumb.tsx";
 
 const formatNumber = (num: number): string => {
     if (num < 1000) return num.toString();
@@ -47,23 +46,14 @@ const StatBlock = ({ value, label }: StatBlockProps) => (
 const Profile = () => {
     const { id } = useParams(); // The profile user's ID
     const { user } = useUserContext(); // Authenticated user context
-    const { pathname } = useLocation();
     const navigate = useNavigate();
     const [myFridge, setMyFridge] = useState([]);
-    const [confirmationMessage, setConfirmationMessage] = useState("");
-
-
-
-
-
     const { data: currentUser, isLoading } = useGetUserById(id || "");
     const followMutation = useFollowUser();
-
     const [followersCount, setFollowersCount] = useState<number>(0);
     const [followingCount, setFollowingCount] = useState<number>(0);
     const [isUpdating, setIsUpdating] = useState<boolean>(false);
     const { data: profileUserRecipes, isLoading: isLoadingRecipes } = useGetUserRecipes(currentUser?.id);
-
     const { data: fridge, isLoading: isFridgeLoading } = useGetAllFridgeIngredients(user.myFridge);
 
     useEffect(() => {
@@ -89,12 +79,22 @@ const Profile = () => {
         };
     }, [currentUser, user.myFridge]);
 
-    if (isLoading || isFridgeLoading || !currentUser)
-        return (
-            <div className="flex-center w-full h-full">
-                <Loader />
-            </div>
-        );
+    if (isLoading || isFridgeLoading) return (<>
+        <p className="text-center text-light-4 mt-10">Loading Recipe...</p>
+        <div className="flex justify-center items-center h-screen">
+            <Loader />
+        </div>
+    </>);
+
+    if (!currentUser) return (<>
+        <p className="text-center text-light-4 mt-10">An Error has occurred loading a user, try visiting the page again.</p>
+        <Button
+            onClick={() => navigate("/all-users")}
+            className="mb-4 text-sm text-yellow-400 hover:bg-red transition"
+        >
+            ← Back to People
+        </Button>
+    </>);
 
     const isFollowing = currentUser.followers.includes(user.id);
 
@@ -109,14 +109,33 @@ const Profile = () => {
         setIsUpdating(false);
     };
 
-
-
     console.log("currentUser.recipes", currentUser.recipes)
 
     return (
-        <div className="profile-container">
-            <div className="profile-inner_container">
-                <div className="flex xl:flex-row flex-col max-xl:items-center flex-1 gap-7">
+        <div className="profile-container bg-dark-4">
+            {/* Breadcrumb */}
+            <Breadcrumb>
+                <BreadcrumbList>
+                    <BreadcrumbItem>
+                        <BreadcrumbLink asChild>
+                            <Link className={"hover:text-accentColor"} to="/">Home</Link>
+                        </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                        <BreadcrumbLink asChild>
+                            <Link className={"hover:text-accentColor"} to="/all-users">People</Link>
+                        </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                        <BreadcrumbLink>@{currentUser.username}</BreadcrumbLink>
+                    </BreadcrumbItem>
+                </BreadcrumbList>
+            </Breadcrumb>
+
+            <div className="profile-inner_container -m-2 p-2">
+                <div className="flex xl:flex-row flex-col max-xl:items-center flex-1 gap-7 ">
                     <div className={"relative"}>
                     <Avatar className="w-28 h-28">
                         <AvatarImage src={currentUser.pfp} alt={currentUser.username} />
@@ -156,8 +175,8 @@ const Profile = () => {
                             </div>
 
                         <div className="flex gap-8 mt-10 items-center justify-center xl:justify-start flex-wrap z-20">
-                            <StatBlock value={currentUser.recipes.length || 0} label="Recipes" />
-                            <StatBlock value={currentUser.workshops.length || 0} label={"Workshops"} />
+                            <StatBlock value={currentUser.recipes.length} label="Recipes" />
+                            <StatBlock value={currentUser.workshops.length} label={"Workshops"} />
                             <StatBlock value={currentUser.challenges.length} label={"Challenges"} />
                             <StatBlock value={isUpdating ? 0 : followersCount} label="Followers" />
                             <StatBlock value={isUpdating ? 0 : followingCount} label="Following" />
@@ -171,7 +190,7 @@ const Profile = () => {
                         {user.id === currentUser.id && (
                             <Link
                                 to={`/update-profile/${currentUser.id}`}
-                                className="h-12 bg-dark-4 px-5 text-light-1 flex-center gap-2 rounded-lg"
+                                className="h-12 bg-dark-2 px-5 text-light-1 flex-center gap-2 rounded-lg"
                             >
                                 <img
                                     src={"/assets/icons/edit.svg"}
@@ -194,81 +213,77 @@ const Profile = () => {
 
             {/* Tabs for Recipes, Liked Recipes, and MyFridge */}
             {currentUser.isBanned || currentUser.isDeactivated ? (
-                <div className="text-red-500 text-center mt-10 text-xl font-semibold">
-                    User is {currentUser.isBanned ? "banned" : "deactivated"}.
+                <div className="text-red text-center mt-10 text-xl font-semibold">
+                    The user you are trying to view is {currentUser.isBanned ? "banned." : "deactivated."}.
                 </div>
             ) : (
-            <Tabs defaultValue={"recipes"} className={"flex flex-1 flex-col items-center"}>
-                <TabsList className="flex max-w-5xl w-full justify-center mb-4">
-                    <TabsTrigger value="recipes" className={`profile-tab rounded-l-lg !bg-dark-3 h3-bold md:h2-bold text-center`}>MyRecipes</TabsTrigger>
-                    <TabsTrigger value="liked-recipes" className={`profile-tab !bg-dark-3 h3-bold md:h2-bold text-center`}>Liked Recipes</TabsTrigger>
-                    <TabsTrigger value={"challenges"} className={`profile-tab !bg-dark-3 h3-bold md:h2-bold text-center`}>My Challenges</TabsTrigger>
-                    {user.id === currentUser.id && (
-                        <>
-                            <TabsTrigger value={"inbox"} className={`profile-tab !bg-dark-3 h3-bold md:h2-bold text-center`}>My Inbox</TabsTrigger>
-                            <TabsTrigger value="fridge" className={`profile-tab rounded-r-lg !bg-dark-3 h3-bold md:h2-bold text-center`}>MyFridge</TabsTrigger>
-                        </>
-                    )}
-                </TabsList>
+                <Tabs defaultValue={"recipes"} className={"flex flex-1 flex-col items-center"}>
+                    <TabsList className="flex max-w-5xl w-full justify-center mb-4">
+                        <TabsTrigger value="recipes" className={`profile-tab rounded-l-lg !bg-dark-3 h3-bold md:h2-bold text-center`}>MyRecipes</TabsTrigger>
+                        <TabsTrigger value="liked-recipes" className={`profile-tab !bg-dark-3 h3-bold md:h2-bold text-center`}>Liked Recipes</TabsTrigger>
+                        <TabsTrigger value={"challenges"} className={`profile-tab !bg-dark-3 h3-bold md:h2-bold text-center`}>Challenges</TabsTrigger>
+                        {user.id === currentUser.id && (
+                            <>
+                                <TabsTrigger value={"inbox"} className={`profile-tab !bg-dark-3 h3-bold md:h2-bold text-center`}>Inbox</TabsTrigger>
+                                <TabsTrigger value="fridge" className={`profile-tab rounded-r-lg !bg-dark-3 h3-bold md:h2-bold text-center`}>MyFridge</TabsTrigger>
+                            </>
+                        )}
+                    </TabsList>
 
-                <TabsContent value={"recipes"} className="w-full max-w-5xl">
-                    {isLoadingRecipes ? (
-                        <LoadingRecipe />
-                    ) : (
+                    <TabsContent value={"recipes"} className="w-full max-w-5xl">
+                        {isLoadingRecipes ? (
+                            <LoadingRecipe />
+                        ) : (
+                            <>
+                                {currentUser.recipes.length === 0 && (
+                                    <p className="text-light-4">I have no Recipes!</p>
+                                )}
+
+                                <GridRecipeList recipes={currentUser.recipes} />
+                            </>
+
+                        )}
+                    </TabsContent>
+
+                    <TabsContent value={"liked-recipes"} className="w-full max-w-5xl">
                         <>
-                            {currentUser.recipes.length === 0 && (
-                                <p className="text-light-4">I have no Recipes!</p>
+                            {currentUser.likedRecipes.length === 0 && (
+                                <p className="text-light-4">No liked recipes</p>
                             )}
 
-                            <GridRecipeList recipes={currentUser.recipes} />
+                            <GridRecipeList recipes={currentUser.likedRecipes} />
                         </>
+                    </TabsContent>
 
+                    <TabsContent value={"challenges"} className="w-full max-w-5xl">
+                        <>
+                            <GridChallengeList challenges={currentUser.challenges}/>
+                        </>
+                    </TabsContent>
+
+                    {user.id === currentUser.id && (
+                        <>
+                            <TabsContent value={"inbox"} className="w-full max-w-5xl">
+                                <div className="mb-4 flex justify-end">
+                                   <Inbox/>
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value={"fridge"} className="w-full max-w-5xl">
+                                <div>
+                                    <DataTable
+                                        columns={FridgeColumns}
+                                        data={myFridge.map((ingredient, index) => ({
+                                            id: index.toString(),
+                                            ingredient_name: ingredient,
+                                        }))}
+                                    />
+                                </div>
+                            </TabsContent>
+                        </>
                     )}
-                </TabsContent>
-
-                <TabsContent value={"liked-recipes"} className="w-full max-w-5xl">
-                    <>
-                        {currentUser.likedRecipes.length === 0 && (
-                            <p className="text-light-4">No liked recipes</p>
-                        )}
-
-                        <GridRecipeList recipes={currentUser.likedRecipes} />
-                    </>
-                </TabsContent>
-
-                <TabsContent value={"challenges"} className="w-full max-w-5xl">
-                    <>
-                                <GridChallengeList challenges={currentUser.challenges}/>
-                    </>
-                </TabsContent>
-
-
-                {user.id === currentUser.id && (
-                    <>
-                        <TabsContent value={"inbox"} className="w-full max-w-5xl">
-                            <div className="mb-4 flex justify-end">
-                               <Inbox/>
-                            </div>
-                        </TabsContent>
-
-                        <TabsContent value={"fridge"} className="w-full max-w-5xl">
-                            <div>
-                                <DataTable
-                                    columns={FridgeColumns}
-                                    data={myFridge.map((ingredient, index) => ({
-                                        id: index.toString(),
-                                        ingredient_name: ingredient,
-                                    }))}
-                                />
-                            </div>
-
-
-
-                        </TabsContent>
-                    </>
-                )}
-            </Tabs>
-                )}
+                </Tabs>
+            )}
             <Outlet />
         </div>
     );

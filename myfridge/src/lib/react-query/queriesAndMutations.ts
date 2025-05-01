@@ -4,13 +4,12 @@ import {
     useQueryClient, useInfiniteQuery, UseMutationResult,
 
 } from "@tanstack/react-query";
-import {collection, DocumentReference, getDocs, query, where} from "firebase/firestore";
+import {collection, DocumentReference, getDocs,} from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
 import {
     generateAiRecipes,
     createRecipe,
     createUserAccount,
-    getRecentRecipes,
     signInAccount,
     signOutAccount,
     getRecipeById,
@@ -22,7 +21,6 @@ import {
     getUserById,
     updateUser,
     getUserRecipes,
-    createFridge,
     followUser,
     getAllFridgeIngredients,
     addIngredientToFridge,
@@ -32,7 +30,6 @@ import {
     likeWorkshop,
     saveWorkshop,
     createWorkshop,
-    updateWorkshop,
     deleteWorkshop, getFollowedUsersRecipes, generateAiRecipesFromImage,
 
 } from "@/lib/firebase/api";
@@ -41,7 +38,6 @@ import {
     INewUser,
     IUpdateUser,
     INewWorkshop,
-    IUpdateWorkshop,
     Workshop,
     Recipe
 } from "@/types";
@@ -65,12 +61,6 @@ export const useSignInAccount = () => {
 export const useSignOutAccount = () => {
     return useMutation({
         mutationFn: signOutAccount,
-    });
-};
-
-export const useCreateFridge = () => {
-    return useMutation({
-        mutationFn: (userID: string) => createFridge(userID),
     });
 };
 
@@ -99,16 +89,6 @@ export const useGetUserRecipes = (recipeRefs?: DocumentReference<Recipe>[]) => {
         enabled: !!recipeRefs && recipeRefs.length > 0,
     });
 };
-
-// Query for fetching recent recipes
-export const useGetRecentRecipes = () => {
-    return useQuery({
-        queryKey: [QUERY_KEYS.GET_RECENT_RECIPES],
-        queryFn: getRecentRecipes,
-    });
-};
-
-
 
 // Query for searching recipes
 export const useSearchRecipes = (searchTerm: string) => {
@@ -148,7 +128,6 @@ export const useGetRecipeById = (recipeId?: string) => {
     });
 };
 
-
 // Mutation for deleting a recipe
 export const useDeleteRecipe = () => {
     const queryClient = useQueryClient();
@@ -157,7 +136,7 @@ export const useDeleteRecipe = () => {
         mutationFn: (recipe: any) => {
             if (!recipe.id) throw new Error("Invalid recipe: Missing ID");
 
-            let mediaId: string | undefined;
+            let mediaId: string;
 
             if (recipe.mediaUrl) {
                 try {

@@ -9,7 +9,6 @@ export {default as RecipeDetails} from './RecipeDetails';
 export {default as AllUsers} from './AllUsers';
 export {default as LikedRecipes} from './LikedRecipes';
 export {default as Workshops} from './Workshops';
-export {default as Admin} from './Admin';
 export {default as Inbox} from './Inbox';
 export {default as ChallengeDetails} from './ChallengeDetails';
 export {default as RecipeAnalytics} from './RecipeAnalytics';

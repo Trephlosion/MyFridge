@@ -5,14 +5,13 @@ import {
 } from "@/components/shared";
 import Feed from "@/components/shared/Feed";
 import { Separator } from "@/components/ui/separator";
-import { useUserContext } from "@/lib/context/UserContext";
 
 const Home = () => {
-
 
     return (
         <div className="flex flex-1">
             <div className="home-container space-y-10">
+
                 {/* Top Users */}
                 <div>
                     <TopUsersCarousel />
@@ -31,7 +30,6 @@ const Home = () => {
                 <div>
                     <TopChallengesCarousel />
                 </div>
-
 
                 <Separator />
 

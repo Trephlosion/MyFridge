@@ -1,5 +1,4 @@
 // Extending WorkshopDetails.tsx to allow replies to Questions
-
 import { useEffect, useState } from "react";
 import {useParams, useNavigate, Link} from "react-router-dom";
 import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
@@ -7,12 +6,20 @@ import { database } from "@/lib/firebase/config";
 import { useUserContext } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbSeparator
+} from "@/components/ui/breadcrumb.tsx";
+import {Loader} from "@/components/shared";
+import {Textarea} from "@/components/ui/textarea.tsx";
 
 const WorkshopDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useUserContext();
-
     const [workshop, setWorkshop] = useState<any>(null);
     const [creator, setCreator] = useState<{ username: string; pfp: string } | null>(null);
     const [question, setQuestion] = useState("");
@@ -79,11 +86,6 @@ const WorkshopDetails = () => {
         setQuestions(list);
     };
 
-    useEffect(() => {
-        fetchWorkshop();
-        fetchQuestions();
-    }, [id]);
-
     const handleEnroll = async () => {
         if (!user || !workshop) return;
 
@@ -132,66 +134,104 @@ const WorkshopDetails = () => {
         fetchQuestions();
     };
 
-    if (isLoading || !workshop) {
-        return <div className="text-white text-center mt-10">Loading workshop...</div>;
-    }
+    useEffect(() => {
+        fetchWorkshop();
+        fetchQuestions();
+    }, [id]);
+
+
+
+    if (isLoading) return (<>
+            <p className="text-center text-light-4 mt-10">Loading Workshops...</p>
+            <div className="flex justify-center items-center h-screen">
+                <Loader />
+            </div>
+        </>
+    );
+
+    if (!workshop) // If workshop is not found
+        return (<>
+                <p className="text-center text-light-4 mt-10">Workshop not found.</p>
+                <Button
+                    onClick={() => navigate("/workshops")}
+                    className="mb-4 text-sm text-yellow-400 hover:text-yellow-300 transition"
+                >
+                    ← Back to Workshops
+                </Button>
+            </>
+        );
 
     return (
-        <div className="p-6 max-w-4xl mx-auto text-white">
-            <button
-                onClick={() => navigate("/workshops")}
-                className="mb-4 text-sm text-yellow-400 hover:text-yellow-300 transition"
-            >
-                ← Back to Workshops
-            </button>
+        <div className="p-6 max-w-4xl mx-auto text-white flex-auto flex-col">
+            <div className={"bg-dark-4 mt-0 m-1.5 p-2 rounded-2xl"}>
+                <div className={"bg-dark-3 p-2 rounded-xl "}>
 
-            <img
-                src={workshop.media_url || '/assets/icons/recipe-placeholder.svg'}
-                alt={workshop.title}
-                className="w-full h-96 object-cover rounded-2xl shadow-lg"
-            />
+                <img
+                    src={workshop.media_url || '/assets/icons/recipe-placeholder.svg'}
+                    alt={workshop.title}
+                    className="w-full h-96 object-cover rounded-2xl shadow-lg"
+                />
 
-            <h1 className="text-4xl font-bold text-center mt-6">{workshop.title}</h1>
+                <h1 className="text-4xl font-bold text-center mt-6">{workshop.title}</h1>
 
-            <div className="flex justify-around text-lg my-4">
-                <p><span className="font-semibold">Date:</span> {new Date(workshop.date?.seconds * 1000).toLocaleDateString()}</p>
-                <p><span className="font-semibold">Location:</span> {workshop.location}</p>
+                <div className="flex justify-around text-lg my-4">
+                    <p><span className="font-semibold">Date:</span> {new Date(workshop.date?.seconds * 1000).toLocaleDateString()}</p>
+                    <div className="flex items-center justify-center my-4">
+                        <Avatar className="w-12 h-12 mr-2">
+                            <AvatarImage src={creator?.pfp} alt={creator?.username} />
+                            <AvatarFallback className="bg-white text-black">
+                                {creator?.username.charAt(0)}
+                            </AvatarFallback>
+                        </Avatar>
+                        <h3 className="text-lg font-semibold">@{creator?.username}</h3>
+                    </div>
+                    <p><span className="font-semibold">Location:</span> {workshop.location}</p>
+                </div>
+                    <div className="text-center text-sm text-gray-400 mb-6">
+                        Enrolled: {workshop.participants?.length || 0} / {workshop.maxParticipants}
+                    </div>
             </div>
 
-            <div className="flex justify-center mb-4">
+
+
+            <div className="flex justify-center my-2.5">
                 {user && !user.isVerified && (
                     enrolled ? (
-                        <Button onClick={handleUnenroll} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md">
+                        <span>
+                        <Button onClick={handleUnenroll} className="bg-dark-1 hover:bg-red text-white px-4 py-2 rounded-xl">
                             Unenroll
                         </Button>
+                        </span>
                     ) : (
-                        <Button onClick={handleEnroll} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                        <span>
+                        <Button onClick={handleEnroll} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl">
                             Enroll in Workshop
                         </Button>
+                        </span>
                     )
                 )}
             </div>
 
-            <div className="text-center text-sm text-gray-400 mb-6">
-                Enrolled: {workshop.participants?.length || 0} / {workshop.maxParticipants}
-            </div>
+
 
             <div className="bg-gray-800 p-6 rounded-xl my-6">
                 <h2 className="text-2xl font-semibold mb-4">Description</h2>
                 <p className="leading-relaxed italic">{workshop.description}</p>
             </div>
 
+        </div>
+
             <div className="bg-gray-900 p-6 rounded-xl mb-6">
                 <h2 className="text-2xl font-semibold mb-4">Ask a Question (Nutrition Q&A)</h2>
-                <textarea
+                <Textarea
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
                     placeholder="Ask a nutrition-related question..."
-                    className="w-full p-3 rounded-md text-black mb-4"
+                    className="w-full p-3 rounded-xl bg-white text-black mb-4"
                 />
                 <Button
                     onClick={handleSubmitQuestion}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md"
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-xl"
                 >
                     Submit Question
                 </Button>
@@ -241,6 +281,27 @@ const WorkshopDetails = () => {
                         ))}
                     </ul>
                 )}
+            </div>
+            <div className={"flex justify-around text-lg mt-4 mb-8 pb-2"}>
+            <Breadcrumb>
+                <BreadcrumbList>
+                    <BreadcrumbItem>
+                        <BreadcrumbLink asChild>
+                            <Link className={"hover:text-accentColor"} to="/">Home</Link>
+                        </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                        <BreadcrumbLink asChild>
+                            <Link className={"hover:text-accentColor"} to="/workshops">Workshops</Link>
+                        </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                        <BreadcrumbLink>{workshop?.title || "Details"}</BreadcrumbLink>
+                    </BreadcrumbItem>
+                </BreadcrumbList>
+            </Breadcrumb>
             </div>
         </div>
     );

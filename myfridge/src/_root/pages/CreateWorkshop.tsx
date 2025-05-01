@@ -16,6 +16,8 @@ import { useUserContext } from "@/context/AuthContext";
 import { database, storage } from "@/lib/firebase/config";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea.tsx";
+import { Label } from "@/components/ui/label.tsx";
 
 const CreateWorkshop = () => {
     const { user } = useUserContext();
@@ -128,7 +130,7 @@ const CreateWorkshop = () => {
                     className="bg-gray-700 text-white border border-gray-600"
                 />
 
-                <textarea
+                <Textarea
                     name="description"
                     placeholder="Workshop Description"
                     onChange={handleChange}
@@ -163,9 +165,9 @@ const CreateWorkshop = () => {
                     className="bg-gray-700 text-white border border-gray-600"
                 />
 
-                <label className="block text-sm font-semibold text-gray-300">
+                <Label className="block text-sm font-semibold text-gray-300">
                     Upload an Image:
-                </label>
+                </Label>
                 <input
                     type="file"
                     accept="image/*"

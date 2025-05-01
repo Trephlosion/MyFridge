@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
-import { database } from "@/lib/firebase/config";
+import { useState, useEffect } from "react";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
-import { UserCardMini } from "@/components/shared";
-import { useUserContext } from "@/context/AuthContext";
 import UserCard from "../cards/UserCard.tsx";
-import {IUser} from "@/types";
-import { getTopUsers} from "@/lib/firebase/api.ts";
+import { IUser } from "@/types";
+import { getTopUsers } from "@/lib/firebase/api.ts";
+
 const TopUsersCarousel = () => {
+
     const [topUsers, setTopUsers] = useState<IUser[]>([]);
+
     useEffect(() => {
         const fetchTopData = async () => {
             const [users] = await Promise.all([

@@ -1,8 +1,15 @@
 // RecipeAnalytics.tsx
-import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import {Link, useLocation} from 'react-router-dom';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { database } from '@/lib/firebase/config';
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbSeparator
+} from "@/components/ui/breadcrumb.tsx";
 
 const RecipeAnalytics = () => {
     const location = useLocation();
@@ -105,11 +112,33 @@ Format the report in readable, clear paragraphs.
 
     return (
         <div className="p-6 max-w-4xl mx-auto text-left">
+            <Breadcrumb>
+                <BreadcrumbList>
+                    <BreadcrumbItem>
+                        <BreadcrumbLink asChild>
+                            <Link className={"hover:text-accentColor"} to="/">Home</Link>
+                        </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                        <BreadcrumbLink>Analytics</BreadcrumbLink>
+                    </BreadcrumbItem>
+                    {recipeId && (
+                        <>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                                <BreadcrumbLink>Recipe {recipeId}</BreadcrumbLink>
+                            </BreadcrumbItem>
+                        </>
+                    )}
+                </BreadcrumbList>
+            </Breadcrumb>
+
             <h1 className="text-2xl font-semibold mb-4">AI-Generated Recipe Analytics</h1>
             {loading ? <p>Generating report...</p> : <pre className="whitespace-pre-wrap">{report}</pre>}
+            {!loading && !report && <p>No report generated.</p>}
         </div>
     );
 };
 
 export default RecipeAnalytics;
-

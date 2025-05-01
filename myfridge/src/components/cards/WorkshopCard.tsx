@@ -1,6 +1,5 @@
 // Continuing modular fixes. Now WorkshopCard.tsx.
 // Normalized to handle DocumentReferences properly for userId, participants, and media_url.
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDownloadURL, ref as storageRef } from "firebase/storage";
@@ -8,9 +7,7 @@ import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firest
 import { Workshop } from "@/types";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { multiFormatDateString } from "@/lib/utils";
 import { database, storage } from "@/lib/firebase/config";
 import { useUserContext } from "@/context/AuthContext";
 import {UserAvatarRow} from "@/components/shared";
@@ -22,9 +19,8 @@ interface WorkshopCardProps {
 const WorkshopCard = ({ workshop }: WorkshopCardProps) => {
     const navigate = useNavigate();
     const { user } = useUserContext();
-
     const [creator, setCreator] = useState<{ username: string; pfp: string } | null>(null);
-    const [imageUrl, setImageUrl] = useState<string>("/assets/icons/recipe-placeholder.svg");
+    const [imageUrl, setImageUrl] = useState<string>("");
     const [enrolled, setEnrolled] = useState(false);
     const [participantsCount, setParticipantsCount] = useState(0);
 
@@ -95,7 +91,7 @@ const WorkshopCard = ({ workshop }: WorkshopCardProps) => {
 
     return (
         <Card className="recipe-card flex flex-col">
-            <CardTitle className="flex-center text-center px-3 pt-2">
+            <CardTitle className="flex-center text-center px-3 pt-2 truncate">
                 <h1 className="text-lg font-bold">{workshop.title}</h1>
             </CardTitle>
 
@@ -128,7 +124,7 @@ const WorkshopCard = ({ workshop }: WorkshopCardProps) => {
                 {!user?.isVerified && (
                     <>
                         {enrolled ? (
-                            <Button onClick={handleUnenroll} className="bg-red-600 hover:bg-red-700 text-white w-full">
+                            <Button onClick={handleUnenroll} className="bg-red transition hover:bg-dark-3 text-white w-full">
                                 Unenroll
                             </Button>
                         ) : (

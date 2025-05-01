@@ -515,10 +515,6 @@ export const generateAiRecipes = async (ingredients: string[]): Promise<Recipe[]
                 cookTime: item.cookTime,
                 servings: item.servings,
                 mediaUrl: img,
-                isRecommended: false,
-                isApproved: false,
-                isSeasonal: false,
-                createdAt: serverTimestamp(),
                 username: "AI Chef",
                 pfp: "/assets/icons/ai-bot-icon.svg",
                 tags: ["AI", "Auto-generated"],
@@ -549,7 +545,7 @@ export const generateAiRecipesFromImage = async (files: File[]): Promise<Recipe[
         });
     const dataUrl = await toDataURL(files[0]);
 
-    const systemPrompt = { role: "system", content: "You are a helpful chef." };
+    const systemPrompt = { role: "system", content: "You are a experienced chef." };
     const userPrompt = {
         role: "user",
         content: `You are an innovative chef. Here is an image: ${dataUrl}
@@ -835,6 +831,8 @@ export async function toggleUserActivation(userId: string): Promise<void> {
         const userRef = doc(database, "Users", userId);
         const userSnap = await getDoc(userRef);
         const currentStatus = userSnap.data()?.isDeactivated;
+        console.log("Current status:", currentStatus);
+        console.log("Toggling user deactivation status for userId:", userId);
         await updateDoc(userRef, { isDeactivated: !currentStatus });
     } catch (error) {
         console.error("Error toggling user disabled state:", error);

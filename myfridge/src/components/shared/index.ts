@@ -11,10 +11,8 @@ export { default as UserCard } from "../cards/UserCard.tsx";
 export { default as RecipeStats } from "../cards/RecipeStats.tsx";
 export { default as MiniRecipeCard } from "../cards/RecipeCardMini.tsx";
 export { default as UserSkeletonCard } from "../cards/UserSkeletonCard.tsx";
-export { default as UserCardMini } from "../cards/UserCardMini.tsx";
 export { default as RecipeSkeleton } from "../cards/RecipeSkeleton.tsx"
 export { default as TopUsersCarousel } from "./TopUsersCarousel.tsx"
-export { default as RatingSystem } from "./RatingSystem.tsx"
 export { default as UserCommentCard } from "../cards/UserCommentCard.tsx"
 export { default as CuratorReviewCard } from "../cards/CuratorReviewCard.tsx"
 export { default as CuratorReviewCarousel } from "./CuratorReviewCarousel.tsx"
@@ -30,3 +28,4 @@ export { default as TopChallengesCarousel } from "./TopChallengesCarousel.tsx"
 export { default as TopWorkshopsCarousel } from "./TopWorkshopsCarousel.tsx"
 export { default as WorkshopCard } from "../cards/WorkshopCard.tsx"
 export { default as Feed } from "./Feed.tsx"
+export { default as GridChallengeList } from "./GridChallengeList.tsx"

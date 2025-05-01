@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { useUserContext } from "@/context/AuthContext";
 import {
@@ -11,7 +11,7 @@ import {
 import RecipeCard from "@/components/cards/RecipeCard";
 import { database } from "@/lib/firebase/config";
 import { Recipe } from "@/types";
-import { RecipeSkeleton } from "@/components/cards";
+import { RecipeSkeleton } from "@/components/shared";
 import { useGenerateAiRecipes } from "@/lib/react-query/queriesAndMutations";
 import { Button } from "@/components/ui/button";
 
@@ -70,7 +70,7 @@ const AiRecipeCarousel: React.FC = () => {
     }
 
     return (
-        <div className="w-full mx-auto">
+        <div className=" flex-auto">
             {loading ? (
                 <>
                     <p className="text-center mb-4">Generating AI recipes...</p>
@@ -94,7 +94,7 @@ const AiRecipeCarousel: React.FC = () => {
                 <Carousel opts={{ align: "start" }} className="w-full">
                     <CarouselContent className="grid grid-cols-3 gap-4">
                         {aiRecipes.map((recipe) => (
-                            <CarouselItem key={recipe.id} className="w-full p-1">
+                            <CarouselItem key={recipe.id} className="w-fit p-1">
                                 <RecipeCard recipe={recipe} />
                             </CarouselItem>
                         ))}

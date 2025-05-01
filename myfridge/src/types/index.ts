@@ -7,6 +7,7 @@ export interface AuthContextType {
     isAuthenticated: boolean;
     isLoading: boolean;
     checkAuthUser: () => Promise<boolean>;
+    setUserContext: (object :{isAuthenticated: boolean, user: IUser}) => void;
 }
 
 // Navigation Link Type
