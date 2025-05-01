@@ -22,11 +22,12 @@ import {
     NotificationsPage,
     CreateWorkshop,
     SendMessage,
-    Inbox
+    Inbox,
+    AIFeatures,
+    CreateChallenge,
 } from './_root/pages';
-                    import { Toaster } from '@/components/ui/toaster.tsx';
-import {CreateChallenge} from "@/_root/pages";
-import AIFeatures from "@/_root/pages/AIFeatures.tsx";
+import { Toaster } from '@/components/ui/toaster.tsx';
+
 
 
                     const App = () => {

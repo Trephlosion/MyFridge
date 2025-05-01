@@ -18,3 +18,4 @@ export {default as WorkshopDetails} from './WorkshopDetails';
 export {default as CreateWorkshop} from './CreateWorkshop';
 export {default as EditWorkshop} from './EditWorkshop';
 export {default as CreateChallenge} from './CreateChallenge';
+export {default as AIFeatures} from './AIFeatures';
