@@ -21,6 +21,7 @@ import {
     BreadcrumbList,
     BreadcrumbSeparator
 } from "@/components/ui/breadcrumb.tsx";
+import FridgeForm from "@/components/form/FridgeForm.tsx";
 
 const formatNumber = (num: number): string => {
     if (num < 1000) return num.toString();
@@ -274,13 +275,7 @@ const Profile = () => {
 
                             <TabsContent value={"fridge"} className="w-full max-w-5xl">
                                 <div>
-                                    <DataTable
-                                        columns={FridgeColumns}
-                                        data={myFridge.map((ingredient, index) => ({
-                                            id: index.toString(),
-                                            ingredient_name: ingredient,
-                                        }))}
-                                    />
+                                    <FridgeForm />
                                 </div>
                             </TabsContent>
                         </>
