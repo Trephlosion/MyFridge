@@ -44,12 +44,12 @@ export default function RecipeAnalytics() {
                     <CardTitle className="text-3xl font-bold">
                         Recipe Analytics
                     </CardTitle>
-                    <h2 className="text-xl text-gray-400 mt-1">{analytics.title}</h2>
+                    <h2 className="text-xl text-gray-400 mt-1">{recipeId.title}</h2>
                 </CardHeader>
 
                 <CardContent className="space-y-4">
                     <p>
-                        <strong>Likes:</strong> {analytics.totalLikes || 0}
+                        <strong>Likes:</strong> {analytics.likes?.length || 0}
                     </p>
 
                     <p>
@@ -58,19 +58,13 @@ export default function RecipeAnalytics() {
                     </p>
 
                     <p>
-                        <strong>Total Reviews:</strong> {analytics.totalReviews}
+                        <strong>Approval Status:</strong>{" "}
+                        {analytics.isApproved ? "✅ This recipe is approved." : "🚫 This recipe is not yet approved."}
                     </p>
 
-                    <div>
-                        <strong>Rating Distribution:</strong>
-                        <ul className="list-disc list-inside ml-4">
-                            {Object.entries(analytics.ratingCounts).map(([star, count]) => (
-                                <li key={star}>
-                                    {star} ★ – {count}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
+                    <p>
+                        <strong>Total Reviews:</strong> {analytics.totalReviews}
+                    </p>
 
                     <p>
                         <strong>Most Recent Review:</strong>{" "}
@@ -78,7 +72,12 @@ export default function RecipeAnalytics() {
                     </p>
 
                     <p>
-                        <strong>Overview:</strong> {analytics.overview}
+                        <strong>AI Summary:</strong> Based on recent engagement, this recipe has garnered a notable number of likes,
+                        suggesting it's well-received by users. {analytics.isTrending ? "🔥 It is currently trending" : "It is not trending"} and{" "}
+                        {analytics.isSeasonal ? "🌞 highlighted as a seasonal favorite" : "not marked as seasonal"}.
+                        {analytics.isApproved ? "✅ With official approval," : "🚫 Without official approval,"} it stands as a{" "}
+                        {analytics.totalLikes > 10 ? "highly recommended" : "moderately rated"} dish worth exploring.
+                        We recommend giving it a try!
                     </p>
                 </CardContent>
 
