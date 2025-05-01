@@ -16,8 +16,8 @@ import { Routes, Route } from 'react-router-dom';
     Profile,
     UpdateProfile,
     LikedRecipes,
-    Admin,
     Workshops,
+                        Admin,
                         Challenges, ChallengeDetails, RecipeAnalytics, WorkshopDetails, NotificationsPage,
                         CreateWorkshop, SendMessage,
                         Inbox
