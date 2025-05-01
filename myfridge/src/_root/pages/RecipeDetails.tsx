@@ -462,7 +462,47 @@ const RecipeDetails = () => {
                                     <Button className="shad-button_primary">Add Review</Button>
                                 </DialogTrigger>
                                 <DialogContent>
-                                    {/* …same content… */}
+                                    <DialogHeader>
+                                        <DialogTitle>Leave a Review</DialogTitle>
+                                        <DialogDescription>
+                                            Pick a star rating and write your thoughts on this recipe.
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    {/* Star picker */}
+                                    <div className="flex items-center gap-2 mb-4">
+                                        {[1, 2, 3, 4, 5].map((num) => (
+                                            <span
+                                                key={num}
+                                                onClick={() => setRating(num)}
+                                                className={`cursor-pointer text-3xl ${
+                                                    rating >= num ? "text-yellow-400" : "text-gray-500"
+                                                }`}
+                                            >
+                                                            ★
+                                                        </span>
+                                        ))}
+                                    </div>
+                                    {/* Review text area */}
+                                    <Textarea
+                                        value={reviewText}
+                                        onChange={(e) => setReviewText(e.target.value)}
+                                        placeholder="Write your review here…"
+                                        className="w-full h-24 mb-4"
+                                    />
+                                    <DialogFooter>
+                                        <Button
+                                            onClick={handleSubmitReview}
+                                            disabled={!rating || !reviewText.trim() || reviewLoading}
+                                        >
+                                            {reviewLoading ? "Submitting…" : "Submit Review"}
+                                        </Button>
+                                        <DialogClose asChild>
+                                            <Button variant="outline" className="ml-2">
+                                                Cancel
+                                            </Button>
+                                        </DialogClose>
+                                    </DialogFooter>
                                 </DialogContent>
                             </Dialog>
                         )}
@@ -510,8 +550,34 @@ const RecipeDetails = () => {
                             <DialogTrigger asChild>
                                 <Button className="shad-button_primary">Add Comment</Button>
                             </DialogTrigger>
-                            <DialogContent>
-                                {/* …same content… */}
+                            <DialogContent className={"user-card bg-dark-4 text-white"}>
+                                <DialogHeader>
+                                    <DialogTitle>Add a Comment</DialogTitle>
+                                    <DialogDescription>
+                                        Share your thoughts with the community.
+                                    </DialogDescription>
+                                </DialogHeader>
+
+                                <Textarea
+                                    value={commentText}
+                                    onChange={(e) => setCommentText(e.target.value)}
+                                    placeholder="Write your comment here…"
+                                    className="w-full h-32 mb-4 bg-dark-3 text-white"
+                                />
+
+                                <DialogFooter>
+                                    <Button className={"shad-button_primary"}
+                                            onClick={handleSubmitComment}
+                                            disabled={!commentText.trim() || loadingComment}
+                                    >
+                                        {loadingComment ? "Posting…" : "Post Comment"}
+                                    </Button>
+                                    <DialogClose asChild>
+                                        <Button variant="outline" className="ml-2">
+                                            Cancel
+                                        </Button>
+                                    </DialogClose>
+                                </DialogFooter>
                             </DialogContent>
                         </Dialog>
 

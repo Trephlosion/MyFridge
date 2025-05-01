@@ -80,6 +80,7 @@ export const createUserAccount = async (userData: any) => {
         isCurator,
         followers: [],
         following: [],
+        likedRecipes: [],
         recipes: [],
         workshops: [],
         challenges: [],
