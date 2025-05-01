@@ -1,6 +1,6 @@
 // pages/RecipeAnalytics.tsx
 import { useEffect, useState } from "react";
-import {Link, useLocation, useNavigate} from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/shared";
@@ -20,7 +20,6 @@ export default function RecipeAnalytics() {
     const recipeId = params.get("recipeId")!;
     const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
     const [loading, setLoading] = useState(true);
-    const location = useLocation();
 
     useEffect(() => {
         (async () => {
@@ -42,16 +41,26 @@ export default function RecipeAnalytics() {
         <div className="max-w-3xl mx-auto mt-10">
             <Card className="recipe-card">
                 <CardHeader>
-                    <CardTitle> {analytics.title} Recipe Analytics</CardTitle>
-
+                    <CardTitle className="text-3xl font-bold">
+                        Recipe Analytics
+                    </CardTitle>
+                    <h2 className="text-xl text-gray-400 mt-1">{analytics.title}</h2>
                 </CardHeader>
+
                 <CardContent className="space-y-4">
                     <p>
-                        <strong>Average Rating:</strong> {analytics.averageRating.toFixed(1)}
+                        <strong>Likes:</strong> {analytics.totalLikes || 0}
                     </p>
+
+                    <p>
+                        <strong>Seasonal Status:</strong>{" "}
+                        {analytics.isSeasonal ? "🌞 This recipe is highlighted as seasonal." : "❄️ This recipe is not seasonal."}
+                    </p>
+
                     <p>
                         <strong>Total Reviews:</strong> {analytics.totalReviews}
                     </p>
+
                     <div>
                         <strong>Rating Distribution:</strong>
                         <ul className="list-disc list-inside ml-4">
@@ -62,6 +71,7 @@ export default function RecipeAnalytics() {
                             ))}
                         </ul>
                     </div>
+
                     <p>
                         <strong>Most Recent Review:</strong>{" "}
                         {new Date(analytics.mostRecentReviewDate).toLocaleDateString()}
@@ -71,11 +81,12 @@ export default function RecipeAnalytics() {
                         <strong>Overview:</strong> {analytics.overview}
                     </p>
                 </CardContent>
+
                 <CardFooter>
                     <Breadcrumb>
                         <BreadcrumbList>
                             <BreadcrumbItem>
-                                <BreadcrumbLink >
+                                <BreadcrumbLink>
                                     <Link className="cursor-pointer hover:text-accentColor" to="/">
                                         Home
                                     </Link>
@@ -83,7 +94,7 @@ export default function RecipeAnalytics() {
                             </BreadcrumbItem>
                             <BreadcrumbSeparator />
                             <BreadcrumbItem>
-                                <BreadcrumbLink >
+                                <BreadcrumbLink>
                                     <Link className="hover:text-accentColor" to={`/recipes/${recipeId}`}>
                                         {analytics.title} Recipe Details
                                     </Link>
@@ -95,7 +106,6 @@ export default function RecipeAnalytics() {
                                     Analytics
                                 </BreadcrumbLink>
                             </BreadcrumbItem>
-
                         </BreadcrumbList>
                     </Breadcrumb>
                 </CardFooter>
@@ -103,3 +113,4 @@ export default function RecipeAnalytics() {
         </div>
     );
 }
+
