@@ -12,12 +12,12 @@ const ChallengeCard = ({ challenge }: { challenge: any }) => {
 
     return (
         <Card className="recipe-card flex flex-col">
+            <div className="flex items-center justify-between">
+                <CardTitle className="flex-center text-center px-3 pt-2 truncate">{challenge.title}</CardTitle>
+            </div>
             <CardHeader>
-                <div className="flex items-center justify-between">
-                    <CardTitle className="flex-center text-center px-3 pt-2 truncate">{challenge.title}</CardTitle>
-                </div>
                 <div className="flex items-center gap-2 mt-3">
-                    <UserAvatarRow user={challenge.creator}/>
+                    <UserAvatarRow user={challenge.creator} avatarsize={"w-12 h-12"}/>
                 </div>
             </CardHeader>
 
@@ -28,7 +28,7 @@ const ChallengeCard = ({ challenge }: { challenge: any }) => {
                 </p>
 
                 <Link to={`/challenge/${challenge.id}`}>
-                    <Button size="sm" className="w-full mt-3">
+                    <Button size="sm" className="w-full mt-3 rounded bg-primary-500 hover:bg-primary-600">
                         View Challenge
                     </Button>
                 </Link>

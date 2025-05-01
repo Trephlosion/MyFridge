@@ -10,9 +10,11 @@ import {ensureUserRef, resolveUserRef} from "@/lib/firebase/api"
 interface UserAvatarRowProps {
     user: IUser | DocumentReference;
     dateString?: Timestamp; // Optional, for showing creation date
+    avatarsize?: string;
+
 }
 
-const UserAvatarRow = ({ user, dateString }: UserAvatarRowProps) => {
+const UserAvatarRow = ({ user, dateString, avatarsize }: UserAvatarRowProps) => {
     const [userInfo, setUserInfo] = useState<IUser | null>(null);
 
     useEffect(() => {
@@ -40,7 +42,8 @@ const UserAvatarRow = ({ user, dateString }: UserAvatarRowProps) => {
 
     return (
         <Link to={`/profile/${userInfo.id}`} className="flex items-center gap-3">
-            <Avatar className="w-16 h-16">
+            <Avatar className={` ${ avatarsize ? avatarsize : "w-16 h-16"
+            }`}>
                 <AvatarImage src={userInfo.pfp} alt={userInfo.username} />
                 <AvatarFallback className="bg-white text-black">
                     {userInfo.username?.charAt(0) ?? ""}

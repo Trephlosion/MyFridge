@@ -3,7 +3,7 @@ import {useParams, Link, Outlet, useNavigate} from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Inbox } from "@/_root/pages";
 import { useUserContext } from "@/context/AuthContext";
-import { GridRecipeList, Loader, LoadingRecipe, GridChallengeList } from "@/components/shared";
+import {GridRecipeList, Loader, LoadingRecipe, GridChallengeList, SendMessage} from "@/components/shared";
 import { DataTable, FridgeColumns } from "@/components/DataTables";
 import {
     useGetUserById,
@@ -203,9 +203,12 @@ const Profile = () => {
                         )}
                         {/* Follow Button */}
                         {user.id !== currentUser.id && (
+                            <>
                             <Button type="button" className="shad-button_primary px-8" onClick={handleFollowClick}>
                                 {isFollowing ? "Unfollow" : "Follow"}
                             </Button>
+
+                            </>
                         )}
                     </div>
                 </div>

@@ -13,6 +13,7 @@ import {
     BreadcrumbList,
     BreadcrumbSeparator
 } from "@/components/ui/breadcrumb.tsx";
+import ChallengeCard from "@/components/cards/ChallengeCard.tsx";
 
 const Challenges = () => {
     const { user } = useUserContext();
@@ -82,27 +83,7 @@ const Challenges = () => {
                     <p className="text-center text-light-4">No challenges found.</p>
                 ) : (
                     challenges.map((challenge) => (
-                        <Card key={challenge.id} className="bg-dark-4 p-4 rounded-2xl shadow-md hover:scale-105 transition">
-                            <CardHeader>
-                                <CardTitle className="text-lg font-bold">{challenge.title}</CardTitle>
-                                <p className="text-sm text-light-3">{new Date(challenge.createdAt?.seconds * 1000).toLocaleDateString()}</p>
-
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-light-3 mb-3">{challenge.description}</p>
-                                <p className="text-sm text-light-3">Participants: {challenge.participants.length}</p>
-                            </CardContent>
-                            <CardFooter>
-                                <Button
-                                    size="sm"
-                                    className="w-full hover:bg-primary-600
-                                     bg-primary-500 rounded-1md"
-                                    onClick={() => navigate(`/challenge/${challenge.id}`)}
-                                >
-                                    View Challenge
-                                </Button>
-                            </CardFooter>
-                        </Card>
+                        <ChallengeCard challenge={challenge} />
                     ))
                 )}
             </div>

@@ -41,7 +41,7 @@ import {
     FridgeData,
     Recipe,
     Workshop,
-    Challenge,
+    Challenge, AnalyticsResponse,
 } from "@/types";
 
 // AUTH FUNCTIONS
@@ -650,6 +650,76 @@ Only return raw JSON.`,
     return recipes;
 };
 
+
+export const generateRecipeAnalytics = async (
+    recipeId: string
+): Promise<AnalyticsResponse> => {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    if (!apiKey) throw new Error("Missing OpenAI API Key");
+
+    // 1) fetch all Ratings docs
+    const ratingsSnap = await getDocs(
+        collection(database, "Recipes", recipeId, "Ratings")
+    );
+    const ratings = ratingsSnap.docs.map((ds) => {
+        const d = ds.data() as {
+            stars: number;
+            comment: string;
+            createdAt: Timestamp;
+            recipeId: DocumentReference;
+            userId: DocumentReference;
+        };
+        return {
+            stars: d.stars,
+            comment: d.comment,
+            createdAt: d.createdAt.toDate().toISOString(),
+        };
+    });
+
+    // 2) build prompt
+    const prompt = `
+You are a recipe analytics assistant. Given this JSON array of user ratings:
+${JSON.stringify(ratings, null, 2)}
+
+Return a single JSON object with:
+- title: string
+- averageRating: number
+- totalReviews: number
+- ratingCounts: an object mapping each star (1–5) to its count
+- mostRecentReviewDate: ISO 8601 date of the latest rating
+- overview: a 2 paragraph summary of the reviews as well as a general analysis of the recipe
+
+Respond **only** with valid JSON.
+`.trim();
+
+    // 3) call OpenAI
+    const payload = {
+        model: "gpt-4o",
+        messages: [
+            { role: "system", content: "You analyze recipe ratings." },
+            { role: "user",   content: prompt }
+        ],
+        temperature: 0.0,
+        max_tokens: 300,
+    };
+
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    let content: string = json.choices[0].message.content.trim();
+
+    // strip fences if any
+    content = content.replace(/^```json/, "").replace(/```$/g, "").trim();
+
+    // parse and return
+    return JSON.parse(content) as AnalyticsResponse;
+};
 
 
 

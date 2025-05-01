@@ -67,7 +67,7 @@ const Workshops = () => {
                 <Breadcrumb>
                     <BreadcrumbList>
                         <BreadcrumbItem>
-                            <BreadcrumbLink asChild>
+                            <BreadcrumbLink>
                                 <Link className={"hover:text-accentColor"} to="/">Home</Link>
                             </BreadcrumbLink>
                         </BreadcrumbItem>

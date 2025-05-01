@@ -17,6 +17,16 @@ export type INavLink = {
     label: string;
 };
 
+export interface AnalyticsResponse {
+    averageRating: number;
+    totalReviews: number;
+    ratingCounts: Record<1|2|3|4|5, number>;
+    mostRecentReviewDate: string;
+    overview: string;
+    title: string;
+}
+
+
 // User Update Type
 // Normalized User
 export interface IUser {

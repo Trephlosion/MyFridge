@@ -22,6 +22,8 @@ import {
 } from "@/lib/firebase/api.ts";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar.tsx";
 import {Badge} from "@/components/ui/badge.tsx";
+import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover.tsx";
+import {SendMessage} from "@/components/shared";
 
 const formatNumber = (num: number): string => {
     if (num < 1000) return num.toString();

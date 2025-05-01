@@ -5,7 +5,7 @@ import { database} from "@/lib/firebase/config";
 import {useParams, useLocation, useNavigate, Link} from "react-router-dom";
 import { useUserContext} from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { UserInfo, Recipe } from "@/types";
+import {UserInfo, Recipe, IUser} from "@/types";
 import {
     Dialog,
     DialogTrigger,
@@ -61,31 +61,35 @@ const RecipeDetails = () => {
     const [commentText, setCommentText] = useState("");
     const [loadingComment, setLoadingComment] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [userInfo, setUserInfo] = useState<UserInfo>({
-        pfp: "/assets/icons/profile-placeholder.svg",
-        username: "Unknown",
-        isVerified: false,
-        isCurator: false,
-        isAdministrator: false,
-        id: "",
-    });
+
+
+    useEffect(() => {
+        console.log("🚩 user flags:", {
+            isCurator: user.isCurator,
+            isAdministrator: user.isAdministrator,
+        });
+    }, [user]);
+
 
     // Handler to submit the review
     const handleSubmitReview = async () => {
         if (!rating || !reviewText.trim()) return;
         setReviewLoading(true);
         try {
+            const recipeRef = doc(database, "Recipes", id!);
+            const userRef   = doc(database, "Users", user.id);
+
             await addDoc(
                 collection(database, "Recipes", id!, "Ratings"),
                 {
                     comment:   reviewText.trim(),
                     stars:     rating,
                     createdAt: serverTimestamp(),
-                    recipeId:  id,
-                    userId:    user.id,
+                    recipeId:  recipeRef,  // now a DocumentReference
+                    userId:    userRef,    // now a DocumentReference
                 }
             );
-            // trigger re-fetch of reviews
+
             setSubmitted((s) => !s);
             setShowReviewDialog(false);
             setReviewText("");
@@ -205,25 +209,39 @@ const RecipeDetails = () => {
         };
         fetchComments();
     }, [id]);
+
     // Fetch recipe data (either from location.state or Firestore)
     useEffect(() => {
-        if (location.state && (location.state as Recipe).id) {
-            setRecipe(location.state as Recipe);
-            setIsLoading(false);
+        // Try to pull the recipe out of location.state (only valid for AI recipes)
+        const stateRecipe = location.state as Recipe
+        const isAiRecipe = !!stateRecipe?.tags?.includes("AI")
 
+        if (isAiRecipe && stateRecipe.id) {
+            // For AI recipes, use the in‐memory object
+            setRecipe(stateRecipe)
+            setIsLoading(false)
         } else {
+            // For all non-AI recipes, fetch from Firestore by ID
             const fetchRecipe = async () => {
-                if (id) {
-                    const recipeDoc = await getDoc(doc(database, "Recipes", id));
-                    if (recipeDoc.exists()) {
-                        setRecipe({ id: recipeDoc.id, ...recipeDoc.data() } as Recipe);
-                        setIsLoading(false);
+                if (!id) return
+                try {
+                    const docRef = doc(database, "Recipes", id)
+                    const snap = await getDoc(docRef)
+                    if (snap.exists()) {
+                        setRecipe({ id: snap.id, ...snap.data() } as Recipe)
+                    } else {
+                        console.warn(`No recipe found with ID ${id}`)
                     }
+                } catch (err) {
+                    console.error("Error loading recipe:", err)
+                } finally {
+                    setIsLoading(false)
                 }
-            };
-            fetchRecipe();
+            }
+            fetchRecipe()
         }
-    }, [id, location.state]);
+    }, [id, location.state])
+
     // Fetch reviews from the "Ratings" subcollection for this recipe
     useEffect(() => {
     const fetchReviews = async () => {
@@ -260,27 +278,39 @@ const RecipeDetails = () => {
     fetchReviews();
 }, [id, submitted]);
 
+
+    const [authorData, setAuthorData] = useState<IUser>();
+
     useEffect(() => {
-        const fetchUserInfo = async () => {
-            if (!recipe) return;
-            if (recipe.tags?.includes("AI")) {
-                setUserInfo({
-                    pfp:      recipe.pfp  || "/assets/icons/ai-bot-icon.svg",
-                    username: recipe.username || "AI Chef",
-                    isVerified: false,
-                    isCurator:  false,
-                    isAdministrator: false,
-                    id: "",
-                });
+        const loadAuthor = async () => {
+            if (!recipe || recipe.tags?.includes("AI")) return;
+
+            // normalize to a DocumentReference<IUser>
+            let authorRef: DocumentReference<IUser>;
+            if (typeof recipe.author === "string") {
+                authorRef = doc(database, "Users", recipe.author) as DocumentReference<IUser>;
             } else {
-                // recipe.author could be string, object, or DocumentReference
-                const authorIdentifier = recipe.author || recipe.userId;
-                const info = await handleGetUserInfo(authorIdentifier);
-                setUserInfo(info);
+                authorRef = recipe.author as DocumentReference<IUser>;
+            }
+
+            try {
+                const snap = await getDoc(authorRef);
+                if (snap.exists()) {
+                    // snap.data() already contains all IUser fields
+                    const data = snap.data() as IUser;
+                    setAuthorData({ id: snap.id, ...data });
+                } else {
+                    console.warn("No user found at", authorRef.path);
+                }
+            } catch (err) {
+                console.error("Error fetching author info:", err);
             }
         };
-        fetchUserInfo();
+
+        loadAuthor();
     }, [recipe]);
+
+
 
     if (isloading) return (<>
         <p className="text-center text-light-4 mt-10">Loading Recipe...</p>
@@ -301,29 +331,28 @@ const RecipeDetails = () => {
 
     return (
         <>
-            {/* ─── Breadcrumb ───────────────────────── */}
-            <div className={"text-white"}>
-                <Breadcrumb>
-                    <BreadcrumbList>
-                        <BreadcrumbItem>
-                            <BreadcrumbLink asChild>
-                                <Link className={"hover:text-accentColor"} to="/">Home</Link>
-                            </BreadcrumbLink>
-                        </BreadcrumbItem>
-                        <BreadcrumbSeparator />
-                        <BreadcrumbItem>
-                            <BreadcrumbLink asChild>
-                                <Link className={"hover:text-accentColor"} to="/explore">Explore</Link>
-                            </BreadcrumbLink>
-                        </BreadcrumbItem>
-                        <BreadcrumbSeparator />
-                        <BreadcrumbItem>
-                            <BreadcrumbLink>{recipe?.title}</BreadcrumbLink>
-                        </BreadcrumbItem>
-                    </BreadcrumbList>
-                </Breadcrumb>
-            </div>
-                <div className="p-6 max-w-4xl mx-auto bg-dark-4 text-white">
+                <div className="p-6 w-full mx-auto bg-dark-4 text-white">
+                    <div className={"text-white"}>
+                        <Breadcrumb>
+                            <BreadcrumbList>
+                                <BreadcrumbItem>
+                                    <BreadcrumbLink >
+                                        <Link className={"hover:text-accentColor"} to="/">Home</Link>
+                                    </BreadcrumbLink>
+                                </BreadcrumbItem>
+                                <BreadcrumbSeparator />
+                                <BreadcrumbItem>
+                                    <BreadcrumbLink >
+                                        <Link className={"hover:text-accentColor"} to="/explore">Explore</Link>
+                                    </BreadcrumbLink>
+                                </BreadcrumbItem>
+                                <BreadcrumbSeparator />
+                                <BreadcrumbItem>
+                                    <BreadcrumbLink>{recipe?.title}</BreadcrumbLink>
+                                </BreadcrumbItem>
+                            </BreadcrumbList>
+                        </Breadcrumb>
+                    </div>
                     <img
                         src={recipe.mediaUrl || "/assets/icons/recipe-placeholder.svg"}
                         alt={recipe.title}
@@ -335,8 +364,7 @@ const RecipeDetails = () => {
                     <div className="flex items-center justify-center gap-4 my-4">
                         <div className="flex flex-col md:flex-row md:items-center gap-4">
                             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
-                                <UserAvatarRow user={userInfo.id}/>
-
+                                <UserAvatarRow user={authorData} avatarsize={"w-12 h-12"} />
 
                                 {recipe.tags?.map((tag, index) => (
                                     <span
@@ -353,6 +381,38 @@ const RecipeDetails = () => {
                     </div>
 
                     <>
+                        {user.isCurator && (
+                            <div className="flex flex-row gap-2 mt-3">
+                                <Button
+                                    onClick={() =>
+                                        navigate(`/recipe-analytics?recipeId=${recipe.id}`, {
+                                            state: { from: location },
+                                        })
+                                    }
+                                    className="bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 px-3 rounded"
+                                >
+                                    Get Analytics
+                                </Button>
+
+                                <Button
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const recipeRef = doc(database, "Recipes", recipe.id);
+                                        const updatedHighlight = !recipe.isRecommended;
+
+                                        await updateDoc(recipeRef, {
+                                            isRecommended: updatedHighlight,
+                                        });
+
+                                        window.location.reload(); // refresh to show updated state
+                                    }}
+                                    className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-3 rounded"
+                                >
+                                    {recipe.isRecommended ? "Unhighlight" : "Highlight as Seasonal"}
+                                </Button>
+                            </div>
+                        )}
+
                         {reviews.length > 0 && (() => {
                             const totalStars = reviews.reduce((sum, review) => sum + review.stars, 0);
                             const averageRating = (totalStars / reviews.length).toFixed(1);
@@ -408,81 +468,10 @@ const RecipeDetails = () => {
 
                     <div className={"flex flex-col justify-center items-center mt-6"}>
                         <div className={"flex flex-col items-center"}>
+
                             {/* Render review section only for curators */}
-                            {user.isCurator || user.isAdministrator && (
+                            {user?.isCurator && (
                                 <>
-                                    {user?.isAdministrator && (
-                                        <div className="flex flex-col gap-2 mt-3">
-                                            <Button
-                                                onClick={() => navigate(`/recipe-analytics?recipeId=${recipe.id}`)}
-                                                className="bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 px-3 rounded"
-                                            >
-                                                Get Analytics
-                                            </Button>
-                                            <Button
-                                                onClick={async (e) => {
-                                                    e.stopPropagation();
-                                                    const recipeRef = doc(database, "Recipes", recipe.id);
-                                                    const updatedHighlight = !recipe.isRecommended;
-
-                                                    await updateDoc(recipeRef, {
-                                                        isRecommended: updatedHighlight,
-                                                    });
-
-                                                    window.location.reload(); // refresh to show updated state
-                                                }}
-                                                className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-3 rounded"
-                                            >
-                                                {recipe.isRecommended ? "Unhighlight" : "Highlight as Seasonal"}
-                                            </Button>
-                                        </div>
-                                    )}
-
-                                    <h2 className="text-2xl font-semibold mb-4">Submitted Reviews</h2>
-                                    {/* Horizontal carousel to display submitted reviews */}
-                                    {reviews.length > 0 ? (
-                                        <Carousel className="w-full">
-                                            <CarouselContent>
-                                                {reviews.map((rev) => (
-                                                    <CarouselItem key={rev.id} className="flex justify-center">
-                                                        <Card className="max-w-xs bg-card bg-dark-4 rounded-3xl">
-                                                            <CardHeader className="flex items-center space-x-3">
-                                                                <Avatar className="w-10 h-10">
-                                                                    <AvatarImage src={rev.userPfp} alt={rev.username} />
-                                                                    <AvatarFallback className={"bg-white text-black"}>
-                                                                        {rev.username.charAt(0)}
-                                                                    </AvatarFallback>
-                                                                </Avatar>
-                                                                <div>
-                                                                    <CardTitle>{rev.username}</CardTitle>
-                                                                    <CardDescription>
-                                                                        {multiFormatDateString(
-                                                                            rev.createdAt.toDate().toString()
-                                                                        )}
-                                                                    </CardDescription>
-                                                                </div>
-                                                            </CardHeader>
-                                                            <CardContent>
-                                                                <p>{rev.comment}</p>
-                                                            </CardContent>
-                                                            <CardFooter>
-                                                                <div className="flex items-center gap-2 text-yellow-400">
-                                                                    {Array.from({ length: rev.stars }).map((_, i) => (
-                                                                        <span key={i}>★</span>
-                                                                    ))}
-                                                                </div>
-                                                            </CardFooter>
-                                                        </Card>
-                                                    </CarouselItem>
-                                                ))}
-                                            </CarouselContent>
-                                            <CarouselPrevious />
-                                            <CarouselNext />
-                                        </Carousel>
-                                    ) : (
-                                        <p className="p-4 text-center">No reviews yet.</p>
-                                    )}
-
                                     {/* Add Review Button + Dialog */}
                                     <div className="flex justify-center mt-6">
                                         <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
@@ -535,6 +524,52 @@ const RecipeDetails = () => {
                                         </Dialog>
                                     </div>
                                 </>
+                            )}
+
+                            {/* Reviews Section */}
+                            <h2 className="text-2xl font-semibold mb-4">Submitted Reviews</h2>
+                            {/* Horizontal carousel to display submitted reviews */}
+                            {reviews.length > 0 ? (
+                                <Carousel className="w-full">
+                                    <CarouselContent>
+                                        {reviews.map((rev) => (
+                                            <CarouselItem key={rev.id} className="flex justify-center">
+                                                <Card className="max-w-xs bg-dark-2 border border-dark-4 p-5 lg:p-7 w-1/2 rounded-3xl">
+                                                    <CardHeader className="flex items-center space-x-3">
+                                                        <Avatar className="w-10 h-10">
+                                                            <AvatarImage src={rev.userPfp} alt={rev.username} />
+                                                            <AvatarFallback className={"bg-white text-black"}>
+                                                                {rev.username.charAt(0)}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div>
+                                                            <CardTitle>{rev.username}</CardTitle>
+                                                            <CardDescription>
+                                                                {multiFormatDateString(
+                                                                    rev.createdAt.toDate().toString()
+                                                                )}
+                                                            </CardDescription>
+                                                        </div>
+                                                    </CardHeader>
+                                                    <CardContent>
+                                                        <p>{rev.comment}</p>
+                                                    </CardContent>
+                                                    <CardFooter>
+                                                        <div className="flex items-center gap-2 text-yellow-400 size-2">
+                                                            {Array.from({ length: rev.stars }).map((_, i) => (
+                                                                <span key={i}>★</span>
+                                                            ))}
+                                                        </div>
+                                                    </CardFooter>
+                                                </Card>
+                                            </CarouselItem>
+                                        ))}
+                                    </CarouselContent>
+                                    <CarouselPrevious />
+                                    <CarouselNext />
+                                </Carousel>
+                            ) : (
+                                <p className="p-4 text-center">No reviews yet.</p>
                             )}
                         </div>
 
