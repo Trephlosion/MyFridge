@@ -24,42 +24,7 @@ const GridRecipeList = ({ recipes }: GridRecipeListProps) => {
 
   const { data: userRecipes, isLoading: isLoadingUserRecipes } = useGetUserRecipes(recipes);
 
-  const likedRecipeIds = user?.likedRecipes?.map((ref: any) => ref.id) || [];
-
-  const filteredRecipes = recipes.filter((recipe) =>
-      likedRecipeIds.includes(recipe.id)
-  );
-
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [creators, setCreators] = useState<{ [key: string]: string }>({});
-  const [suggestedRecipes, setSuggestedRecipes] = useState<any[]>([]);
-  const [showMyRecipes, setShowMyRecipes] = useState(false);
-  const [ratingsMap, setRatingsMap] = useState<{ [key: string]: any[] }>({});
-  const navigate = useNavigate();
-  const [highlightedRecipes, setHighlightedRecipes] = useState<string[]>([]);
-
-  const { data: searchResults, isLoading: isSearching } = useSearchRecipes(searchTerm.toLowerCase());
-
-
-
-  useEffect(() => {
-    const fetchSuggestedRecipes = async () => {
-      const recipesRef = collection(database, "Recipes");
-      const suggestedQuery = query(recipesRef, orderBy("createdAt", "desc"), limit(20));
-      const querySnapshot = await getDocs(suggestedQuery);
-      const suggested = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setSuggestedRecipes(suggested);
-    };
-
-    fetchSuggestedRecipes();
-  }, []);
-
-
-  const noResults = searchTerm && recipes.length === 0;
+    const [creators, setCreators] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     const fetchCreators = async () => {
@@ -79,24 +44,7 @@ const GridRecipeList = ({ recipes }: GridRecipeListProps) => {
       fetchCreators();
     }
   }, [recipes]);
-
-  useEffect(() => {
-    const fetchRatingsForUserRecipes = async () => {
-      const newRatingsMap: { [key: string]: any[] } = {};
-      for (const recipe of recipes) {
-        if (recipe.author === user.id) {
-          const ratingsRef = collection(database, "Recipes", recipe.id, "Ratings");
-          const snapshot = await getDocs(ratingsRef);
-          newRatingsMap[recipe.id] = snapshot.docs.map(doc => doc.data());
-        }
-      }
-      setRatingsMap(newRatingsMap);
-    };
-
-    if (recipes.length > 0) {
-      fetchRatingsForUserRecipes();
-    }
-  }, [recipes]);
+  
 
   const location = useLocation();
   const isProfilePage = location.pathname.includes("/profile");

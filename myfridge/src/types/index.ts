@@ -26,6 +26,11 @@ export interface AnalyticsResponse {
     title: string;
 }
 
+export interface UnlikeRecipeArgs {
+    recipeId: string;
+    userId: string;
+}
+
 
 // User Update Type
 // Normalized User

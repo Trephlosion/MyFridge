@@ -12,7 +12,6 @@ import {
     arrayUnion,
     collection,
     deleteDoc,
-
     doc,
     getDoc,
     getDocs,
@@ -22,7 +21,7 @@ import {
     runTransaction,
     serverTimestamp,
     setDoc,
-
+    writeBatch,
     updateDoc,
     where,
     DocumentReference,
@@ -41,7 +40,8 @@ import {
     FridgeData,
     Recipe,
     Workshop,
-    Challenge, AnalyticsResponse,
+    Challenge,
+    AnalyticsResponse,
 } from "@/types";
 
 // AUTH FUNCTIONS
@@ -274,36 +274,34 @@ export const deleteRecipe = async (recipeId: string, mediaId: string) => {
     await deleteDoc(recipeRef);
 };
 
-// Like Recipe
-export async function likeRecipe(recipeId: string, userId: string) {
+export async function likeRecipe(
+    recipeId: string,
+    userId: string
+): Promise<void> {
+    const batch = writeBatch(database);
     const recipeRef = doc(database, "Recipes", recipeId);
-    const userRef = doc(database, "Users", userId);
-    await runTransaction(database, async (tx) => {
-        const [recipeSnap, userSnap] = await Promise.all([
-            tx.get(recipeRef),
-            tx.get(userRef),
-        ]);
-        if (!recipeSnap.exists() || !userSnap.exists()) throw new Error("Invalid refs");
+    const userRef   = doc(database, "Users",   userId);
 
-        tx.update(recipeRef, { likes: arrayUnion(userId) });
-        tx.update(userRef, { likedRecipes: arrayUnion(recipeId) });
-    });
+    // Add userRef to recipe.likes[], add recipeRef to user.likedRecipes[]
+    batch.update(recipeRef, { likes: arrayUnion(userRef) });
+    batch.update(userRef,   { likedRecipes: arrayUnion(recipeRef as DocumentReference) });
+
+    await batch.commit();
 }
 
-// Unlike Recipe
-export async function unlikeRecipe(recipeId: string, userId: string) {
+export async function unlikeRecipe(
+    recipeId: string,
+    userId: string
+): Promise<void> {
+    const batch = writeBatch(database);
     const recipeRef = doc(database, "Recipes", recipeId);
-    const userRef = doc(database, "Users", userId);
-    await runTransaction(database, async (tx) => {
-        const [recipeSnap, userSnap] = await Promise.all([
-            tx.get(recipeRef),
-            tx.get(userRef),
-        ]);
-        if (!recipeSnap.exists() || !userSnap.exists()) throw new Error("Invalid refs");
+    const userRef   = doc(database, "Users",   userId);
 
-        tx.update(recipeRef, { likes: arrayRemove(userId) });
-        tx.update(userRef, { likedRecipes: arrayRemove(recipeId) });
-    });
+    // Remove userRef from recipe.likes[], remove recipeRef from user.likedRecipes[]
+    batch.update(recipeRef, { likes: arrayRemove(userRef) });
+    batch.update(userRef,   { likedRecipes: arrayRemove(recipeRef as DocumentReference) });
+
+    await batch.commit();
 }
 
 // Get User's Recipes from References

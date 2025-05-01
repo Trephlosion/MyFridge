@@ -159,32 +159,81 @@ export const useDeleteRecipe = () => {
 };
 
 
-// Hook for liking a recipe
-export const useLikeRecipe = () => {
-    const queryClient = useQueryClient();
-
+export function useLikeRecipe() {
+    const qc = useQueryClient();
     return useMutation({
+        // 🆕 v4-style: put the mutation function under `mutationFn`
         mutationFn: ({ recipeId, userId }: { recipeId: string; userId: string }) =>
             likeRecipe(recipeId, userId),
-        onSuccess: (_data, { recipeId }) => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_RECIPE_BY_ID, recipeId] });
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_CURRENT_USER] });
+
+        // optimistic update
+        onMutate: async (vars) => {
+            await qc.cancelQueries(["recipe", vars.recipeId]);
+            await qc.cancelQueries(["currentUser"]);
+
+            const prevRecipe = qc.getQueryData<any>(["recipe", vars.recipeId]);
+            const prevUser   = qc.getQueryData<any>(["currentUser"]);
+
+            qc.setQueryData(["recipe", vars.recipeId], (old: any) => ({
+                ...old,
+                likes: [...(old?.likes || []), vars.userId],
+            }));
+            qc.setQueryData(["currentUser"], (old: any) => ({
+                ...old,
+                likedRecipes: [...(old?.likedRecipes || []), vars.recipeId],
+            }));
+
+            return { prevRecipe, prevUser };
+        },
+
+        onError: (_err, vars, context: any) => {
+            if (context?.prevRecipe) qc.setQueryData(["recipe", vars.recipeId], context.prevRecipe);
+            if (context?.prevUser)   qc.setQueryData(["currentUser"], context.prevUser);
+        },
+
+        onSettled: (_data, _err, vars) => {
+            qc.invalidateQueries(["recipe", vars.recipeId]);
+            qc.invalidateQueries(["currentUser"]);
         },
     });
-};
+}
 
-export const useUnlikeRecipe = () => {
-    const queryClient = useQueryClient();
-
+export function useUnlikeRecipe() {
+    const qc = useQueryClient();
     return useMutation({
         mutationFn: ({ recipeId, userId }: { recipeId: string; userId: string }) =>
             unlikeRecipe(recipeId, userId),
-        onSuccess: (_data, { recipeId }) => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_RECIPE_BY_ID, recipeId] });
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_CURRENT_USER] });
+
+        onMutate: async (vars) => {
+            await qc.cancelQueries(["recipe", vars.recipeId]);
+            await qc.cancelQueries(["currentUser"]);
+
+            const prevRecipe = qc.getQueryData<any>(["recipe", vars.recipeId]);
+            const prevUser   = qc.getQueryData<any>(["currentUser"]);
+
+            qc.setQueryData(["recipe", vars.recipeId], (old: any) => ({
+                ...old,
+                likes: (old?.likes || []).filter((id: string) => id !== vars.userId),
+            }));
+            qc.setQueryData(["currentUser"], (old: any) => ({
+                ...old,
+                likedRecipes: (old?.likedRecipes || []).filter((rid: string) => rid !== vars.recipeId),
+            }));
+
+            return { prevRecipe, prevUser };
+        },
+
+        onError: (_err, vars, context: any) => {
+            if (context?.prevRecipe) qc.setQueryData(["recipe", vars.recipeId], context.prevRecipe);
+            if (context?.prevUser)   qc.setQueryData(["currentUser"], context.prevUser);
+        },
+
+        onSettled: (_data, _err, vars) => {
+            qc.invalidateQueries(["recipe", vars.recipeId]);
+            qc.invalidateQueries(["currentUser"]);
         },
     });
-};
+}
 
 
 
