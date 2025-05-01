@@ -42,13 +42,3 @@ export const ProfileValidation = z.object({
     username: z.string().nonempty({message: 'Username is required'}).min(2, { message: "Name must be at least 2 characters." }),
     bio: z.string(),
 });
-
-export const FridgeValidation = z.object({
-   ingredient_name: z.string().nonempty({message: 'Ingredient name is required'}),
-
-});
-
-export const ShoppingListValidation = z.object({
-    ingredient_name: z.string().nonempty({message: 'Ingredient name is required'}),
-
-});

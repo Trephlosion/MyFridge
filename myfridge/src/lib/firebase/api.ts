@@ -12,7 +12,6 @@ import {
     arrayUnion,
     collection,
     deleteDoc,
-
     doc,
     getDoc,
     getDocs,
@@ -22,7 +21,7 @@ import {
     runTransaction,
     serverTimestamp,
     setDoc,
-
+    writeBatch,
     updateDoc,
     where,
     DocumentReference,
@@ -42,6 +41,7 @@ import {
     Recipe,
     Workshop,
     Challenge,
+    AnalyticsResponse, Fridge,
 } from "@/types";
 
 // AUTH FUNCTIONS
@@ -80,6 +80,7 @@ export const createUserAccount = async (userData: any) => {
         isCurator,
         followers: [],
         following: [],
+        likedRecipes: [],
         recipes: [],
         workshops: [],
         challenges: [],
@@ -222,6 +223,8 @@ export async function createRecipe(recipe: INewRecipe) {
         prepTime: recipe.prepTime,
         servings: recipe.servings,
         isRecommended: false,
+        isApproved: false,
+        isSeasonal: false,
         tags,
         likes: [],
         comments: [],
@@ -272,36 +275,34 @@ export const deleteRecipe = async (recipeId: string, mediaId: string) => {
     await deleteDoc(recipeRef);
 };
 
-// Like Recipe
-export async function likeRecipe(recipeId: string, userId: string) {
+export async function likeRecipe(
+    recipeId: string,
+    userId: string
+): Promise<void> {
+    const batch = writeBatch(database);
     const recipeRef = doc(database, "Recipes", recipeId);
-    const userRef = doc(database, "Users", userId);
-    await runTransaction(database, async (tx) => {
-        const [recipeSnap, userSnap] = await Promise.all([
-            tx.get(recipeRef),
-            tx.get(userRef),
-        ]);
-        if (!recipeSnap.exists() || !userSnap.exists()) throw new Error("Invalid refs");
+    const userRef   = doc(database, "Users",   userId);
 
-        tx.update(recipeRef, { likes: arrayUnion(userId) });
-        tx.update(userRef, { likedRecipes: arrayUnion(recipeId) });
-    });
+    // Add userRef to recipe.likes[], add recipeRef to user.likedRecipes[]
+    batch.update(recipeRef, { likes: arrayUnion(userRef) });
+    batch.update(userRef,   { likedRecipes: arrayUnion(recipeRef as DocumentReference) });
+
+    await batch.commit();
 }
 
-// Unlike Recipe
-export async function unlikeRecipe(recipeId: string, userId: string) {
+export async function unlikeRecipe(
+    recipeId: string,
+    userId: string
+): Promise<void> {
+    const batch = writeBatch(database);
     const recipeRef = doc(database, "Recipes", recipeId);
-    const userRef = doc(database, "Users", userId);
-    await runTransaction(database, async (tx) => {
-        const [recipeSnap, userSnap] = await Promise.all([
-            tx.get(recipeRef),
-            tx.get(userRef),
-        ]);
-        if (!recipeSnap.exists() || !userSnap.exists()) throw new Error("Invalid refs");
+    const userRef   = doc(database, "Users",   userId);
 
-        tx.update(recipeRef, { likes: arrayRemove(userId) });
-        tx.update(userRef, { likedRecipes: arrayRemove(recipeId) });
-    });
+    // Remove userRef from recipe.likes[], remove recipeRef from user.likedRecipes[]
+    batch.update(recipeRef, { likes: arrayRemove(userRef) });
+    batch.update(userRef,   { likedRecipes: arrayRemove(recipeRef as DocumentReference) });
+
+    await batch.commit();
 }
 
 // Get User's Recipes from References
@@ -339,31 +340,54 @@ export async function getAllFridgeIngredients(fridgeRef: DocumentReference<Docum
     return Array.isArray(fridgeData.ingredients) ? fridgeData.ingredients : [];
 }
 
-// Add new ingredient to fridge
-export async function addIngredientToFridge(fridgeId: string, ingredientName: string) {
-    const fridgeDoc = doc(database, "Fridges", fridgeId);
-    await updateDoc(fridgeDoc, {
-        ingredients: arrayUnion(ingredientName),
-    });
-    return { status: "ok" };
+export async function addNewIngredient(
+    fridgeRef: DocumentReference,
+    ingredientName: string
+) {
+    try {
+        // only update the fridge’s ingredients array
+        await updateDoc(fridgeRef, {
+            ingredients: arrayUnion(ingredientName),
+            updatedAt: serverTimestamp(),
+        });
+        return { status: "ok" };
+    } catch (error) {
+        console.error("Error adding ingredient:", error);
+        throw error;
+    }
 }
 
-// Remove ingredient from fridge
-export async function removeIngredientFromFridge(fridgeId: string, ingredientName: string) {
-    const fridgeDoc = doc(database, "Fridges", fridgeId);
-    const fridgeSnap = await getDoc(fridgeDoc);
 
-    if (!fridgeSnap.exists()) throw new Error("Fridge not found");
-    const fridgeData = fridgeSnap.data() as FridgeData;
-
-    const updatedIngredients = (Array.isArray(fridgeData.ingredients) ? fridgeData.ingredients : []).filter((item) => item !== ingredientName);
-
-    await updateDoc(fridgeDoc, {
-        ingredients: updatedIngredients,
+export async function addIngredientToFridge(
+    fridgeId: string,
+    ingredientName: string
+) {
+    const fridgeRef = doc(database, "Fridges", fridgeId);
+    await updateDoc(fridgeRef, {
+        ingredients: arrayUnion(ingredientName),
         updatedAt: serverTimestamp(),
     });
+}
 
-    return { status: "ok" };
+export async function removeIngredientFromFridge(
+    fridgeId: string,
+    ingredientName: string
+) {
+    const fridgeRef = doc(database, "Fridges", fridgeId);
+    await updateDoc(fridgeRef, {
+        ingredients: arrayRemove(ingredientName),
+        updatedAt: serverTimestamp(),
+    });
+}
+
+export async function fetchFridgeByRef(
+    fridgeRef: DocumentReference<Fridge>
+): Promise<Fridge> {
+    const snap = await getDoc(fridgeRef);
+    if (!snap.exists()) {
+        throw new Error("Fridge not found");
+    }
+    return { id: snap.id, ...(snap.data() as Omit<Fridge, "id">) };
 }
 
 // Ingredient Functions
@@ -477,7 +501,7 @@ export const generateAiRecipes = async (ingredients: string[]): Promise<Recipe[]
 
     if (!apiKey) throw new Error("Missing OpenAI API Key");
 
-    const prompt = `You are an innovative chef. Generate 3-4 unique recipes using only the following ingredients: ${ingredients.join(",")}\nReturn JSON array with title, description, ingredients, cookTime, prepTime, servings, instructions.`;
+    const prompt = `You are an innovative chef. Generate 5-6 unique recipes using only the following ingredients: ${ingredients.join(",")}\nReturn JSON array with title, description, ingredients, cookTime, prepTime, servings, instructions.`;
 
     const payload = {
         model: "gpt-3.5-turbo",
@@ -513,8 +537,6 @@ export const generateAiRecipes = async (ingredients: string[]): Promise<Recipe[]
                 cookTime: item.cookTime,
                 servings: item.servings,
                 mediaUrl: img,
-                createdAt: new Date(),
-                likes: [],
                 username: "AI Chef",
                 pfp: "/assets/icons/ai-bot-icon.svg",
                 tags: ["AI", "Auto-generated"],
@@ -525,6 +547,201 @@ export const generateAiRecipes = async (ingredients: string[]): Promise<Recipe[]
     return recipes;
 };
 
+
+/**
+ * Generate 4–5 recipes from a user-uploaded image.
+ * Uses GPT-4o to “see” the image (encoded as data URL).
+ */
+export const generateAiRecipesFromImage = async (files: File[]): Promise<Recipe[]> => {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    if (!apiKey) throw new Error("Missing OpenAI API Key");
+    if (!files || files.length === 0) throw new Error("No image file provided");
+
+    // helper: file → data URL
+    const toDataURL = (file: File) =>
+        new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => reject(new Error("Failed to read file"));
+            reader.readAsDataURL(file);
+        });
+    const dataUrl = await toDataURL(files[0]);
+
+    const systemPrompt = { role: "system", content: "You are a experienced chef." };
+    const userPrompt = {
+        role: "user",
+        content: `You are an innovative chef. Here is an image: ${dataUrl}
+Generate 4–5 unique recipes based on the ingredients you see or the vibe/feeling of the image.
+Return a JSON array of objects with these keys:
+- title (string)
+- description (string)
+- ingredients (string[])
+- prepTime (number of minutes)
+- cookTime (number of minutes)
+- servings (number)
+- instructions (string[])
+
+Only return raw JSON.`,
+    };
+
+    const payload = {
+        model: "gpt-4o",
+        messages: [systemPrompt, userPrompt],
+        temperature: 0.7,
+        max_tokens: 800,
+    };
+
+    // retry logic
+    const maxRetries = 3;
+    let response: Response | null = null;
+    let json: any = null;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        // on rate limit, back off
+        if (response.status === 429) {
+            const retryAfter = response.headers.get("Retry-After");
+            const delayMs = retryAfter
+                ? parseInt(retryAfter, 10) * 1000
+                : Math.pow(2, attempt) * 1000;
+            console.warn(`OpenAI 429 → retrying in ${delayMs}ms (attempt ${attempt + 1})`);
+            await new Promise((res) => setTimeout(res, delayMs));
+            continue;
+        }
+
+        // any other HTTP error
+        if (!response.ok) {
+            const txt = await response.text().catch(() => "");
+            throw new Error(`OpenAI error ${response.status}: ${txt}`);
+        }
+
+        // success
+        json = await response.json();
+        break;
+    }
+
+    if (!json) {
+        throw new Error("Failed to get a valid response from OpenAI after retries");
+    }
+
+    // guard missing choices
+    const content = json.choices?.[0]?.message?.content;
+    if (!content) {
+        console.error("OpenAI raw response:", json);
+        throw new Error("OpenAI did not return any content in choices[0]");
+    }
+
+    // strip markdown fences, parse JSON
+    const cleaned = content.trim().replace(/^```json/, "").replace(/```$/, "");
+    let parsed: any[];
+    try {
+        parsed = JSON.parse(cleaned);
+    } catch (e) {
+        console.error("Failed to JSON.parse OpenAI output:", cleaned);
+        throw new Error("Invalid JSON from OpenAI");
+    }
+
+    // enrich with images
+    const recipes: Recipe[] = await Promise.all(
+        parsed.map(async (item, idx) => {
+            const img = await getTopImageForRecipe(item.title);
+            return {
+                id: `ai-img-${Date.now()}-${idx}`,
+                title: item.title,
+                description: item.description,
+                ingredients: item.ingredients,
+                prepTime: item.prepTime,
+                cookTime: item.cookTime,
+                servings: item.servings,
+                instructions: item.instructions,
+                mediaUrl: img,
+                username: "AI Chef",
+                pfp: "/assets/icons/ai-bot-icon.svg",
+                tags: ["AI", "Image-Based"],
+            };
+        })
+    );
+
+    return recipes;
+};
+
+
+export const generateRecipeAnalytics = async (
+    recipeId: string
+): Promise<AnalyticsResponse> => {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    if (!apiKey) throw new Error("Missing OpenAI API Key");
+
+    // 1) fetch all Ratings docs
+    const ratingsSnap = await getDocs(
+        collection(database, "Recipes", recipeId, "Ratings")
+    );
+    const ratings = ratingsSnap.docs.map((ds) => {
+        const d = ds.data() as {
+            stars: number;
+            comment: string;
+            createdAt: Timestamp;
+            recipeId: DocumentReference;
+            userId: DocumentReference;
+        };
+        return {
+            stars: d.stars,
+            comment: d.comment,
+            createdAt: d.createdAt.toDate().toISOString(),
+        };
+    });
+
+    // 2) build prompt
+    const prompt = `
+You are a recipe analytics assistant. Given this JSON array of user ratings:
+${JSON.stringify(ratings, null, 2)}
+
+Return a single JSON object with:
+- title: string
+- averageRating: number
+- totalReviews: number
+- ratingCounts: an object mapping each star (1–5) to its count
+- mostRecentReviewDate: ISO 8601 date of the latest rating
+- overview: a 2 paragraph summary of the reviews as well as a general analysis of the recipe
+
+Respond **only** with valid JSON.
+`.trim();
+
+    // 3) call OpenAI
+    const payload = {
+        model: "gpt-4o",
+        messages: [
+            { role: "system", content: "You analyze recipe ratings." },
+            { role: "user",   content: prompt }
+        ],
+        temperature: 0.0,
+        max_tokens: 300,
+    };
+
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    let content: string = json.choices[0].message.content.trim();
+
+    // strip fences if any
+    content = content.replace(/^```json/, "").replace(/```$/g, "").trim();
+
+    // parse and return
+    return JSON.parse(content) as AnalyticsResponse;
+};
 
 
 
@@ -684,19 +901,7 @@ export async function addIngredientToShoppingList(fridgeId: string, ingredientId
     }
 }
 
-// add new ingredient
-export async function addNewIngredient(fridgeRef: DocumentReference, ingredientName: string) {
-    try {
-        const ingredientRef = doc(database, "Ingredients", ingredientName);
-        await setDoc(ingredientRef, { name: ingredientName });
-        await updateDoc(fridgeRef, {
-            ingredients: arrayUnion(ingredientName),
-        });
-        return { status: ok };
-    } catch (error) {
-        console.log(error);
-    }
-}
+
 
 // INGREDIENT FUNCTIONS
 
@@ -706,6 +911,8 @@ export async function toggleUserActivation(userId: string): Promise<void> {
         const userRef = doc(database, "Users", userId);
         const userSnap = await getDoc(userRef);
         const currentStatus = userSnap.data()?.isDeactivated;
+        console.log("Current status:", currentStatus);
+        console.log("Toggling user deactivation status for userId:", userId);
         await updateDoc(userRef, { isDeactivated: !currentStatus });
     } catch (error) {
         console.error("Error toggling user disabled state:", error);

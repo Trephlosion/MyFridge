@@ -1,8 +1,7 @@
 // Modularly fixing Workshops.tsx (normalized for DocumentReferences)
-
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { collection, getDocs, getDoc } from "firebase/firestore";
+import {Link, useNavigate} from "react-router-dom";
+import { collection, getDocs,} from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
 import { useUserContext } from "@/context/AuthContext";
 import { Input } from "@/components/ui/input";
@@ -10,17 +9,24 @@ import { Workshop } from "@/types";
 import WorkshopCard from "@/components/cards/WorkshopCard";
 import useDebounce from "@/hooks/useDebounce";
 import { useSearchWorkshops } from "@/lib/react-query/queriesAndMutations";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbSeparator
+} from "@/components/ui/breadcrumb.tsx";
 
 const Workshops = () => {
     const { user } = useUserContext();
     const navigate = useNavigate();
-
     const [workshops, setWorkshops] = useState<Workshop[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isError, setIsError] = useState(false);
     const [searchValue, setSearchValue] = useState("");
     const debouncedSearch = useDebounce(searchValue, 500);
-
+    const shouldShowSearchResults = searchValue !== "";
+    const shouldShowNoWorkshops = !shouldShowSearchResults && workshops.length === 0;
     const { data: searchedWorkshops = [], isLoading: isSearching } = useSearchWorkshops(debouncedSearch);
 
     useEffect(() => {
@@ -54,11 +60,25 @@ const Workshops = () => {
         fetchWorkshops();
     }, []);
 
-    const shouldShowSearchResults = searchValue !== "";
-    const shouldShowNoWorkshops = !shouldShowSearchResults && workshops.length === 0;
-
     return (
         <div className="p-5">
+
+            <div className={"text-white"}>
+                <Breadcrumb>
+                    <BreadcrumbList>
+                        <BreadcrumbItem>
+                            <BreadcrumbLink>
+                                <Link className={"hover:text-accentColor"} to="/">Home</Link>
+                            </BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                            <BreadcrumbLink>Workshops</BreadcrumbLink>
+                        </BreadcrumbItem>
+                    </BreadcrumbList>
+                </Breadcrumb>
+            </div>
+
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-white">Explore Workshops</h2>
                 {user?.isVerified && (

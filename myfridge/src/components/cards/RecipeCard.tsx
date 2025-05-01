@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { getDownloadURL, ref } from "firebase/storage";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { multiFormatDateString } from "@/lib/utils";
 import { useUserContext } from "@/context/AuthContext";
 import { Recipe } from "@/types";
@@ -17,11 +17,10 @@ import {
     CardTitle,
     CardDescription,
 } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { Button } from "@/components/ui/button";
 import { RecipeCardProps, UserInfo } from "@/types";
 import {UserAvatarRow} from "@/components/shared";
+import {Badge} from "@/components/ui/badge.tsx";
 
 
 const RecipeCard = ({ recipe }: RecipeCardProps) => {
@@ -111,28 +110,30 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
             <CardTitle className="flex-center text-center">
                 <h1 className="text-lg font-bold">{recipe.title}</h1>
             </CardTitle>
-
             <CardHeader className="flex justify-between px-3">
                 <div className="flex flex-col items-start gap-3">
-                    <UserAvatarRow user={recipe.author} />
+                    {recipe.author && <UserAvatarRow user={recipe.author} />}
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                         <p>{recipe.createdAt ? (multiFormatDateString(recipe.createdAt)) : "Unknown Date"}</p>
                         {recipe.updatedAt && recipe.createdAt !== recipe.updatedAt && (
                             <p>Updated {multiFormatDateString(recipe.updatedAt)}</p>
                         )}
-                        <p>{recipe.likes.length} likes</p>
+                        {recipe.likes && <p>{recipe.likes.length} likes</p>}
                     </div>
-
                     {user.username === userInfo.username ? (
                         <Link to={`/update-recipe/${recipe.id}`}>
                             <img src="/assets/icons/edit.svg" alt="edit" className="w-5 h-5" />
                         </Link>
                     ) : null}
                 </div>
-
-
+                {recipe.isSeasonal && (
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Badge variant={"secondary"} className={"bg-orange-400 "}>
+                            Seasonal
+                        </Badge>
+                    </div>
+                )}
             </CardHeader>
-
             <CardContent className="p-2">
                 <Link to={`/recipes/${recipe.id}`} state={JSON.parse(JSON.stringify(recipe))}>
                     <AspectRatio ratio={16 / 9} className="w-full rounded overflow-hidden">
@@ -143,13 +144,10 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                         />
                     </AspectRatio>
                 </Link>
-
             </CardContent>
-
             <CardDescription className="px-3 mt-1">
                 <p className="text-sm text-gray-700 line-clamp-2">{recipe.description}</p>
             </CardDescription>
-
             <CardFooter className="mt-auto px-5">
                 <RecipeStats recipe={recipe} userId={user.id} />
                 <ul className="flex flex-row flex-wrap gap-1 mt-2 text-xs text-gray-500">
@@ -157,9 +155,6 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
                         <li key={`${tag}-${idx}`}>#{tag}</li>
                     ))}
                 </ul>
-
-
-
             </CardFooter>
         </Card>
     );

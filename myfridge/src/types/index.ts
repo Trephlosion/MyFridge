@@ -7,6 +7,7 @@ export interface AuthContextType {
     isAuthenticated: boolean;
     isLoading: boolean;
     checkAuthUser: () => Promise<boolean>;
+    setUserContext: (object :{isAuthenticated: boolean, user: IUser}) => void;
 }
 
 // Navigation Link Type
@@ -15,6 +16,21 @@ export type INavLink = {
     route: string;
     label: string;
 };
+
+export interface AnalyticsResponse {
+    averageRating: number;
+    totalReviews: number;
+    ratingCounts: Record<1|2|3|4|5, number>;
+    mostRecentReviewDate: string;
+    overview: string;
+    title: string;
+}
+
+export interface UnlikeRecipeArgs {
+    recipeId: string;
+    userId: string;
+}
+
 
 // User Update Type
 // Normalized User
@@ -73,12 +89,14 @@ export type Recipe = {
     prepTime?: number;
     servings?: number;
 
-    createdAt: Timestamp;
+    createdAt?: Timestamp;
     updatedAt?: Timestamp;
-    isRecommended: boolean;
+    isRecommended?: boolean;
+    isApproved?: boolean;
+    isSeasonal?: boolean;
 
     mediaUrl: string;
-    author: DocumentReference<IUser>;
+    author?: DocumentReference<IUser>;
     userId?: DocumentReference<IUser>;
 
     username?: string;
@@ -88,8 +106,8 @@ export type Recipe = {
     instructions: string[];
     ingredients: string[];
 
-    likes: DocumentReference<IUser>[];
-    comments: DocumentReference<any>[];
+    likes?: DocumentReference<IUser>[];
+    comments?: DocumentReference<any>[];
 
     file?: File[];
     avgRating?: number;
@@ -167,6 +185,13 @@ export type FridgeData = {
     shoppingList: string[];
     updatedAt: Timestamp;
     userid: DocumentReference<IUser>;
+};
+
+export type Fridge = {
+    id: string;
+    ingredients: string[];
+    updatedAt: any;
+    userid: DocumentReference;
 };
 
 export type RemoveIngredientParams = {

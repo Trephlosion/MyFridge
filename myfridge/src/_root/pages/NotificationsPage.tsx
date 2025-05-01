@@ -10,11 +10,18 @@ import {
     updateDoc,
     doc,
 } from "firebase/firestore";
-import { useNavigate } from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import { useUserContext } from "@/context/AuthContext";
 import { database } from "@/lib/firebase/config";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbSeparator
+} from "@/components/ui/breadcrumb.tsx";
 
 interface Notification {
     id: string;
@@ -113,6 +120,20 @@ const NotificationsPage = () => {
 
     return (
         <div className="max-w-2xl mx-auto p-4">
+            <Breadcrumb>
+                <BreadcrumbList>
+                    <BreadcrumbItem>
+                        <BreadcrumbLink asChild>
+                            <Link className={"hover:text-accentColor"} to="/">Home</Link>
+                        </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                        <BreadcrumbLink>Notifications</BreadcrumbLink>
+                    </BreadcrumbItem>
+                </BreadcrumbList>
+            </Breadcrumb>
+
             <h1 className="text-2xl font-bold mb-6 text-center text-yellow-400">
                 Notifications
             </h1>

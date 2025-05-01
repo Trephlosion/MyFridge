@@ -3,39 +3,33 @@ import {Skeleton} from "@/components/ui/skeleton.tsx";
 
 const RecipeSkeleton = () => {
     return (
-        <Card className="recipe-card">
-            <CardTitle className={"flex-center text-center"}>
-                <Skeleton className={"h-5 flex-grow"}/>
+        <Card className="recipe-card flex flex-col">
+            <CardTitle className="flex-center text-center">
+                <Skeleton className={"h-4 w-max-[400px] flex"}/>
             </CardTitle>
-            <CardHeader className="flex-between">
-                <div className="flex items-center gap-3">
-                    <Skeleton className={"w-12 lg:h-12 rounded-full"} />
+            <CardHeader className="flex justify-between px-3">
+                <div className="flex flex-col items-start gap-3">
+                    <Skeleton className={"w-16 h-16 rounded-full flex"}/>
                     <div className="flex flex-col">
-                            <Skeleton className={"h-4 flex-grow"}/>
-                        <div className="flex-center gap-2 text-light-3">
-                            <Skeleton className={"h-8 flex-grow"}/>
+                        <div className="flex items-center gap-1">
+                            <Skeleton className={"h-3 w-max-max-[400px] flex"}/>
+                            <Skeleton className={"w-3 h-2 flex"}/>
                         </div>
+                        <Skeleton className={"h-5 w-max-[400px] flex"}/>
                     </div>
                 </div>
             </CardHeader>
-            <CardDescription>
-                <div className="flex gap-8 mt-10 items-center justify-center xl:justify-start flex-wrap z-20">
-                    <Skeleton className={"h-4 flex-grow"} />
-                    <Skeleton className={"h-4 flex-grow"} />
-                </div>
-            </CardDescription>
-            <CardContent className="small-medium lg:base-medium py-2.5">
-                    <Skeleton className={"h-8 w-2/3 flex-grow"} />
+            <CardContent className="p-2">
+                    <Skeleton className="object-cover w-2/3 h-1/3 rounded-xl flex"/>
             </CardContent>
-            <CardFooter className={"flex-col"}>
-                <Skeleton className={"h-4 w-1/3 flex-grow"}/>
-                <ul className="flex-row gap-1 mt-2">
-                        <li className="text-light-3 small-regular">
-                            <Skeleton className={"h-4 w-1/5 flex-grow"}/>
-                            <Skeleton className={"h-4 w-1/5 flex-grow"}/>
-                            <Skeleton className={"h-4 w-1/5 flex-grow"}/>
-                            <Skeleton className={"h-4 w-1/5 flex-grow"}/>
-                        </li>
+            <CardDescription className="px-3 mt-1">
+                <Skeleton className={"h-5 w-max-[400px] flex"}/>
+            </CardDescription>
+            <CardFooter className="mt-auto px-5 flex-row" >
+                <ul className="inline-flex gap-1 mt-2 items-center">
+                    <Skeleton className={"h-2 w-3 flex"}/>
+                    <Skeleton className={"h-2 w-3 flex"}/>
+                    <Skeleton className={"h-2 w-3 flex"}/>
                 </ul>
             </CardFooter>
         </Card>

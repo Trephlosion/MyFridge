@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
-import { database } from "@/lib/firebase/config";
+import { useState, useEffect } from "react";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
-import {ChallengeCard, UserCardMini} from "@/components/shared";
-import { useUserContext } from "@/context/AuthContext";
-import UserCard from "../cards/UserCard.tsx";
-import {Challenge} from "@/types";
-import {getTopChallenges} from "@/lib/firebase/api.ts";
+import { ChallengeCard } from "@/components/shared";
+import { Challenge } from "@/types";
+import { getTopChallenges } from "@/lib/firebase/api.ts";
+
 const TopChallengesCarousel = () => {
+
     const [topChallenges, setTopChallenges] = useState<Challenge[]>([]);
+
     useEffect(() => {
         const fetchTopData = async () => {
             const [challenges] = await Promise.all([

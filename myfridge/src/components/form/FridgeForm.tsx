@@ -1,169 +1,154 @@
-import { useState, useEffect } from "react";
-import { useUserContext } from "@/context/AuthContext";
-import { useGetAllFridgeIngredients,  } from "@/lib/react-query/queriesAndMutations";
-import { DataTable, FridgeColumns } from "@/components/DataTables";
+"use client"
+
+import React from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
-    Sheet,
-    SheetClose,
-    SheetContent,
-    SheetDescription,
-    SheetFooter,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from "@/components/ui/sheet";
-import { useLocation, useNavigate } from "react-router-dom";
-import { addNewIngredient, } from "@/lib/firebase/api";
-import {onSnapshot} from "firebase/firestore";
+    Card,
+    CardHeader,
+    CardTitle,
+    CardContent,
+    CardFooter,
+} from "@/components/ui/card";
+import { useUserContext } from "@/context/AuthContext";
+import type { DocumentReference } from "firebase/firestore";
+import {
+    useGetFridgeById,
+    useAddIngredientToFridge,
+    useRemoveIngredientFromFridge,
+} from "@/lib/react-query/queriesAndMutations";
 
-const FridgeForm = () => {
-    const { user } = useUserContext(); // Authenticated user context
-    const { pathname } = useLocation();
-    const [ingredientName, setIngredientName] = useState("");
-    const [myFridge, setMyFridge] = useState([]);
-    const [confirmationMessage, setConfirmationMessage] = useState("");
-    const { data: fridge, refetch } = useGetAllFridgeIngredients(user.myFridge);
-    const navigate = useNavigate();
+// validation schema
+const fridgeSchema = z.object({
+    ingredientName: z.string().min(1, "Enter at least 1 character"),
+});
+type FridgeFormValues = z.infer<typeof fridgeSchema>;
 
-    const handleAddIngredient = async () => {
-        // Validate the ingredient name (must be one word, start with a capital letter, and contain no numbers)
-        if (!validateName(ingredientName)) {
-            alert("Invalid ingredient name. It must be one word, start with a capital letter, and contain no numbers.");
-            return;
-        }
+// Google Custom Search API config (set in .env)
+const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_SEARCH_API_KEY;
+const GOOGLE_CSE_ID = import.meta.env.VITE_GOOGLE_SEARCH_ENGINE_ID;
 
-        // Check if the ingredient already exists in the fridge (myFridge is now an array of strings)
-        if (myFridge.includes(ingredientName)) {
-            alert("Ingredient already exists in your fridge.");
-            return;
-        }
+async function fetchIngredientImage(query: string): Promise<string | null> {
+    try {
+        const res = await fetch(
+            `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CSE_ID}&searchType=image&q=${encodeURIComponent(
+                query
+            )}&num=1`
+        );
+        const data = await res.json();
+        return data.items?.[0]?.link ?? null;
+    } catch {
+        return null;
+    }
+}
 
-        try {
-            // Update the user's fridge document in Firebase by adding the ingredient string to the ingredients array.
-            await addNewIngredient(user.myFridge, ingredientName);
+export default function FridgeForm() {
+    const { user } = useUserContext();
+    const fridgeRef = user?.myFridge as DocumentReference | undefined;
+    if (!fridgeRef) return <p>No fridge linked to your account.</p>;
 
-            // Update local state to reflect the change, so that the table re-renders with the new ingredient.
-            const updatedFridge = [...myFridge, ingredientName];
-            setMyFridge(updatedFridge);
-            setConfirmationMessage("Ingredient added to your fridge.");
-        } catch (error) {
-            console.error("Error adding ingredient:", error);
-            alert("Failed to add ingredient. Please try again.");
-        }
+    const {
+        data: fridge,
+        isLoading: fridgeLoading,
+        isError: fridgeError,
+    } = useGetFridgeById(fridgeRef);
 
-        // Clear the confirmation message after 3 seconds
-        setTimeout(() => {
-            setConfirmationMessage("");
-        }, 3000);
+    const addMutation = useAddIngredientToFridge();
+    const removeMutation = useRemoveIngredientFromFridge();
+
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: { errors, isSubmitting },
+    } = useForm<FridgeFormValues>({
+        resolver: zodResolver(fridgeSchema),
+    });
+
+    // image state
+    const [images, setImages] = React.useState<Record<string, string | null>>({});
+    const [loadingImages, setLoadingImages] = React.useState<Record<string, boolean>>({});
+
+    React.useEffect(() => {
+        fridge?.ingredients.forEach((name) => {
+            if (images[name] !== undefined) return;
+            setLoadingImages((prev) => ({ ...prev, [name]: true }));
+            fetchIngredientImage(name)
+                .then((url) => setImages((prev) => ({ ...prev, [name]: url })))
+                .finally(() => setLoadingImages((prev) => ({ ...prev, [name]: false })));
+        });
+    }, [fridge?.ingredients]);
+
+    if (fridgeLoading) return <p>Loading your fridge…</p>;
+    if (fridgeError) return <p className="text-red-600">Failed to load fridge.</p>;
+
+    const onSubmit = async (values: FridgeFormValues) => {
+        await addMutation.mutateAsync({
+            fridgeId: fridgeRef.id,
+            ingredientName: values.ingredientName,
+        });
+        reset();
     };
-
-
-    useEffect(() => {
-
-        let unsub = () => {};
-        if (user.myFridge) {
-            unsub = onSnapshot(user.myFridge, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    setMyFridge(data.ingredients || []);
-                } else {
-                    setMyFridge([]);
-                }
-            });
-        }
-
-        return () => {
-            unsub();
-        };
-    }, [user.myFridge]);
-
-    const validateName = (name: string) => {
-        const nameRegex = /^[A-Z][a-zA-Z]*$/;
-        return nameRegex.test(name);
-    };
-
-
 
     return (
-        <div>
-            {myFridge.length === 0 ? (
-                <>
-                    <p className="text-light-4">No current Ingredients</p>
-                    <DataTable
-                        columns={FridgeColumns}
-                        data={myFridge.map((ingredient, index) => ({
-                            id: index.toString(),
-                            ingredient_name: ingredient,
-                        }))}
-                    />
-                </>
-            ) : (
-                <>
-                    <h1 className="h3-bold text-dark-1">Edit MyFridge</h1>
-                    <DataTable
-                        columns={FridgeColumns}
-                        data={myFridge.map((ingredient, index) => ({
-                            id: index.toString(),
-                            ingredient_name: ingredient,
-                        }))}
-                    />
-                </>
+        <div className="space-y-6">
+            {/* Add form */}
+            <form onSubmit={handleSubmit(onSubmit)} className="flex gap-2">
+                <Input className={"bg-dark-2 rounded"} placeholder="New ingredient" {...register("ingredientName")} />
+                <Button type="submit" disabled={isSubmitting || addMutation.isPending} className={"bg-green-500 hover:bg-green-600 transition-all rounded"}>
+                    Add
+                </Button>
+            </form>
+            {errors.ingredientName && (
+                <p className="text-red-600">{errors.ingredientName.message}</p>
             )}
 
-            {/* Show confirmation message */}
-            {confirmationMessage && (
-                <p className="text-green-500">{confirmationMessage}</p>
-            )}
-
-            {/* Show Sheet component only if the current path is /update-profile/${user.id} */}
-            {pathname === `/update-profile/${user.id}` && (
-                <Sheet>
-                    <SheetTrigger asChild>
-                        <Button variant="outline" className={"shad-button_dark_4"}>Add Ingredient</Button>
-                    </SheetTrigger>
-                    <SheetContent>
-                        <SheetHeader>
-                            <SheetTitle>Add an Ingredient</SheetTitle>
-                            <SheetDescription>
-                                Add an ingredient to your fridge. This will help us provide you with better recipes.
-                                Make sure to add ingredients you have at home.
-                            </SheetDescription>
-                        </SheetHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="name" className="text-right">
-                                    Ingredient Name
-                                </Label>
-                                <Input
-                                    id="name"
-                                    value={ingredientName}
-                                    onChange={(e) => setIngredientName(e.target.value)}
-                                    className="col-span-3"
+            {/* Ingredient Cards */}
+            <div className="space-y-4">
+                {fridge.ingredients.map((name) => (
+                    <Card key={name} className="recipe-card w-full">
+                        <CardHeader>
+                            <CardTitle>{name}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {loadingImages[name] ? (
+                                <p>Loading image…</p>
+                            ) : images[name] ? (
+                                <img
+                                    src={images[name] as string}
+                                    alt={name}
+                                    className="w-full h-1/3 h-max-[200px] object-cover rounded-md"
                                 />
-                            </div>
-                        </div>
-                        <SheetFooter>
-                            <SheetClose asChild>
-                                <Button type="button" className={"shad-button_dark_4"} onClick={handleAddIngredient}>
-                                    Add Ingredient
-                                </Button>
-                            </SheetClose>
+                            ) : (
+                                <p>No image found.</p>
+                            )}
+                        </CardContent>
+                        <CardFooter>
                             <Button
-                                type="button"
-                                className="shad-button_dark_4"
-                                onClick={() => navigate(-1)}
+                                variant="destructive"
+                                size="sm"
+                                onClick={() =>
+                                    removeMutation.mutate({
+                                        fridgeId: fridgeRef.id,
+                                        ingredientName: name,
+                                    })
+                                }
+                                disabled={removeMutation.isPending}
+                                className={"hover:bg-red transition-all rounded"}
                             >
-                                Cancel
+                                Remove
                             </Button>
-                        </SheetFooter>
-                    </SheetContent>
-                </Sheet>
+                        </CardFooter>
+                    </Card>
+                ))}
+            </div>
+
+            {(addMutation.isError || removeMutation.isError) && (
+                <p className="text-red-600">An error occurred. Please try again.</p>
             )}
         </div>
     );
-};
-
-export default FridgeForm;
+}

@@ -1,16 +1,15 @@
 import {
     useQuery,
     useMutation,
-    useQueryClient, useInfiniteQuery,
+    useQueryClient, useInfiniteQuery, UseMutationResult,
 
 } from "@tanstack/react-query";
-import {collection, DocumentReference, getDocs, query, where} from "firebase/firestore";
+import {collection, DocumentReference, getDocs,} from "firebase/firestore";
 import { database } from "@/lib/firebase/config";
 import {
     generateAiRecipes,
     createRecipe,
     createUserAccount,
-    getRecentRecipes,
     signInAccount,
     signOutAccount,
     getRecipeById,
@@ -22,18 +21,15 @@ import {
     getUserById,
     updateUser,
     getUserRecipes,
-    createFridge,
     followUser,
     getAllFridgeIngredients,
-    addIngredientToFridge,
     getAllIngredients,
     removeIngredientFromFridge,
     addIngredientToShoppingList,
     likeWorkshop,
     saveWorkshop,
     createWorkshop,
-    updateWorkshop,
-    deleteWorkshop, getFollowedUsersRecipes,
+    deleteWorkshop, getFollowedUsersRecipes, generateAiRecipesFromImage, addIngredientToFridge, fetchFridgeByRef,
 
 } from "@/lib/firebase/api";
 import {
@@ -41,7 +37,6 @@ import {
     INewUser,
     IUpdateUser,
     INewWorkshop,
-    IUpdateWorkshop,
     Workshop,
     Recipe
 } from "@/types";
@@ -65,12 +60,6 @@ export const useSignInAccount = () => {
 export const useSignOutAccount = () => {
     return useMutation({
         mutationFn: signOutAccount,
-    });
-};
-
-export const useCreateFridge = () => {
-    return useMutation({
-        mutationFn: (userID: string) => createFridge(userID),
     });
 };
 
@@ -99,16 +88,6 @@ export const useGetUserRecipes = (recipeRefs?: DocumentReference<Recipe>[]) => {
         enabled: !!recipeRefs && recipeRefs.length > 0,
     });
 };
-
-// Query for fetching recent recipes
-export const useGetRecentRecipes = () => {
-    return useQuery({
-        queryKey: [QUERY_KEYS.GET_RECENT_RECIPES],
-        queryFn: getRecentRecipes,
-    });
-};
-
-
 
 // Query for searching recipes
 export const useSearchRecipes = (searchTerm: string) => {
@@ -148,7 +127,6 @@ export const useGetRecipeById = (recipeId?: string) => {
     });
 };
 
-
 // Mutation for deleting a recipe
 export const useDeleteRecipe = () => {
     const queryClient = useQueryClient();
@@ -157,7 +135,7 @@ export const useDeleteRecipe = () => {
         mutationFn: (recipe: any) => {
             if (!recipe.id) throw new Error("Invalid recipe: Missing ID");
 
-            let mediaId: string | undefined;
+            let mediaId: string;
 
             if (recipe.mediaUrl) {
                 try {
@@ -180,32 +158,134 @@ export const useDeleteRecipe = () => {
 };
 
 
-// Hook for liking a recipe
-export const useLikeRecipe = () => {
-    const queryClient = useQueryClient();
-
+export function useLikeRecipe() {
+    const qc = useQueryClient();
     return useMutation({
+        // 🆕 v4-style: put the mutation function under `mutationFn`
         mutationFn: ({ recipeId, userId }: { recipeId: string; userId: string }) =>
             likeRecipe(recipeId, userId),
-        onSuccess: (_data, { recipeId }) => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_RECIPE_BY_ID, recipeId] });
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_CURRENT_USER] });
+
+        // optimistic update
+        onMutate: async (vars) => {
+            await qc.cancelQueries(["recipe", vars.recipeId]);
+            await qc.cancelQueries(["currentUser"]);
+
+            const prevRecipe = qc.getQueryData<any>(["recipe", vars.recipeId]);
+            const prevUser   = qc.getQueryData<any>(["currentUser"]);
+
+            qc.setQueryData(["recipe", vars.recipeId], (old: any) => ({
+                ...old,
+                likes: [...(old?.likes || []), vars.userId],
+            }));
+            qc.setQueryData(["currentUser"], (old: any) => ({
+                ...old,
+                likedRecipes: [...(old?.likedRecipes || []), vars.recipeId],
+            }));
+
+            return { prevRecipe, prevUser };
+        },
+
+        onError: (_err, vars, context: any) => {
+            if (context?.prevRecipe) qc.setQueryData(["recipe", vars.recipeId], context.prevRecipe);
+            if (context?.prevUser)   qc.setQueryData(["currentUser"], context.prevUser);
+        },
+
+        onSettled: (_data, _err, vars) => {
+            qc.invalidateQueries(["recipe", vars.recipeId]);
+            qc.invalidateQueries(["currentUser"]);
         },
     });
-};
+}
 
-export const useUnlikeRecipe = () => {
-    const queryClient = useQueryClient();
-
+export function useUnlikeRecipe() {
+    const qc = useQueryClient();
     return useMutation({
         mutationFn: ({ recipeId, userId }: { recipeId: string; userId: string }) =>
             unlikeRecipe(recipeId, userId),
-        onSuccess: (_data, { recipeId }) => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_RECIPE_BY_ID, recipeId] });
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_CURRENT_USER] });
+
+        onMutate: async (vars) => {
+            await qc.cancelQueries(["recipe", vars.recipeId]);
+            await qc.cancelQueries(["currentUser"]);
+
+            const prevRecipe = qc.getQueryData<any>(["recipe", vars.recipeId]);
+            const prevUser   = qc.getQueryData<any>(["currentUser"]);
+
+            qc.setQueryData(["recipe", vars.recipeId], (old: any) => ({
+                ...old,
+                likes: (old?.likes || []).filter((id: string) => id !== vars.userId),
+            }));
+            qc.setQueryData(["currentUser"], (old: any) => ({
+                ...old,
+                likedRecipes: (old?.likedRecipes || []).filter((rid: string) => rid !== vars.recipeId),
+            }));
+
+            return { prevRecipe, prevUser };
+        },
+
+        onError: (_err, vars, context: any) => {
+            if (context?.prevRecipe) qc.setQueryData(["recipe", vars.recipeId], context.prevRecipe);
+            if (context?.prevUser)   qc.setQueryData(["currentUser"], context.prevUser);
+        },
+
+        onSettled: (_data, _err, vars) => {
+            qc.invalidateQueries(["recipe", vars.recipeId]);
+            qc.invalidateQueries(["currentUser"]);
         },
     });
-};
+}
+
+
+// READ hook
+export function useGetFridgeById(fridgeRef: DocumentReference) {
+    return useQuery({
+        // 1) queryKey must be inside the options object
+        queryKey: ["fridge", fridgeRef.id],
+
+        // 2) queryFn likewise
+        queryFn: () => fetchFridgeByRef(fridgeRef),
+
+        // 3) any other options (staleTime, enabled, etc.)
+        staleTime: 1000 * 60,
+        enabled: !!fridgeRef.id,
+    });
+}
+
+// (you already have these, but for completeness)
+// ADD hook
+export function useAddIngredientToFridge() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+                         fridgeId,
+                         ingredientName,
+                     }: {
+            fridgeId: string;
+            ingredientName: string;
+        }) => addIngredientToFridge(fridgeId, ingredientName),
+        onSuccess(_data, vars) {
+            qc.invalidateQueries(["fridge", vars.fridgeId]);
+        },
+    });
+}
+
+// REMOVE hook
+export function useRemoveIngredientFromFridge() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+                         fridgeId,
+                         ingredientName,
+                     }: {
+            fridgeId: string;
+            ingredientName: string;
+        }) => removeIngredientFromFridge(fridgeId, ingredientName),
+        onSuccess(_data, vars) {
+            qc.invalidateQueries(["fridge", vars.fridgeId]);
+        },
+    });
+}
+
+
 
 
 
@@ -382,18 +462,6 @@ export const useGetAllIngredients = () => {
 
 
 
-// Mutation for removing an ingredient from the fridge
-export const useRemoveIngredientFromFridge = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: ({ fridgeId, ingredient }: { fridgeId: any; ingredient: string }) => removeIngredientFromFridge(fridgeId, ingredient),
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_ALL_FRIDGE_INGREDIENTS, variables.fridgeId],
-            });
-        },
-    });
-};
 
 // Mutation for adding an ingredient to the shopping list
 export const useAddIngredientToShoppingList = () => {
@@ -409,6 +477,12 @@ export const useGenerateAiRecipes = () =>
         mutationFn: generateAiRecipes,
     });
 
+/** Hook to generate recipes from uploaded image */
+export const useGenerateImageAiRecipes = ():
+    UseMutationResult<Recipe[], Error, File[]> =>
+    useMutation<Recipe[], Error, File[]>({
+        mutationFn: (files) => generateAiRecipesFromImage(files),
+    });
 
 export const useGetInfiniteFeed = (userId: string) =>
     useInfiniteQuery({

@@ -3,7 +3,6 @@ import {Button} from "@/components/ui/button";
 import {useSignOutAccount} from "@/lib/react-query/queriesAndMutations.ts";
 import {useEffect} from "react";
 import {INITIAL_USER, useUserContext} from "@/context/AuthContext.tsx";
-import Loader from "@/components/shared/Loader.tsx";
 import {sidebarLinks} from "@/constants";
 import {INavLink} from "@/types";
 import {Skeleton} from "@/components/ui/skeleton.tsx";
@@ -31,7 +30,7 @@ const LeftSidebar = () => {
 
 
     return (
-        <nav className="leftsidebar">
+        <nav className="leftsidebar h-screen">
             <div className="flex flex-col gap-11">
                 <Link to="/" className="flex gap-3 items-center">
                     <img

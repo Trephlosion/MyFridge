@@ -1,21 +1,26 @@
 import { useEffect, useState } from "react";
 import { useUserContext } from "@/context/AuthContext";
 import { database } from "@/lib/firebase/config";
-import {collection, addDoc, getDocs, doc, getDoc, serverTimestamp, updateDoc, arrayUnion} from "firebase/firestore";
+import {collection, getDocs } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {Card, CardContent, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
 import { Loader } from "@/components/shared";
 import {Link, useNavigate} from "react-router-dom";
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar.tsx";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbSeparator
+} from "@/components/ui/breadcrumb.tsx";
+import ChallengeCard from "@/components/cards/ChallengeCard.tsx";
 
 const Challenges = () => {
     const { user } = useUserContext();
     const [challenges, setChallenges] = useState<any[]>([]);
-    const [title, setTitle] = useState("");
-    const [description, setDescription] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
+
 
     useEffect(() => {
         const fetchChallenges = async () => {
@@ -36,43 +41,33 @@ const Challenges = () => {
         fetchChallenges();
     }, []);
 
-    const handleCreateChallenge = async () => {
-        if (!title || !description) return;
-
-        try {
-            const newChallenge = {
-                title,
-                description,
-                creator: doc(database, "Users", user.id),
-                participants: [],
-                createdAt: serverTimestamp(),
-            };
-
-            const challengeRef = await addDoc(collection(database, "Challenges"), newChallenge);
-
-            const userRef = doc(database, "Users", user.id);
-            const userSnap = await getDoc(userRef);
-
-            if (userSnap.exists()) {
-                await updateDoc(userRef, {
-                    challenges: arrayUnion(challengeRef), // automatically prevents duplicates
-                });
-            }
-
-            setChallenges((prev) => [{ id: challengeRef.id, ...newChallenge }, ...prev]);
-            setTitle("");
-            setDescription("");
-        } catch (error) {
-            console.error("Error creating challenge:", error);
-        }
-    };
-
     if (isLoading) {
-        return <Loader />;
+        return(
+            <>
+                <div className="flex justify-center items-center h-screen">
+                    <Loader />
+                    <h1 className="text-light-4 text-xl">Loading challenges...</h1>
+                </div>
+
+            </>
+        );
     }
 
     return (
         <div className="p-6 max-w-4xl mx-auto">
+            <Breadcrumb>
+                <BreadcrumbList>
+                    <BreadcrumbItem>
+                        <BreadcrumbLink asChild>
+                            <Link className={"hover:text-accentColor"} to="/">Home</Link>
+                        </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                        <BreadcrumbLink>Challenges</BreadcrumbLink>
+                    </BreadcrumbItem>
+                </BreadcrumbList>
+            </Breadcrumb>
             <h1 className="h2-bold text-center mb-8">Recipe Challenges</h1>
 
             {user.isVerified && (
@@ -88,28 +83,7 @@ const Challenges = () => {
                     <p className="text-center text-light-4">No challenges found.</p>
                 ) : (
                     challenges.map((challenge) => (
-                        <Card key={challenge.id} className="bg-dark-4 p-4 rounded-2xl shadow-md hover:scale-105 transition">
-                            <CardHeader>
-                                <CardTitle className="text-lg font-bold">{challenge.title}</CardTitle>
-                                <p className="text-sm text-light-3">{new Date(challenge.createdAt?.seconds * 1000).toLocaleDateString()}</p>
-
-
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-light-3 mb-3">{challenge.description}</p>
-                                <p className="text-sm text-light-3">Participants: {challenge.participants.length}</p>
-                            </CardContent>
-                            <CardFooter>
-                                <Button
-                                    size="sm"
-                                    className="w-full hover:bg-primary-600
-                                     bg-primary-500 rounded-1md"
-                                    onClick={() => navigate(`/challenge/${challenge.id}`)}
-                                >
-                                    View Challenge
-                                </Button>
-                            </CardFooter>
-                        </Card>
+                        <ChallengeCard challenge={challenge} />
                     ))
                 )}
             </div>

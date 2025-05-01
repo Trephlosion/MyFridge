@@ -1,115 +1,105 @@
-// RecipeAnalytics.tsx
-import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
-import { database } from '@/lib/firebase/config';
+// pages/RecipeAnalytics.tsx
+import { useEffect, useState } from "react";
+import {Link, useLocation, useNavigate} from "react-router-dom";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Loader } from "@/components/shared";
+import { generateRecipeAnalytics } from "@/lib/firebase/api";
+import { AnalyticsResponse } from "@/types";
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbSeparator
+} from "@/components/ui/breadcrumb.tsx";
 
-const RecipeAnalytics = () => {
-    const location = useLocation();
-    const recipeId = new URLSearchParams(location.search).get('recipeId');
-    const [report, setReport] = useState('');
+export default function RecipeAnalytics() {
+    const navigate = useNavigate();
+    const params = new URLSearchParams(useLocation().search);
+    const recipeId = params.get("recipeId")!;
+    const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
     const [loading, setLoading] = useState(true);
-
-    const fetchAnalyticsReport = async () => {
-        try {
-            if (!recipeId) {
-                setReport('No recipe ID provided.');
-                return;
-            }
-
-            // Get the recipe document
-            const recipeRef = doc(database, 'Recipes', recipeId);
-            const recipeSnap = await getDoc(recipeRef);
-
-            if (!recipeSnap.exists()) {
-                setReport('Recipe not found.');
-                return;
-            }
-
-            const recipeData = recipeSnap.data();
-            const recipeTitle = recipeData.title || 'Unknown Title';
-            const recipeCreatedAt = recipeData.createdAt?.toDate?.().toLocaleDateString?.() || 'Unknown Date';
-
-            // Get all ratings for this recipe
-            const ratingsQuery = query(
-                collection(database, 'Ratings'),
-                where('recipeId', '==', recipeId)
-            );
-            const snapshot = await getDocs(ratingsQuery);
-            const ratingsData = snapshot.docs.map(doc => doc.data());
-
-            // Format ratings into readable string
-            const formattedRatings = ratingsData.map((r, i) => {
-                const date = r.createdAt?.toDate?.().toLocaleDateString?.() ?? 'Unknown Date';
-                return `Rating ${i + 1}:
-- Stars: ${r.stars}
-- Comment: "${r.comment}"
-- Date: ${date}
-- User ID: ${r.userId}`;
-            }).join('\n');
-
-            const openAiKey = import.meta.env.VITE_OPENAI_API_KEY;
-            const prompt = `
-You are a data analyst helping a chef understand how their recipe is performing.
-Below is the data for the recipe.
-
-**Recipe Name:** ${recipeTitle}
-**Created At:** ${recipeCreatedAt}
-
-Each rating includes: stars (1–5), comment, createdAt, and userId.
-
-Ratings:
-${formattedRatings}
-
-Please summarize:
-- The overall sentiment
-- Common themes in comments
-- Constructive suggestions
-- Positive highlights
-
-Format the report in readable, clear paragraphs.
-            `;
-
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${openAiKey}`,
-                },
-                body: JSON.stringify({
-                    model: 'gpt-3.5-turbo',
-                    messages: [
-                        { role: 'system', content: 'You are an analytical and helpful assistant.' },
-                        { role: 'user', content: prompt },
-                    ],
-                    temperature: 0.7,
-                    max_tokens: 1000,
-                }),
-            });
-
-            const data = await response.json();
-            const message = data.choices?.[0]?.message?.content;
-
-            setReport(message || 'Failed to generate report.');
-        } catch (error) {
-            console.error('Error generating analytics report:', error);
-            setReport('An error occurred while generating the report.');
-        } finally {
-            setLoading(false);
-        }
-    };
+    const location = useLocation();
 
     useEffect(() => {
-        fetchAnalyticsReport();
-    }, []);
+        (async () => {
+            try {
+                const data = await generateRecipeAnalytics(recipeId);
+                setAnalytics(data);
+            } catch (err) {
+                console.error("Analytics error:", err);
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, [recipeId]);
+
+    if (loading) return <Loader />;
+    if (!analytics) return <p className="text-center mt-10">Failed to load analytics.</p>;
 
     return (
-        <div className="p-6 max-w-4xl mx-auto text-left">
-            <h1 className="text-2xl font-semibold mb-4">AI-Generated Recipe Analytics</h1>
-            {loading ? <p>Generating report...</p> : <pre className="whitespace-pre-wrap">{report}</pre>}
+        <div className="max-w-3xl mx-auto mt-10">
+            <Card className="recipe-card">
+                <CardHeader>
+                    <CardTitle> {analytics.title} Recipe Analytics</CardTitle>
+
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <p>
+                        <strong>Average Rating:</strong> {analytics.averageRating.toFixed(1)}
+                    </p>
+                    <p>
+                        <strong>Total Reviews:</strong> {analytics.totalReviews}
+                    </p>
+                    <div>
+                        <strong>Rating Distribution:</strong>
+                        <ul className="list-disc list-inside ml-4">
+                            {Object.entries(analytics.ratingCounts).map(([star, count]) => (
+                                <li key={star}>
+                                    {star} ★ – {count}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                    <p>
+                        <strong>Most Recent Review:</strong>{" "}
+                        {new Date(analytics.mostRecentReviewDate).toLocaleDateString()}
+                    </p>
+
+                    <p>
+                        <strong>Overview:</strong> {analytics.overview}
+                    </p>
+                </CardContent>
+                <CardFooter>
+                    <Breadcrumb>
+                        <BreadcrumbList>
+                            <BreadcrumbItem>
+                                <BreadcrumbLink >
+                                    <Link className="cursor-pointer hover:text-accentColor" to="/">
+                                        Home
+                                    </Link>
+                                </BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                                <BreadcrumbLink >
+                                    <Link className="hover:text-accentColor" to={`/recipes/${recipeId}`}>
+                                        {analytics.title} Recipe Details
+                                    </Link>
+                                </BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator />
+                            <BreadcrumbItem>
+                                <BreadcrumbLink>
+                                    Analytics
+                                </BreadcrumbLink>
+                            </BreadcrumbItem>
+
+                        </BreadcrumbList>
+                    </Breadcrumb>
+                </CardFooter>
+            </Card>
         </div>
     );
-};
-
-export default RecipeAnalytics;
-
+}
