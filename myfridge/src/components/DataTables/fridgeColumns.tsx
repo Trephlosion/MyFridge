@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardTitle } from "@/com
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
+import {DocumentReference} from "firebase/firestore";
 
 export type Fridge = {
     id: string;

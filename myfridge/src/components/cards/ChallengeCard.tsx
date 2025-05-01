@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import {UserAvatarRow} from "@/components/shared";
+import {Badge} from "@/components/ui/badge.tsx";
 
 const ChallengeCard = ({ challenge }: { challenge: any }) => {
     const deadlineDate = challenge.deadline?.toDate?.();
@@ -11,7 +12,10 @@ const ChallengeCard = ({ challenge }: { challenge: any }) => {
         : "No Deadline";
 
     return (
-        <Card className="recipe-card flex flex-col">
+        <>
+        <Card className={`flex-center flex-col gap-4 border bg-dark-3 border-dark-4 rounded-[20px] px-5 py-8 relative shadow-md transition-all hover:scale-[1.02] ${
+                challenge.deadline?.toDate() < new Date() ? "border-red transition" : challenge.winner ? "border-yellow-500" : "border-dark-4"
+            }`}>
             <div className="flex items-center justify-between">
                 <CardTitle className="flex-center text-center px-3 pt-2 truncate">{challenge.title}</CardTitle>
             </div>
@@ -33,7 +37,20 @@ const ChallengeCard = ({ challenge }: { challenge: any }) => {
                     </Button>
                 </Link>
             </CardContent>
+            {challenge.deadline?.toDate() < new Date() && (
+                <Badge variant="destructive" className="absolute bg-red top-2 right-2">
+                    Expired
+                </Badge>
+            )}
+
+            {challenge.winner && (
+                <Badge variant="destructive" className="absolute bg-yellow-500 top-2 right-2">
+                    Completed
+                </Badge>
+            )}
         </Card>
+
+        </>
     );
 };
 

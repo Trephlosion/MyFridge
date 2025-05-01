@@ -187,6 +187,13 @@ export type FridgeData = {
     userid: DocumentReference<IUser>;
 };
 
+export type Fridge = {
+    id: string;
+    ingredients: string[];
+    updatedAt: any;
+    userid: DocumentReference;
+};
+
 export type RemoveIngredientParams = {
     fridgeId: DocumentReference<any>;
     ingredientName: string;

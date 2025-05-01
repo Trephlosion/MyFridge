@@ -14,6 +14,8 @@ const UpdateProfile = () => {
     const [myFridge, setMyFridge] = useState([]);
     const { data: fridge, isLoading: isFridgeLoading } = useGetAllFridgeIngredients(user.myFridge);
 
+    console.log("user.myFridge ➡️", user?.myFridge);
+
     useEffect(() => {
 
         let unsub = () => {};

@@ -41,7 +41,7 @@ import {
     Recipe,
     Workshop,
     Challenge,
-    AnalyticsResponse,
+    AnalyticsResponse, Fridge,
 } from "@/types";
 
 // AUTH FUNCTIONS
@@ -339,31 +339,54 @@ export async function getAllFridgeIngredients(fridgeRef: DocumentReference<Docum
     return Array.isArray(fridgeData.ingredients) ? fridgeData.ingredients : [];
 }
 
-// Add new ingredient to fridge
-export async function addIngredientToFridge(fridgeId: string, ingredientName: string) {
-    const fridgeDoc = doc(database, "Fridges", fridgeId);
-    await updateDoc(fridgeDoc, {
-        ingredients: arrayUnion(ingredientName),
-    });
-    return { status: "ok" };
+export async function addNewIngredient(
+    fridgeRef: DocumentReference,
+    ingredientName: string
+) {
+    try {
+        // only update the fridge’s ingredients array
+        await updateDoc(fridgeRef, {
+            ingredients: arrayUnion(ingredientName),
+            updatedAt: serverTimestamp(),
+        });
+        return { status: "ok" };
+    } catch (error) {
+        console.error("Error adding ingredient:", error);
+        throw error;
+    }
 }
 
-// Remove ingredient from fridge
-export async function removeIngredientFromFridge(fridgeId: string, ingredientName: string) {
-    const fridgeDoc = doc(database, "Fridges", fridgeId);
-    const fridgeSnap = await getDoc(fridgeDoc);
 
-    if (!fridgeSnap.exists()) throw new Error("Fridge not found");
-    const fridgeData = fridgeSnap.data() as FridgeData;
-
-    const updatedIngredients = (Array.isArray(fridgeData.ingredients) ? fridgeData.ingredients : []).filter((item) => item !== ingredientName);
-
-    await updateDoc(fridgeDoc, {
-        ingredients: updatedIngredients,
+export async function addIngredientToFridge(
+    fridgeId: string,
+    ingredientName: string
+) {
+    const fridgeRef = doc(database, "Fridges", fridgeId);
+    await updateDoc(fridgeRef, {
+        ingredients: arrayUnion(ingredientName),
         updatedAt: serverTimestamp(),
     });
+}
 
-    return { status: "ok" };
+export async function removeIngredientFromFridge(
+    fridgeId: string,
+    ingredientName: string
+) {
+    const fridgeRef = doc(database, "Fridges", fridgeId);
+    await updateDoc(fridgeRef, {
+        ingredients: arrayRemove(ingredientName),
+        updatedAt: serverTimestamp(),
+    });
+}
+
+export async function fetchFridgeByRef(
+    fridgeRef: DocumentReference<Fridge>
+): Promise<Fridge> {
+    const snap = await getDoc(fridgeRef);
+    if (!snap.exists()) {
+        throw new Error("Fridge not found");
+    }
+    return { id: snap.id, ...(snap.data() as Omit<Fridge, "id">) };
 }
 
 // Ingredient Functions
@@ -877,19 +900,7 @@ export async function addIngredientToShoppingList(fridgeId: string, ingredientId
     }
 }
 
-// add new ingredient
-export async function addNewIngredient(fridgeRef: DocumentReference, ingredientName: string) {
-    try {
-        const ingredientRef = doc(database, "Ingredients", ingredientName);
-        await setDoc(ingredientRef, { name: ingredientName });
-        await updateDoc(fridgeRef, {
-            ingredients: arrayUnion(ingredientName),
-        });
-        return { status: ok };
-    } catch (error) {
-        console.log(error);
-    }
-}
+
 
 // INGREDIENT FUNCTIONS
 

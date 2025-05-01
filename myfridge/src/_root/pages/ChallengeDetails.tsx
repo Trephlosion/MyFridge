@@ -190,13 +190,13 @@ const ChallengeDetails = () => {
             <Breadcrumb>
                 <BreadcrumbList>
                     <BreadcrumbItem>
-                        <BreadcrumbLink asChild>
+                        <BreadcrumbLink >
                             <Link className={"hover:text-accentColor"} to="/">Home</Link>
                         </BreadcrumbLink>
                     </BreadcrumbItem>
                     <BreadcrumbSeparator />
                     <BreadcrumbItem>
-                        <BreadcrumbLink asChild>
+                        <BreadcrumbLink>
                             <Link className={"hover:text-accentColor"} to="/challenges">Challenges</Link>
                         </BreadcrumbLink>
                     </BreadcrumbItem>
@@ -208,7 +208,9 @@ const ChallengeDetails = () => {
             </Breadcrumb>
 
             {/* ✨ Info Card */}
-            <Card className="bg-dark-4 shadow-lg rounded-2xl">
+            <Card className={`flex-center flex-col gap-4 border bg-dark-3 border-dark-4 rounded-[20px] px-5 py-8 relative shadow-md transition-all hover:scale-[1.02] ${
+                challenge.deadline?.toDate() < new Date() ? "border-red transition" : ""
+            }`}>
                 <CardHeader>
                     <CardTitle className="text-3xl">{challenge.title}</CardTitle>
                     <ChallengeDeadlineInfo deadline={challenge.deadline} />
@@ -267,30 +269,32 @@ const ChallengeDetails = () => {
                 <CardFooter className="flex flex-col justify-end">
                     {/* Join / Leave */}
                     <div className="flex justify-center">
-                        {!isParticipant ? (
-                            <Button className={"bg-primary-500 hover:bg-primary-600 rounded-2xl shadow p-5 mb-3"} onClick={handleJoinChallenge}>Join Challenge</Button>
-                        ) : (
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="destructive">Leave Challenge</Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Confirm Leave</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Leaving will remove you and your submission from this
-                                            challenge. Are you sure?
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleLeaveChallenge}>
-                                            Yes, Leave
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        )}
+                        {!expired && (
+    !isParticipant ? (
+        <Button className={"bg-primary-500 hover:bg-primary-600 rounded-2xl shadow p-5 mb-3"} onClick={handleJoinChallenge}>Join Challenge</Button>
+    ) : (
+        <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <Button variant="destructive">Leave Challenge</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm Leave</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Leaving will remove you and your submission from this
+                        challenge. Are you sure?
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleLeaveChallenge}>
+                        Yes, Leave
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    )
+)}
                     </div>
                 </CardFooter>
             </Card>

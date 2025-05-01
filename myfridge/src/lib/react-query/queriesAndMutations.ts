@@ -23,14 +23,13 @@ import {
     getUserRecipes,
     followUser,
     getAllFridgeIngredients,
-    addIngredientToFridge,
     getAllIngredients,
     removeIngredientFromFridge,
     addIngredientToShoppingList,
     likeWorkshop,
     saveWorkshop,
     createWorkshop,
-    deleteWorkshop, getFollowedUsersRecipes, generateAiRecipesFromImage,
+    deleteWorkshop, getFollowedUsersRecipes, generateAiRecipesFromImage, addIngredientToFridge, fetchFridgeByRef,
 
 } from "@/lib/firebase/api";
 import {
@@ -236,6 +235,59 @@ export function useUnlikeRecipe() {
 }
 
 
+// READ hook
+export function useGetFridgeById(fridgeRef: DocumentReference) {
+    return useQuery({
+        // 1) queryKey must be inside the options object
+        queryKey: ["fridge", fridgeRef.id],
+
+        // 2) queryFn likewise
+        queryFn: () => fetchFridgeByRef(fridgeRef),
+
+        // 3) any other options (staleTime, enabled, etc.)
+        staleTime: 1000 * 60,
+        enabled: !!fridgeRef.id,
+    });
+}
+
+// (you already have these, but for completeness)
+// ADD hook
+export function useAddIngredientToFridge() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+                         fridgeId,
+                         ingredientName,
+                     }: {
+            fridgeId: string;
+            ingredientName: string;
+        }) => addIngredientToFridge(fridgeId, ingredientName),
+        onSuccess(_data, vars) {
+            qc.invalidateQueries(["fridge", vars.fridgeId]);
+        },
+    });
+}
+
+// REMOVE hook
+export function useRemoveIngredientFromFridge() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+                         fridgeId,
+                         ingredientName,
+                     }: {
+            fridgeId: string;
+            ingredientName: string;
+        }) => removeIngredientFromFridge(fridgeId, ingredientName),
+        onSuccess(_data, vars) {
+            qc.invalidateQueries(["fridge", vars.fridgeId]);
+        },
+    });
+}
+
+
+
+
 
 // ============================================================
 // USER QUERIES
@@ -410,18 +462,6 @@ export const useGetAllIngredients = () => {
 
 
 
-// Mutation for removing an ingredient from the fridge
-export const useRemoveIngredientFromFridge = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: ({ fridgeId, ingredient }: { fridgeId: any; ingredient: string }) => removeIngredientFromFridge(fridgeId, ingredient),
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_ALL_FRIDGE_INGREDIENTS, variables.fridgeId],
-            });
-        },
-    });
-};
 
 // Mutation for adding an ingredient to the shopping list
 export const useAddIngredientToShoppingList = () => {
