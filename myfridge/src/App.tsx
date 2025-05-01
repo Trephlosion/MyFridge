@@ -23,6 +23,7 @@ import { Routes, Route } from 'react-router-dom';
                         Inbox
 } from './_root/pages';
                     import { Toaster } from '@/components/ui/toaster.tsx';
+                    import Trending from "@/_root/pages/Trending";
 
 
                     const App = () => {
@@ -39,6 +40,7 @@ import { Routes, Route } from 'react-router-dom';
                                     <Route element={<RootLayout />}>
                                         <Route index element={<Home/>} />
                                         <Route path="/explore" element={<Explore/>} />
+                                        <Route path="/trending" element={<Trending />} />
                                         <Route path="/challenges" element={<Challenges/>} />
                                         <Route path="/all-users" element={<AllUsers/>} />
                                         <Route path="/create-recipe" element={<CreateRecipe/>} />

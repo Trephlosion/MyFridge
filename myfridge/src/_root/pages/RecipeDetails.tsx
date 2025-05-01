@@ -3,11 +3,13 @@
                     import React, {useEffect, useState} from "react";
                     import {doc, getDoc, addDoc, collection, getDocs, query, orderBy, where, serverTimestamp, updateDoc, arrayUnion, DocumentReference} from "firebase/firestore";
                     import {database} from "@/lib/firebase/config";
-                    import {useParams, useLocation, Link} from "react-router-dom";
+                    import {useParams, useLocation, Link, useNavigate} from "react-router-dom";
                     import {useUserContext} from "@/context/AuthContext";
                     import {Recipe} from "@/types";
                     import {Button} from "@/components/ui/button";
                     import {UserInfo} from "@/types";
+                    import { deleteDoc } from "firebase/firestore";
+
 
 
 import {
@@ -64,6 +66,7 @@ import {Input} from "postcss";
                         const [review, setReview] = useState("");
                         const [rating, setRating] = useState(0);
                         const [submitted, setSubmitted] = useState(false);
+                        const navigate = useNavigate();
 
 
                         const [usageCount, setUsageCount] = useState<number>(0);
@@ -304,6 +307,35 @@ import {Input} from "postcss";
                             };
                             fetchUserInfo();
                         }, [recipe]);
+                        const handleApproveRecipe = async () => {
+                            try {
+                                await updateDoc(doc(database, "Recipes", recipe.id), {
+                                    isApproved: true,
+                                });
+                                alert("Recipe approved successfully!");
+                                setSubmitted(!submitted);
+                            } catch (error) {
+                                console.error("Error approving recipe:", error);
+                                alert("Failed to approve recipe.");
+                            }
+                        };
+
+                        const handleDeleteRecipe = async () => {
+                            const confirmDelete = window.confirm("Are you sure you want to permanently delete this recipe?");
+                            if (!confirmDelete) return;
+
+                            try {
+                                const recipeRef = doc(database, "Recipes", recipe.id);
+                                await deleteDoc(recipeRef);
+
+                                // Move navigation AFTER successful deletion
+                                alert("Recipe deleted successfully!");
+                                navigate("/explore"); // Ensure useNavigate is correctly set
+                            } catch (error) {
+                                console.error("Error deleting recipe:", error);
+                                alert("Failed to delete recipe.");
+                            }
+                    };
 
 
 
@@ -712,6 +744,22 @@ import {Input} from "postcss";
                                                 >
                                                     Submit Dietary Review
                                                 </Button>
+                                                {/* Curator-Only Actions */}
+                                                {user?.isCurator && (
+                                                    <div className="space-y-4">
+                                                        {!recipe.isApproved && (
+                                                            <Button className="bg-green-600 hover:bg-green-700" onClick={handleApproveRecipe}>
+                                                                ✅ Approve Recipe
+                                                            </Button>
+                                                        )}
+                                                        <Button className="bg-yellow-500 hover:bg-yellow-600" onClick={() => navigate(`/edit-recipe/${recipe.id}`)}>
+                                                            ✏️ Suggest Edits
+                                                        </Button>
+                                                        <Button className="bg-red-600 hover:bg-red-700" onClick={handleDeleteRecipe}>
+                                                            🗑️ Delete Recipe
+                                                        </Button>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
